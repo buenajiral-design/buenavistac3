@@ -63,6 +63,7 @@
   .btn.outline:hover{background:var(--forest);color:var(--white);}
   .btn.small{padding:.4em .9em;font-size:.82rem;}
   .btn.danger{background:var(--clay);color:var(--white);}
+  .btn:disabled{opacity:.45;cursor:default;}
   input,select,textarea{
     font-family:'Karla',sans-serif;
     font-size:.95rem;
@@ -340,10 +341,6 @@
     background:var(--parchment-2);border:none;border-radius:4px;width:1.8em;height:1.8em;font-size:.85rem;
   }
   .bloque-editor .bloque-tools button:hover{background:var(--parchment);}
-  .bloque-fila{display:flex;gap:1em;align-items:flex-start;}
-  .bloque-fila .bloque-editor{flex:1 1 0;min-width:0;}
-  .bloque-editor.media-col{border-left:3px solid var(--gold);}
-  @media(max-width:640px){ .bloque-fila{flex-direction:column;} }
   .add-bloque-bar{display:flex;flex-wrap:wrap;gap:.5em;margin:1em 0 1.6em;}
   .add-bloque-bar button{
     background:var(--white);border:1.5px dashed var(--gold);color:var(--gold-dark);
@@ -354,18 +351,53 @@
   .upload-row{display:flex;gap:.6em;align-items:center;flex-wrap:wrap;margin-bottom:.6em;}
   .upload-row input[type="file"]{width:auto;flex:1;min-width:160px;}
 
+  /* ---------- filas y columnas de "Mi tarea" ---------- */
+  .fila-editor{border:1.5px solid var(--line);border-radius:8px;background:var(--white);margin-bottom:1.2em;overflow:hidden;}
+  .fila-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4em;background:var(--parchment-2);padding:.6em 1em;}
+  .fila-label{font-weight:700;font-size:.85rem;color:var(--forest-dark);}
+  .fila-tools{display:flex;gap:.3em;flex-wrap:wrap;}
+  .fila-tools button{background:var(--white);border:1px solid var(--line);border-radius:4px;padding:0 .5em;height:1.9em;font-size:.76rem;font-weight:700;}
+  .fila-tools button:hover:not(:disabled){background:var(--parchment);}
+  .fila-tools button:disabled{opacity:.35;}
+  .fila-columnas{display:grid;gap:1px;background:var(--line);}
+  .col-editor{background:var(--white);padding:1em;min-width:0;}
+  .col-label{font-size:.72rem;font-weight:700;color:#8a7f6e;letter-spacing:.03em;text-transform:uppercase;margin-bottom:.6em;}
+  .col-vacia{color:#a89c86;font-size:.8rem;text-align:center;padding:1em 0;}
+  .col-add{width:100%;background:var(--white);border:1.5px dashed var(--gold);color:var(--gold-dark);border-radius:6px;padding:.55em;font-weight:700;font-size:.8rem;margin-top:.3em;}
+  .col-add:hover{background:var(--gold);color:var(--white);border-style:solid;}
+  @media(max-width:640px){ .fila-columnas{grid-template-columns:1fr!important;} }
+
+  /* ---------- panel "Administrar columnas" ---------- */
+  .colmgr-picker{display:flex;gap:.5em;flex-wrap:wrap;}
+  .colmgr-box{
+    width:44px;height:44px;border-radius:8px;border:1.5px solid var(--line);
+    background:var(--parchment-2);color:var(--forest-dark);font-weight:700;font-size:.95rem;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .colmgr-box.active{background:var(--forest);border-color:var(--forest);color:var(--white);}
+  .colmgr-box.colmgr-add{background:var(--white);border-style:dashed;border-color:var(--gold);color:var(--gold-dark);font-size:1.2rem;}
+  .colmgr-box.colmgr-add:hover{background:var(--gold);color:var(--white);border-style:solid;}
+  .colmgr-actions{display:flex;gap:.5em;}
+  .colmgr-actions button{
+    width:44px;height:44px;border-radius:8px;border:1.5px solid var(--line);background:var(--white);
+    font-size:1.05rem;color:var(--forest-dark);
+  }
+  .colmgr-actions button:hover:not(:disabled){background:var(--parchment);}
+  .colmgr-actions button:disabled{opacity:.3;}
+
   /* ---------- cuadro simbólico (esquema en vivo del orden/columnas) ---------- */
-  .esquema-box{background:var(--parchment-2);border:1px solid var(--line);border-radius:8px;padding:.9em 1em .3em;margin-bottom:1.2em;}
+  .esquema-box{background:var(--parchment-2);border:1px solid var(--line);border-radius:8px;padding:.9em 1em 1em;margin-bottom:1.2em;}
   .esquema-title{font-size:.78rem;font-weight:700;color:#6b6152;margin-bottom:.6em;letter-spacing:.02em;}
-  .esquema-tira{line-height:0;}
+  .esquema-fila{display:grid;gap:6px;margin-bottom:6px;}
+  .esquema-col{display:flex;flex-direction:column;gap:6px;}
   .esquema-caja{
-    display:inline-block;vertical-align:top;box-sizing:border-box;
-    height:52px;line-height:1.25;border-radius:6px;margin:0 2% 8px 0;
-    color:#fff;font-weight:700;font-size:.72rem;text-align:center;
-    padding-top:8px;cursor:pointer;opacity:.92;transition:opacity .12s ease, transform .12s ease;
+    border-radius:6px;padding:8px 6px;color:#fff;font-weight:700;font-size:.72rem;
+    text-align:center;cursor:pointer;opacity:.92;transition:opacity .12s ease, transform .12s ease;
   }
   .esquema-caja:hover{opacity:1;transform:translateY(-1px);}
   .esquema-caja .esq-icon{display:block;font-size:1.05rem;margin-bottom:1px;line-height:1;}
+  .esquema-vacia{background:var(--white)!important;border:1.5px dashed var(--line);color:#a89c86!important;cursor:default;}
+  .esquema-vacia:hover{transform:none;}
 
   /* ---------- panel lateral: elegir qué agregar ---------- */
   .bloque-picker-overlay{position:fixed;inset:0;background:rgba(20,16,10,.45);z-index:70;display:none;}
@@ -392,16 +424,13 @@
   .bloque-picker-text strong{color:var(--forest-dark);font-size:.95rem;}
   .bloque-picker-text small{color:#8a7f6e;font-size:.78rem;}
 
-  /* ---------- insertar en un punto exacto ---------- */
-  .bloque-insert{display:flex;align-items:center;gap:.6em;margin:.15em 0;}
-  .bloque-insert::before,.bloque-insert::after{content:"";flex:1;height:1px;background:var(--line);}
-  .bloque-insert button{
-    background:var(--parchment-2);border:1px dashed var(--gold-dark);color:var(--gold-dark);
-    border-radius:20px;padding:.25em .8em;font-size:.74rem;font-weight:700;white-space:nowrap;
-  }
-  .bloque-insert button:hover{background:var(--gold);color:var(--white);border-style:solid;}
-
   /* ---------- selector de ubicación en mapa ---------- */
+  .mapa-tipo-switch{display:flex;gap:.4em;margin:.3em 0;}
+  .mapa-tipo-switch button{
+    background:var(--white);border:1.5px solid var(--forest);color:var(--forest);
+    padding:.35em .9em;border-radius:20px;font-weight:700;font-size:.78rem;
+  }
+  .mapa-tipo-switch button.active{background:var(--forest);color:var(--white);}
   .mapa-lienzo{height:260px;border-radius:4px;overflow:hidden;margin:.5em 0;border:1.5px solid var(--line);background:var(--parchment-2);}
   .mapa-coords{margin:0 0 .8em;}
 
@@ -612,6 +641,24 @@
     <button class="modal-close" data-close="iaModal">×</button>
     <h3>✨ Mejorar con IA</h3>
     <div id="iaBody">Pensando…</div>
+  </div>
+</div>
+
+<!-- Administrar columnas de una fila (Mi tarea) -->
+<div class="modal-overlay" id="colManagerModal">
+  <div class="modal" style="max-width:380px;">
+    <button class="modal-close" data-close="colManagerModal">×</button>
+    <h3>Administrar columnas</h3>
+    <button class="btn gold small" id="colManagerAddBtn" type="button" style="margin-bottom:1.1em;">＋ Agregar columna</button>
+    <p class="hint" style="margin-bottom:.5em;">Elige una columna:</p>
+    <div class="colmgr-picker" id="colManagerPicker"></div>
+    <p class="hint" style="margin:1.1em 0 .5em;">Elige una acción:</p>
+    <div class="colmgr-actions">
+      <button id="colManagerLeft" type="button" title="Mover a la izquierda">←</button>
+      <button id="colManagerRight" type="button" title="Mover a la derecha">→</button>
+      <button id="colManagerDup" type="button" title="Duplicar columna">⧉</button>
+      <button id="colManagerDel" type="button" title="Eliminar columna">🗑️</button>
+    </div>
   </div>
 </div>
 
@@ -1164,10 +1211,13 @@ function bloqueHTML(b){
   }
   if(b.tipo==='mapa'){
     if(!b.url) return '';
+    const comoLlegar = (b.lat!=null && b.lng!=null)
+      ? `<a class="btn outline small" href="https://www.google.com/maps/dir/?api=1&destination=${b.lat},${b.lng}" target="_blank" rel="noopener" style="margin:.6em .5em 1em 0;">🧭 Cómo llegar</a>`
+      : '';
     if(b.url.includes('google.com/maps/embed') || b.url.includes('output=embed')){
-      return `<div class="video-wrap"><iframe src="${escapeHtml(b.url)}" loading="lazy"></iframe></div>`;
+      return `<div class="video-wrap"><iframe src="${escapeHtml(b.url)}" loading="lazy"></iframe></div>${comoLlegar}`;
     }
-    return `<a class="btn outline small" href="${escapeHtml(b.url)}" target="_blank" rel="noopener">📍 Ver ubicación en Google Maps</a>`;
+    return `<a class="btn outline small" href="${escapeHtml(b.url)}" target="_blank" rel="noopener">📍 Ver ubicación en Google Maps</a>${comoLlegar}`;
   }
   if(b.tipo==='redes'){
     const items = REDES_CONFIG.map(r=>{
@@ -1183,15 +1233,17 @@ function bloqueHTML(b){
   }
   return '';
 }
-function renderBloquesHTML(bloques){
-  if(!bloques || !bloques.length) return '';
-  return `<div class="bloques-vista">${bloques.map(b=>{
-    const html = bloqueHTML(b);
-    if(!html) return '';
-    if(b.ancho==='media'){
-      return `<div style="width:48%;display:inline-block;vertical-align:top;margin-right:2%;">${html}</div>`;
+function renderBloquesHTML(filas){
+  if(!filas || !filas.length) return '';
+  return `<div class="bloques-vista">${filas.map(fila=>{
+    const cols = (fila.columnas||[]).filter(c=>c.bloques && c.bloques.length);
+    if(!cols.length) return '';
+    if((fila.columnas||[]).length<=1){
+      return (fila.columnas[0].bloques||[]).map(bloqueHTML).join('');
     }
-    return html;
+    return `<div style="display:grid;grid-template-columns:repeat(${fila.columnas.length},1fr);gap:1.2em;margin-bottom:1em;">
+      ${fila.columnas.map(c=>`<div>${(c.bloques||[]).map(bloqueHTML).join('')}</div>`).join('')}
+    </div>`;
   }).join('')}</div>`;
 }
 
@@ -1283,7 +1335,7 @@ const ESQUEMA_TIPO_INFO = {
   redes:{icon:'📱', color:'#203329'}
 };
 function crearBloqueBase(tipo){
-  const base = {id:nuevoBloqueId(), tipo, ancho:'completa'};
+  const base = {id:nuevoBloqueId(), tipo};
   if(tipo==='texto'){ base.texto=''; base.tamano='normal'; base.color=''; base.negrita=false; base.cursiva=false; base.alineacion='izquierda'; }
   if(tipo==='foto'){ base.url=''; base.caption=''; base.ajuste='recortada'; }
   if(tipo==='galeria'){ base.fotos = []; }
@@ -1293,10 +1345,51 @@ function crearBloqueBase(tipo){
   if(tipo==='redes'){ base.whatsapp=''; base.instagram=''; base.tiktok=''; base.facebook=''; base.telegram=''; base.youtube=''; base.correo=''; }
   return base;
 }
-/* índice donde se insertará el próximo bloque (null = al final) */
-let bloqueInsertIndex = null;
-function abrirPickerBloque(indice){
-  bloqueInsertIndex = (indice===undefined) ? null : indice;
+
+/* ===== estructura de "Mi tarea": filas → columnas (1 o 2) → bloques ===== */
+function nuevaFilaId(){ return 'f'+Math.random().toString(36).slice(2,10); }
+function nuevaColumnaId(){ return 'c'+Math.random().toString(36).slice(2,10); }
+function crearColumna(){ return {id:nuevaColumnaId(), bloques:[]}; }
+function crearFila(numColumnas){
+  return {id:nuevaFilaId(), columnas: Array.from({length:numColumnas}, ()=>crearColumna())};
+}
+/* Convierte datos guardados con el formato anterior (una lista plana de bloques)
+   al formato nuevo, envolviendo cada bloque en su propia fila de 1 columna. */
+function normalizarFilas(data){
+  if(!Array.isArray(data)) return [];
+  if(data.every(x=>x && Array.isArray(x.columnas))) return data; // ya es formato nuevo
+  return data.filter(b=>b && b.tipo).map(b=>({
+    id:nuevaFilaId(),
+    columnas:[{id:nuevaColumnaId(), bloques:[b]}]
+  }));
+}
+/* Busca un bloque por su id en toda la estructura y devuelve dónde vive,
+   para poder moverlo, editarlo o borrarlo sin depender de índices planos. */
+function ubicarBloque(blockId){
+  for(const fila of miTareaBloques){
+    for(const columna of fila.columnas){
+      const index = columna.bloques.findIndex(x=>x.id===blockId);
+      if(index!==-1) return {fila, columna, bloques:columna.bloques, index, bloque:columna.bloques[index]};
+    }
+  }
+  return null;
+}
+function primerBloqueTexto(){
+  for(const fila of miTareaBloques){
+    for(const columna of fila.columnas){
+      const t = columna.bloques.find(b=>b.tipo==='texto');
+      if(t) return t;
+    }
+  }
+  return null;
+}
+
+/* qué columna recibirá el próximo bloque agregado desde el panel "¿Qué deseas agregar?" */
+let pickerTargetFilaId = null;
+let pickerTargetColId = null;
+function abrirPickerBloque(filaId, colId){
+  pickerTargetFilaId = filaId;
+  pickerTargetColId = colId;
   const overlay = document.getElementById('bloquePickerOverlay');
   const panel = document.getElementById('bloquePicker');
   if(overlay) overlay.classList.add('open');
@@ -1307,6 +1400,44 @@ function cerrarPickerBloque(){
   const panel = document.getElementById('bloquePicker');
   if(overlay) overlay.classList.remove('open');
   if(panel) panel.classList.remove('open');
+}
+
+/* ===== "Administrar columnas": panel visual para elegir, mover, duplicar o borrar una columna ===== */
+const MAX_COLUMNAS = 4;
+let colManagerFilaId = null;
+let colManagerSelIdx = 0;
+function abrirColManager(filaId){
+  colManagerFilaId = filaId;
+  colManagerSelIdx = 0;
+  pintarColManager();
+  openModal('colManagerModal');
+}
+function pintarColManager(){
+  const fila = miTareaBloques.find(f=>f.id===colManagerFilaId);
+  if(!fila) return;
+  if(colManagerSelIdx >= fila.columnas.length) colManagerSelIdx = fila.columnas.length-1;
+  const cont = document.getElementById('colManagerPicker');
+  cont.innerHTML = fila.columnas.map((c,i)=>`
+    <button type="button" class="colmgr-box ${i===colManagerSelIdx?'active':''}" data-colidx="${i}">${i+1}</button>
+  `).join('') + (fila.columnas.length<MAX_COLUMNAS ? `<button type="button" class="colmgr-box colmgr-add" id="colManagerAddInline" title="Agregar columna">+</button>` : '');
+  cont.querySelectorAll('[data-colidx]').forEach(btn=>{
+    btn.onclick = ()=>{ colManagerSelIdx = +btn.dataset.colidx; pintarColManager(); };
+  });
+  const addInline = document.getElementById('colManagerAddInline');
+  if(addInline) addInline.onclick = agregarColumnaManager;
+  document.getElementById('colManagerAddBtn').disabled = fila.columnas.length>=MAX_COLUMNAS;
+  document.getElementById('colManagerLeft').disabled = colManagerSelIdx<=0;
+  document.getElementById('colManagerRight').disabled = colManagerSelIdx>=fila.columnas.length-1;
+  document.getElementById('colManagerDup').disabled = fila.columnas.length>=MAX_COLUMNAS;
+  document.getElementById('colManagerDel').disabled = fila.columnas.length<=1;
+}
+function agregarColumnaManager(){
+  const fila = miTareaBloques.find(f=>f.id===colManagerFilaId);
+  if(!fila || fila.columnas.length>=MAX_COLUMNAS) return;
+  fila.columnas.push(crearColumna());
+  colManagerSelIdx = fila.columnas.length-1;
+  pintarColManager();
+  pintarBloquesList();
 }
 
 async function renderMiTarea(){
@@ -1326,7 +1457,7 @@ async function renderMiTarea(){
   }
 
   const s = SECTIONS.find(x=>x.id===tarea.seccion_id) || {icon:'🎯', name:tarea.seccion_id};
-  miTareaBloques = Array.isArray(tarea.bloques) ? JSON.parse(JSON.stringify(tarea.bloques)) : [];
+  miTareaBloques = normalizarFilas(Array.isArray(tarea.bloques) ? JSON.parse(JSON.stringify(tarea.bloques)) : []);
   miTareaModo = 'editar';
 
   let pill = '<span class="status-pill status-pending">Borrador</span>';
@@ -1365,9 +1496,8 @@ function pintarMiTarea(){
   body.innerHTML = `
     <div id="bloquesEsquema"></div>
     <div id="bloquesList"></div>
-    <p class="hint" style="margin-top:0;">Tip: en cada bloque puedes elegir "Dos columnas" en "Columnas" para acomodar dos cosas una junto a la otra (por ejemplo, dos fotos, o una foto y un texto).</p>
     <div class="row-actions" style="margin:1em 0 1.6em;">
-      <button class="btn gold" id="abrirPickerFinal" type="button">＋ Agregar contenido</button>
+      <button class="btn gold" id="agregarFilaBtn" type="button">＋ Agregar columnas</button>
     </div>
     <div class="row-actions">
       <button class="btn outline" id="mejorarIABtn" type="button">✨ Mejorar con IA</button>
@@ -1375,6 +1505,21 @@ function pintarMiTarea(){
       <button class="btn gold" id="enviarRevisionBtn">📩 Enviar para revisión</button>
       ${session.tarea && session.tarea.id ? `<button class="btn outline" id="verHistorialBtn">🕓 Historial de versiones</button>` : ''}
     </div>
+
+    <!-- elegir 1 o 2 columnas al crear una fila nueva -->
+    <div class="modal-overlay" id="filaColModal">
+      <div class="modal">
+        <button class="modal-close" id="filaColModalClose" type="button">×</button>
+        <h3>¿Cuántas columnas quieres?</h3>
+        <p class="hint">Primero eliges cuántas, y luego decides qué va en cada una.</p>
+        <div class="pg-col-opciones" style="grid-template-columns:repeat(2,1fr);">
+          <button data-filacols="1" type="button">1<br><small style="font-weight:400;">columna</small></button>
+          <button data-filacols="2" type="button">2<br><small style="font-weight:400;">columnas</small></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- elegir qué agregar dentro de una columna -->
     <div class="bloque-picker-overlay" id="bloquePickerOverlay"></div>
     <div class="bloque-picker" id="bloquePicker">
       <div class="bloque-picker-head">
@@ -1391,14 +1536,25 @@ function pintarMiTarea(){
     </div>
   `;
   pintarBloquesList();
-  document.getElementById('abrirPickerFinal').onclick = ()=> abrirPickerBloque(null);
+  document.getElementById('agregarFilaBtn').onclick = ()=> openModal('filaColModal');
+  document.getElementById('filaColModalClose').onclick = ()=> closeModal('filaColModal');
+  document.getElementById('filaColModal').onclick = (e)=>{ if(e.target.id==='filaColModal') closeModal('filaColModal'); };
+  document.querySelectorAll('#filaColModal [data-filacols]').forEach(btn=>{
+    btn.onclick = ()=>{
+      miTareaBloques.push(crearFila(+btn.dataset.filacols));
+      closeModal('filaColModal');
+      pintarBloquesList();
+    };
+  });
   document.getElementById('bloquePickerClose').onclick = cerrarPickerBloque;
   document.getElementById('bloquePickerOverlay').onclick = cerrarPickerBloque;
   document.querySelectorAll('#bloquePickerList [data-tipo]').forEach(btn=>{
     btn.onclick = ()=>{
-      const base = crearBloqueBase(btn.dataset.tipo);
-      if(bloqueInsertIndex===null || bloqueInsertIndex===undefined) miTareaBloques.push(base);
-      else miTareaBloques.splice(bloqueInsertIndex, 0, base);
+      if(!pickerTargetFilaId || !pickerTargetColId) return;
+      const fila = miTareaBloques.find(f=>f.id===pickerTargetFilaId);
+      const columna = fila && fila.columnas.find(c=>c.id===pickerTargetColId);
+      if(!columna) return;
+      columna.bloques.push(crearBloqueBase(btn.dataset.tipo));
       cerrarPickerBloque();
       pintarBloquesList();
     };
@@ -1413,60 +1569,95 @@ function pintarMiTarea(){
 function pintarBloquesList(){
   const cont = document.getElementById('bloquesList');
   if(!cont) return;
-  const nombresTipo = NOMBRES_TIPO_BLOQUE;
-  const insertBtnHTML = idx => `<div class="bloque-insert"><button type="button" data-insert="${idx}">＋ Insertar aquí</button></div>`;
-  const bloqueCardHTML = (b,i) => `
-    <div class="bloque-editor${b.ancho==='media'?' media-col':''}" data-i="${i}">
-      <div class="bloque-top">
-        <span class="bloque-tipo">${nombresTipo[b.tipo]||b.tipo}</span>
-        <div class="bloque-tools">
-          <button data-subir="${i}" title="Mover arriba" ${i===0?'disabled':''}>▲</button>
-          <button data-bajar="${i}" title="Mover abajo" ${i===miTareaBloques.length-1?'disabled':''}>▼</button>
-          <button data-borrar="${i}" title="Eliminar">🗑️</button>
+
+  const bloqueCardHTML = (b, colBloques) => {
+    const idx = colBloques.findIndex(x=>x.id===b.id);
+    return `
+      <div class="bloque-editor" data-blockid="${b.id}">
+        <div class="bloque-top">
+          <span class="bloque-tipo">${NOMBRES_TIPO_BLOQUE[b.tipo]||b.tipo}</span>
+          <div class="bloque-tools">
+            <button data-subir-blk="${b.id}" title="Mover arriba" ${idx===0?'disabled':''}>▲</button>
+            <button data-bajar-blk="${b.id}" title="Mover abajo" ${idx===colBloques.length-1?'disabled':''}>▼</button>
+            <button data-borrar-blk="${b.id}" title="Eliminar">🗑️</button>
+          </div>
         </div>
+        ${bloqueCamposHTML(b, b.id)}
       </div>
-      <div class="field" style="max-width:280px;margin-bottom:.8em;">
-        <label>Columnas</label>
-        <select data-campo="ancho">
-          <option value="completa" ${!b.ancho||b.ancho==='completa'?'selected':''}>Una columna (ancho completo)</option>
-          <option value="media" ${b.ancho==='media'?'selected':''}>Dos columnas (mitad — junto al siguiente)</option>
-        </select>
-      </div>
-      ${bloqueCamposHTML(b,i)}
-    </div>
-  `;
+    `;
+  };
 
   if(!miTareaBloques.length){
-    cont.innerHTML = `<div class="empty">Usa el botón "＋ Agregar contenido" de abajo para agregar tu primer bloque.</div>`;
+    cont.innerHTML = `<div class="empty">Usa el botón "＋ Agregar columnas" de abajo para crear tu primera fila de contenido.</div>`;
   }else{
-    let html = insertBtnHTML(0);
-    let i = 0;
-    while(i < miTareaBloques.length){
-      const b = miTareaBloques[i];
-      const sig = miTareaBloques[i+1];
-      if(b.ancho==='media' && sig && sig.ancho==='media'){
-        // dos bloques marcados "Dos columnas", uno junto al otro, ambos editables ahí mismo
-        html += `<div class="bloque-fila">${bloqueCardHTML(b,i)}${bloqueCardHTML(sig,i+1)}</div>`;
-        html += insertBtnHTML(i+2);
-        i += 2;
-      }else{
-        html += bloqueCardHTML(b,i);
-        html += insertBtnHTML(i+1);
-        i += 1;
-      }
-    }
-    cont.innerHTML = html;
+    cont.innerHTML = miTareaBloques.map((fila,fi)=>{
+      const cols = fila.columnas;
+      return `
+        <div class="fila-editor" data-filaid="${fila.id}">
+          <div class="fila-top">
+            <span class="fila-label">Fila ${fi+1} · ${cols.length} columna${cols.length>1?'s':''}</span>
+            <div class="fila-tools">
+              <button data-fila-subir="${fila.id}" title="Mover fila arriba" ${fi===0?'disabled':''}>▲</button>
+              <button data-fila-bajar="${fila.id}" title="Mover fila abajo" ${fi===miTareaBloques.length-1?'disabled':''}>▼</button>
+              <button data-fila-colmgr="${fila.id}" title="Administrar columnas">⚙️ Columnas</button>
+              <button data-fila-del="${fila.id}" title="Eliminar fila">🗑️</button>
+            </div>
+          </div>
+          <div class="fila-columnas" style="grid-template-columns:repeat(${cols.length},1fr);">
+            ${cols.map((c,ci)=>`
+              <div class="col-editor">
+                ${cols.length>1 ? `<div class="col-label">Columna ${ci+1}</div>` : ''}
+                ${c.bloques.map(b=>bloqueCardHTML(b,c.bloques)).join('') || `<div class="col-vacia">Todavía vacía</div>`}
+                <button class="col-add" data-col-add-fila="${fila.id}" data-col-add-col="${c.id}" type="button">＋ Agregar contenido</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
-  cont.querySelectorAll('[data-insert]').forEach(b=> b.onclick = ()=> abrirPickerBloque(+b.dataset.insert));
-  cont.querySelectorAll('[data-subir]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.subir; [miTareaBloques[i-1],miTareaBloques[i]]=[miTareaBloques[i],miTareaBloques[i-1]]; pintarBloquesList(); });
-  cont.querySelectorAll('[data-bajar]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.bajar; [miTareaBloques[i+1],miTareaBloques[i]]=[miTareaBloques[i],miTareaBloques[i+1]]; pintarBloquesList(); });
-  cont.querySelectorAll('[data-borrar]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.borrar; if(confirm('¿Eliminar este bloque?')){ miTareaBloques.splice(i,1); pintarBloquesList(); } });
+  /* controles de fila */
+  cont.querySelectorAll('[data-fila-subir]').forEach(b=> b.onclick=()=>{
+    const i = miTareaBloques.findIndex(f=>f.id===b.dataset.filaSubir);
+    if(i>0){ [miTareaBloques[i-1],miTareaBloques[i]]=[miTareaBloques[i],miTareaBloques[i-1]]; pintarBloquesList(); }
+  });
+  cont.querySelectorAll('[data-fila-bajar]').forEach(b=> b.onclick=()=>{
+    const i = miTareaBloques.findIndex(f=>f.id===b.dataset.filaBajar);
+    if(i>=0 && i<miTareaBloques.length-1){ [miTareaBloques[i+1],miTareaBloques[i]]=[miTareaBloques[i],miTareaBloques[i+1]]; pintarBloquesList(); }
+  });
+  cont.querySelectorAll('[data-fila-del]').forEach(b=> b.onclick=()=>{
+    if(!confirm('¿Eliminar esta fila y todo su contenido?')) return;
+    miTareaBloques = miTareaBloques.filter(f=>f.id!==b.dataset.filaDel);
+    pintarBloquesList();
+  });
+  cont.querySelectorAll('[data-fila-colmgr]').forEach(b=> b.onclick=()=> abrirColManager(b.dataset.filaColmgr));
+
+  /* agregar contenido dentro de una columna específica */
+  cont.querySelectorAll('[data-col-add-fila]').forEach(b=>{
+    b.onclick = ()=> abrirPickerBloque(b.dataset.colAddFila, b.dataset.colAddCol);
+  });
+
+  /* mover / borrar un bloque dentro de su columna */
+  cont.querySelectorAll('[data-subir-blk]').forEach(b=> b.onclick=()=>{
+    const u = ubicarBloque(b.dataset.subirBlk);
+    if(u && u.index>0){ [u.bloques[u.index-1],u.bloques[u.index]]=[u.bloques[u.index],u.bloques[u.index-1]]; pintarBloquesList(); }
+  });
+  cont.querySelectorAll('[data-bajar-blk]').forEach(b=> b.onclick=()=>{
+    const u = ubicarBloque(b.dataset.bajarBlk);
+    if(u && u.index<u.bloques.length-1){ [u.bloques[u.index+1],u.bloques[u.index]]=[u.bloques[u.index],u.bloques[u.index+1]]; pintarBloquesList(); }
+  });
+  cont.querySelectorAll('[data-borrar-blk]').forEach(b=> b.onclick=()=>{
+    if(!confirm('¿Eliminar este bloque?')) return;
+    const u = ubicarBloque(b.dataset.borrarBlk);
+    if(u){ u.bloques.splice(u.index,1); pintarBloquesList(); }
+  });
 
   cont.querySelectorAll('[data-campo]').forEach(input=>{
     const actualizar = ()=>{
-      const i = +input.closest('.bloque-editor').dataset.i;
-      miTareaBloques[i][input.dataset.campo] = input.type==='checkbox' ? input.checked : input.value;
+      const id = input.closest('.bloque-editor').dataset.blockid;
+      const u = ubicarBloque(id);
+      if(u) u.bloque[input.dataset.campo] = input.type==='checkbox' ? input.checked : input.value;
     };
     input.oninput = actualizar;
     if(input.tagName==='SELECT' || input.type==='color' || input.type==='checkbox'){
@@ -1477,14 +1668,13 @@ function pintarBloquesList(){
   });
   cont.querySelectorAll('[data-quitarcolor]').forEach(btn=>{
     btn.onclick = ()=>{
-      const i = +btn.dataset.quitarcolor;
-      miTareaBloques[i].color = '';
-      pintarBloquesList();
+      const u = ubicarBloque(btn.dataset.quitarcolor);
+      if(u){ u.bloque.color = ''; pintarBloquesList(); }
     };
   });
   cont.querySelectorAll('[data-subirfoto]').forEach(input=>{
     input.onchange = async ()=>{
-      const i = +input.dataset.subirfoto;
+      const id = input.dataset.subirfoto;
       const file = input.files[0];
       if(!file) return;
       const cardEl = input.closest('.bloque-editor');
@@ -1493,18 +1683,21 @@ function pintarBloquesList(){
       const path = `tarea-${session.id}-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,'')}`;
       const {error} = await db.storage.from('bv-media').upload(path, file);
       if(error){ if(statusEl) statusEl.textContent = 'No se pudo subir: '+error.message; return; }
-      const { data: pub } = db.storage.from('bv-media').getPublicUrl(path);
-      miTareaBloques[i].url = pub.publicUrl;
+      const {data: pub} = db.storage.from('bv-media').getPublicUrl(path);
+      const u = ubicarBloque(id);
+      if(u) u.bloque.url = pub.publicUrl;
       pintarBloquesList();
     };
   });
   cont.querySelectorAll('[data-subirgaleria]').forEach(input=>{
     input.onchange = async ()=>{
-      const i = +input.dataset.subirgaleria;
+      const id = input.dataset.subirgaleria;
       const files = Array.from(input.files||[]);
       if(!files.length) return;
       const cardEl = input.closest('.bloque-editor');
       const statusEl = cardEl.querySelector('.foto-status');
+      const u = ubicarBloque(id);
+      if(!u) return;
       for(let idx=0; idx<files.length; idx++){
         const file = files[idx];
         if(statusEl) statusEl.textContent = `Subiendo ${idx+1} de ${files.length}…`;
@@ -1512,7 +1705,7 @@ function pintarBloquesList(){
         const {error} = await db.storage.from('bv-media').upload(path, file);
         if(error) continue;
         const {data: pub} = db.storage.from('bv-media').getPublicUrl(path);
-        miTareaBloques[i].fotos.push({url: pub.publicUrl});
+        u.bloque.fotos.push({url: pub.publicUrl});
       }
       if(statusEl) statusEl.textContent = '';
       pintarBloquesList();
@@ -1520,20 +1713,29 @@ function pintarBloquesList(){
   });
   cont.querySelectorAll('[data-galeria-del]').forEach(btn=>{
     btn.onclick = ()=>{
-      const i = +btn.dataset.galeriaDel;
-      const fi = +btn.dataset.galeriaFi;
-      miTareaBloques[i].fotos.splice(fi,1);
+      const u = ubicarBloque(btn.dataset.galeriaDel);
+      if(u) u.bloque.fotos.splice(+btn.dataset.galeriaFi,1);
       pintarBloquesList();
     };
   });
 
   /* selector de ubicación en el mapa (por cada bloque de tipo "mapa") */
-  miTareaBloques.forEach((b,i)=>{ if(b.tipo==='mapa') initMapaPicker(b,i); });
+  miTareaBloques.forEach(fila=>fila.columnas.forEach(c=>c.bloques.forEach(b=>{ if(b.tipo==='mapa') initMapaPicker(b); })));
+  cont.querySelectorAll('[data-maptipo]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.dataset.maptipoBlk;
+      const inst = mapaLeaflets[id];
+      if(!inst) return;
+      inst.cambiarCapa(btn.dataset.maptipo);
+      cont.querySelectorAll(`[data-maptipo-blk="${id}"]`).forEach(b2=> b2.classList.toggle('active', b2===btn));
+    };
+  });
   cont.querySelectorAll('[data-buscarmapa-btn]').forEach(btn=>{
     const buscar = async ()=>{
-      const i = +btn.dataset.buscarmapaBtn;
-      const b = miTareaBloques[i];
-      const input = cont.querySelector(`[data-buscarmapa="${i}"]`);
+      const id = btn.dataset.buscarmapaBtn;
+      const u = ubicarBloque(id);
+      if(!u) return;
+      const input = cont.querySelector(`[data-buscarmapa="${id}"]`);
       const q = input.value.trim();
       if(!q) return;
       const textoOriginal = btn.textContent;
@@ -1543,8 +1745,8 @@ function pintarBloquesList(){
         const data = await resp.json();
         if(data && data[0]){
           const lat = +data[0].lat, lng = +data[0].lon;
-          const inst = mapaLeaflets[b.id];
-          if(inst){ inst.map.setView([lat,lng],16); inst.setPos(lat,lng,i); }
+          const inst = mapaLeaflets[u.bloque.id];
+          if(inst){ inst.map.setView([lat,lng],16); inst.setPos(lat,lng); }
         }else{
           alert('No se encontró ese lugar. Intenta con otra búsqueda (por ejemplo, agrega "Panamá").');
         }
@@ -1576,19 +1778,26 @@ function pintarEsquemaBloques(){
     <div class="esquema-box">
       <div class="esquema-title">👁️ Así va quedando el orden y las columnas:</div>
       <div class="esquema-tira">
-        ${miTareaBloques.map((b,i)=>{
-          const info = ESQUEMA_TIPO_INFO[b.tipo] || {icon:'▫️', color:'#8a7f6e'};
-          const media = b.ancho==='media';
-          return `<div class="esquema-caja" data-esquema-i="${i}" style="width:${media?'48%':'100%'};background:${info.color};" title="${NOMBRES_TIPO_BLOQUE[b.tipo]||b.tipo}">
-            <span class="esq-icon">${info.icon}</span>${NOMBRES_TIPO_BLOQUE[b.tipo]||b.tipo}
-          </div>`;
-        }).join('')}
+        ${miTareaBloques.map(fila=>`
+          <div class="esquema-fila" style="grid-template-columns:repeat(${fila.columnas.length},1fr);">
+            ${fila.columnas.map(c=>`
+              <div class="esquema-col">
+                ${c.bloques.length ? c.bloques.map(b=>{
+                  const info = ESQUEMA_TIPO_INFO[b.tipo] || {icon:'▫️', color:'#8a7f6e'};
+                  return `<div class="esquema-caja" data-esquema-blockid="${b.id}" style="background:${info.color};" title="${NOMBRES_TIPO_BLOQUE[b.tipo]||b.tipo}">
+                    <span class="esq-icon">${info.icon}</span>${NOMBRES_TIPO_BLOQUE[b.tipo]||b.tipo}
+                  </div>`;
+                }).join('') : `<div class="esquema-caja esquema-vacia" title="Columna vacía"><span class="esq-icon">➕</span>vacía</div>`}
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
       </div>
     </div>
   `;
-  cont.querySelectorAll('[data-esquema-i]').forEach(el=>{
+  cont.querySelectorAll('[data-esquema-blockid]').forEach(el=>{
     el.onclick = ()=>{
-      const target = document.querySelector(`.bloque-editor[data-i="${el.dataset.esquemaI}"]`);
+      const target = document.querySelector(`.bloque-editor[data-blockid="${el.dataset.esquemaBlockid}"]`);
       if(target) target.scrollIntoView({behavior:'smooth', block:'center'});
     };
   });
@@ -1596,7 +1805,7 @@ function pintarEsquemaBloques(){
 
 /* ---- selector interactivo de ubicación (Leaflet + OpenStreetMap, sin llave de API) ---- */
 let mapaLeaflets = {};
-function initMapaPicker(b, i){
+function initMapaPicker(b){
   const el = document.getElementById('mapaLienzo-'+b.id);
   if(!el || typeof L==='undefined') return;
   if(mapaLeaflets[b.id]){ try{ mapaLeaflets[b.id].map.remove(); }catch(e){} }
@@ -1604,31 +1813,42 @@ function initMapaPicker(b, i){
   const startLat = tieneUbicacion ? b.lat : 8.4;   // centro aproximado de Panamá
   const startLng = tieneUbicacion ? b.lng : -80.6;
   const map = L.map(el, {scrollWheelZoom:false}).setView([startLat, startLng], tieneUbicacion ? 16 : 8);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  const capaCalle = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution:'&copy; colaboradores de OpenStreetMap', maxZoom:19
-  }).addTo(map);
+  });
+  const capaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution:'Tiles &copy; Esri', maxZoom:19
+  });
+  capaCalle.addTo(map);
+  let capaActual = 'calle';
+  function cambiarCapaMapa(tipo){
+    if(tipo===capaActual) return;
+    if(tipo==='satelite'){ map.removeLayer(capaCalle); capaSatelite.addTo(map); }
+    else{ map.removeLayer(capaSatelite); capaCalle.addTo(map); }
+    capaActual = tipo;
+  }
   let marker = tieneUbicacion ? L.marker([b.lat, b.lng], {draggable:true}).addTo(map) : null;
-  if(marker) marker.on('dragend', ()=>{ const p = marker.getLatLng(); guardarUbicacionBloque(b, i, p.lat, p.lng); });
+  if(marker) marker.on('dragend', ()=>{ const p = marker.getLatLng(); guardarUbicacionBloque(b, p.lat, p.lng); });
 
-  function setPos(lat, lng, idx){
+  function setPos(lat, lng){
     if(!marker){
       marker = L.marker([lat,lng], {draggable:true}).addTo(map);
-      marker.on('dragend', ()=>{ const p = marker.getLatLng(); guardarUbicacionBloque(b, idx!=null?idx:i, p.lat, p.lng); });
+      marker.on('dragend', ()=>{ const p = marker.getLatLng(); guardarUbicacionBloque(b, p.lat, p.lng); });
     }else{
       marker.setLatLng([lat,lng]);
     }
-    guardarUbicacionBloque(b, idx!=null?idx:i, lat, lng);
+    guardarUbicacionBloque(b, lat, lng);
   }
-  map.on('click', e=> setPos(e.latlng.lat, e.latlng.lng, i));
-  mapaLeaflets[b.id] = {map, setPos};
+  map.on('click', e=> setPos(e.latlng.lat, e.latlng.lng));
+  mapaLeaflets[b.id] = {map, setPos, cambiarCapa: cambiarCapaMapa};
   setTimeout(()=> map.invalidateSize(), 100);
 }
-function guardarUbicacionBloque(b, i, lat, lng){
+function guardarUbicacionBloque(b, lat, lng){
   b.lat = lat; b.lng = lng;
   b.url = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
   const coordsEl = document.getElementById('mapaCoords-'+b.id);
   if(coordsEl) coordsEl.textContent = `📍 Ubicación seleccionada (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
-  const editorEl = document.querySelector(`.bloque-editor[data-i="${i}"] input[data-campo="url"]`);
+  const editorEl = document.querySelector(`.bloque-editor[data-blockid="${b.id}"] input[data-campo="url"]`);
   if(editorEl) editorEl.value = b.url;
 }
 
@@ -1710,8 +1930,13 @@ function bloqueCamposHTML(b,i){
         <input type="text" data-buscarmapa="${i}" placeholder="Busca un lugar o dirección...">
         <button type="button" class="btn small outline" data-buscarmapa-btn="${i}">🔎 Buscar</button>
       </div>
+      <div class="mapa-tipo-switch">
+        <button type="button" class="active" data-maptipo="calle" data-maptipo-blk="${i}">🗺️ Mapa</button>
+        <button type="button" data-maptipo="satelite" data-maptipo-blk="${i}">🛰️ Satélite</button>
+      </div>
       <div class="mapa-lienzo" id="mapaLienzo-${b.id}"></div>
       <p class="hint mapa-coords" id="mapaCoords-${b.id}">${b.lat!=null ? `📍 Ubicación seleccionada (${(+b.lat).toFixed(5)}, ${(+b.lng).toFixed(5)})` : 'Todavía no has marcado un lugar.'}</p>
+      ${b.lat!=null ? `<p class="hint" style="margin-top:-.4em;">A los visitantes les va a aparecer un botón <a href="https://www.google.com/maps/dir/?api=1&destination=${b.lat},${b.lng}" target="_blank" rel="noopener">🧭 Cómo llegar</a> junto al mapa.</p>` : ''}
       <div class="field" style="margin-bottom:0;"><label>O pega el enlace de Google Maps (opcional)</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="Pega aquí el enlace de Google Maps"></div>
     `;
   }
@@ -1736,11 +1961,19 @@ function bloqueCamposHTML(b,i){
   return '';
 }
 
+/* recorre toda la estructura de filas/columnas y regresa todos los bloques en orden */
+function todosLosBloquesPlanos(){
+  const out = [];
+  miTareaBloques.forEach(fila=> fila.columnas.forEach(c=> c.bloques.forEach(b=> out.push(b))));
+  return out;
+}
+
 async function guardarMiTarea(enviar){
   const msg = document.getElementById('tareaMsg');
   const tarea = session.tarea;
-  const resumen = miTareaBloques.filter(b=>b.tipo==='texto').map(b=>b.texto).filter(Boolean).join('\n\n');
-  const fotoPortada = (miTareaBloques.find(b=>b.tipo==='foto' && b.url)||{}).url || '';
+  const planos = todosLosBloquesPlanos();
+  const resumen = planos.filter(b=>b.tipo==='texto').map(b=>b.texto).filter(Boolean).join('\n\n');
+  const fotoPortada = (planos.find(b=>b.tipo==='foto' && b.url)||{}).url || '';
   msg.innerHTML = `<div class="msg">Guardando…</div>`;
   const {error} = await db.rpc('bv_guardar_mi_tarea', {
     p_nombre: session.nombre, p_cedula: session.cedula,
@@ -1759,7 +1992,7 @@ async function guardarMiTarea(enviar){
    el servidor. El estudiante revisa la sugerencia y decide si la usa;
    nada se aplica automáticamente. */
 async function abrirMejorarIA(){
-  const textoActual = miTareaBloques.filter(b=>b.tipo==='texto').map(b=>b.texto).filter(Boolean).join('\n\n');
+  const textoActual = todosLosBloquesPlanos().filter(b=>b.tipo==='texto').map(b=>b.texto).filter(Boolean).join('\n\n');
   if(!textoActual.trim()){
     alert('Primero escribe algo de texto en tu tarea. La IA mejora lo que ya escribiste, no lo inventa desde cero.');
     return;
@@ -1787,14 +2020,19 @@ async function abrirMejorarIA(){
       const nuevoTexto = document.getElementById('iaTextoSugerido').value;
       const campoTitulo = document.getElementById('iaTituloSugerido');
       const nuevoTitulo = campoTitulo ? campoTitulo.value.trim() : '';
-      const primerTexto = miTareaBloques.find(b=>b.tipo==='texto');
+      const primerTexto = primerBloqueTexto();
       if(primerTexto){ primerTexto.texto = nuevoTexto; }
-      else{ const nb = crearBloqueBase('texto'); nb.texto = nuevoTexto; miTareaBloques.push(nb); }
-      const yaHayTitulo = miTareaBloques[0] && miTareaBloques[0].tipo==='texto' && (miTareaBloques[0].tamano==='enorme' || miTareaBloques[0].tamano==='grande');
+      else{
+        const nb = crearBloqueBase('texto'); nb.texto = nuevoTexto;
+        if(miTareaBloques.length) miTareaBloques[0].columnas[0].bloques.push(nb);
+        else miTareaBloques.push({id:nuevaFilaId(), columnas:[{id:nuevaColumnaId(), bloques:[nb]}]});
+      }
+      const primeraFilaBloque = miTareaBloques[0] && miTareaBloques[0].columnas[0] && miTareaBloques[0].columnas[0].bloques[0];
+      const yaHayTitulo = primeraFilaBloque && primeraFilaBloque.tipo==='texto' && (primeraFilaBloque.tamano==='enorme' || primeraFilaBloque.tamano==='grande');
       if(nuevoTitulo && !yaHayTitulo){
         const tb = crearBloqueBase('texto');
         tb.texto = nuevoTitulo; tb.tamano = 'enorme'; tb.negrita = true;
-        miTareaBloques.unshift(tb);
+        miTareaBloques.unshift({id:nuevaFilaId(), columnas:[{id:nuevaColumnaId(), bloques:[tb]}]});
       }
       closeModal('iaModal');
       pintarBloquesList();
@@ -2830,11 +3068,51 @@ async function cargarPapelera(){
 }
 
 /* =====================  INICIO  ===================== */
+function initColManagerEstatico(){
+  document.getElementById('colManagerAddBtn').onclick = agregarColumnaManager;
+  document.getElementById('colManagerLeft').onclick = ()=>{
+    const fila = miTareaBloques.find(f=>f.id===colManagerFilaId);
+    if(!fila || colManagerSelIdx<=0) return;
+    const cols = fila.columnas;
+    [cols[colManagerSelIdx-1],cols[colManagerSelIdx]] = [cols[colManagerSelIdx],cols[colManagerSelIdx-1]];
+    colManagerSelIdx--;
+    pintarColManager();
+    pintarBloquesList();
+  };
+  document.getElementById('colManagerRight').onclick = ()=>{
+    const fila = miTareaBloques.find(f=>f.id===colManagerFilaId);
+    if(!fila || colManagerSelIdx>=fila.columnas.length-1) return;
+    const cols = fila.columnas;
+    [cols[colManagerSelIdx+1],cols[colManagerSelIdx]] = [cols[colManagerSelIdx],cols[colManagerSelIdx+1]];
+    colManagerSelIdx++;
+    pintarColManager();
+    pintarBloquesList();
+  };
+  document.getElementById('colManagerDup').onclick = ()=>{
+    const fila = miTareaBloques.find(f=>f.id===colManagerFilaId);
+    if(!fila || fila.columnas.length>=MAX_COLUMNAS) return;
+    const original = fila.columnas[colManagerSelIdx];
+    const copia = {id:nuevaColumnaId(), bloques: JSON.parse(JSON.stringify(original.bloques)).map(b=>({...b, id:nuevoBloqueId()}))};
+    fila.columnas.splice(colManagerSelIdx+1, 0, copia);
+    pintarColManager();
+    pintarBloquesList();
+  };
+  document.getElementById('colManagerDel').onclick = ()=>{
+    const fila = miTareaBloques.find(f=>f.id===colManagerFilaId);
+    if(!fila || fila.columnas.length<=1) return;
+    if(!confirm('¿Eliminar esta columna y todo su contenido?')) return;
+    fila.columnas.splice(colManagerSelIdx,1);
+    colManagerSelIdx = Math.max(0, colManagerSelIdx-1);
+    pintarColManager();
+    pintarBloquesList();
+  };
+}
 (function init(){
   renderWho();
   renderDrawer();
   renderFooterLinks();
   initEditorPaginasEstatico();
+  initColManagerEstatico();
   goTo(estaBloqueado() ? 'mitarea' : (session ? (session.role==='admin' ? 'admin' : 'home') : 'home'));
   registrarYMostrarVisitas();
 })();
