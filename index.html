@@ -105,6 +105,9 @@
     padding:.5em .8em;border-radius:var(--radius);font-weight:700;font-size:.9rem;
   }
   .menu-btn:hover{background:rgba(255,255,255,.12);}
+  .busqueda-resultados{max-height:55vh;overflow-y:auto;margin-top:.8em}
+  .busqueda-item{display:block;width:100%;text-align:left;background:var(--white);border:1px solid var(--line);border-radius:7px;padding:.8em;margin:.5em 0;color:var(--ink)}
+  .busqueda-item:hover{background:var(--parchment)}.busqueda-item strong{display:block;color:var(--forest-dark)}.busqueda-item small{color:var(--clay);font-weight:700}.busqueda-resumen{font-size:.83rem;color:#62594e;margin-top:.2em}
 
   /* ---------- section drawer ---------- */
   .drawer-overlay{
@@ -321,6 +324,15 @@
   }
   .red-icono:hover{transform:scale(1.08);}
   .bloques-vista figure{margin:0 0 1em;}
+  .mapa-general-card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:1em;margin:0 0 1.4em;box-shadow:0 5px 18px rgba(43,38,32,.06)}
+  .mapa-general-card h3{margin-bottom:.15em}.mapa-general-card .hint{margin:0 0 .8em}
+  .mapa-general{height:440px;border-radius:7px;border:1px solid var(--line);overflow:hidden;background:var(--parchment-2)}
+  .negocios-asignacion{border:1px solid var(--line);background:var(--parchment);border-radius:7px;padding:.8em;margin-bottom:1em}
+  .historia-resumen{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:1.25em;margin-bottom:1.4em;box-shadow:0 5px 18px rgba(43,38,32,.06)}
+  .historia-dos-cols{display:grid;grid-template-columns:1.15fr .85fr;gap:1.3em;align-items:start}.pob-barra-fila{display:grid;grid-template-columns:48px 1fr 78px;gap:.6em;align-items:center;margin:.75em 0;font-size:.86rem}.pob-barra-pista{height:25px;background:var(--parchment);border-radius:20px;overflow:hidden}.pob-barra{height:100%;background:linear-gradient(90deg,var(--forest),var(--gold));border-radius:20px;min-width:8px}.pob-num{text-align:right;font-weight:700;color:var(--forest-dark)}
+  .historia-guia{display:grid;grid-template-columns:repeat(2,1fr);gap:.55em;margin-top:.8em}.historia-guia div{background:var(--parchment);padding:.65em .75em;border-radius:6px;font-size:.86rem;font-weight:700;color:var(--forest-dark)}
+  @media(max-width:640px){.mapa-general{height:340px}}
+  @media(max-width:700px){.historia-dos-cols{grid-template-columns:1fr}.historia-guia{grid-template-columns:1fr}}
 
   /* ---------- editor de "Mi tarea" ---------- */
   .tarea-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6em;margin-bottom:.3em;}
@@ -541,6 +553,7 @@
   </div>
   <div class="top-actions">
     <span class="who" id="whoLabel"></span>
+    <button class="menu-btn" id="buscarBtn" title="Buscar información">🔎 Buscar</button>
     <button class="menu-btn" id="loginBtn">Entrar</button>
     <button class="menu-btn" id="drawerBtn">☰ Secciones</button>
   </div>
@@ -578,6 +591,17 @@
     Buena Vista — construido por los estudiantes del C.E.B.G. El Jiral, 2026.
   </div>
 </footer>
+
+<!-- Buscador interno -->
+<div class="modal-overlay" id="buscarModal">
+  <div class="modal" style="max-width:680px;">
+    <button class="modal-close" data-close="buscarModal">×</button>
+    <h3>🔎 Buscar en Buena Vista</h3>
+    <p class="hint">Busca una comunidad, negocio, escuela, institución, autoridad, servicio o cualquier palabra.</p>
+    <input id="buscarGeneralInput" type="search" placeholder="Ej. El Giral, restaurante, escuela o Junta Comunal" autocomplete="off">
+    <div class="busqueda-resultados" id="buscarGeneralResultados"><div class="empty">Escribe al menos dos letras para comenzar.</div></div>
+  </div>
+</div>
 
 <!-- Login modal -->
 <div class="modal-overlay" id="loginModal">
@@ -771,14 +795,16 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const SECTIONS = [
   {id:'lugares', name:'30 lugares poblados', icon:'🗺️', desc:'Directorio censal de las comunidades que integran el corregimiento de Buena Vista, con su historia, fotografías, pobladores destacados, negocios, sitios de interés y mapas.'},
   {id:'autoridades', name:'Autoridades', icon:'🏛️', desc:'Conoce a quienes representan y toman decisiones en Buena Vista: representante de corregimiento, corregidor(a), integrantes de la Junta Comunal, delegados de instituciones y líderes comunitarios.'},
-  {id:'instituciones', name:'Instituciones públicas', icon:'🏢', desc:'Las oficinas y entidades del Estado presentes en el corregimiento: corregiduría, oficinas de instituciones nacionales, puestos de policía y demás dependencias que prestan servicio a la comunidad.'},
+  {id:'instituciones', name:'Instituciones públicas', icon:'🏢', desc:'Entidades gubernamentales y servicios oficiales presentes en el corregimiento de Buena Vista.'},
+  {id:'servicios', name:'Empresas de servicios públicos o privados', icon:'💡', desc:'Empresas y proveedores que ofrecen energía eléctrica, telecomunicaciones, internet, transporte, recolección de basura, combustible y otros servicios a la comunidad.'},
   {id:'escuelas', name:'Escuelas y centros educativos', icon:'🏫', desc:'Todos los centros educativos de Buena Vista: escuelas primarias, la sede de premedia y media, centros de educación inicial, y los programas, docentes y logros que forman parte de la vida escolar.'},
   {id:'iglesias', name:'Iglesias', icon:'⛪', desc:'Los templos y congregaciones que acompañan la vida espiritual de la comunidad, junto con sus actividades, grupos juveniles y fiestas patronales.'},
   {id:'deportes', name:'Deportes y clubes', icon:'⚽', desc:'Equipos, canchas, ligas y clubes deportivos de Buena Vista, además de los torneos, actividades recreativas y atletas que representan al corregimiento.'},
   {id:'negocios', name:'Directorio de negocios', icon:'🏪', desc:'Tiendas, ventas y emprendimientos locales. Como mínimo se menciona el nombre del negocio, la dirección y un teléfono de contacto; si el dueño lo desea, se le puede armar una página más completa, igual que en las demás secciones.'},
   {id:'donantes', name:'Donantes y padrinos', icon:'🎁', desc:'Personas, negocios o instituciones que han apoyado con donaciones de dinero, materiales, alimentos o tiempo a la escuela y a la comunidad.'},
-  {id:'salud', name:'Salud', icon:'🏥', desc:'Centros de salud y servicios médicos disponibles.'},
+  {id:'salud', name:'Salud y servicios médicos', icon:'🏥', desc:'Centros y servicios de salud reales del corregimiento de Buena Vista, tanto públicos como privados.'},
   {id:'transporte', name:'Transporte', icon:'🚌', desc:'Cómo se mueve la gente dentro y fuera de Buena Vista: rutas de buses y chivas, horarios, cooperativas de transporte, estado de las calles y transporte escolar.'},
+  {id:'carga_mudanzas', name:'Transporte de carga y mudanzas', icon:'🚚', desc:'Empresas y propietarios que ofrecen transporte de carga, mudanzas, acarreo, grúas y otros servicios de traslado dentro o fuera del corregimiento.'},
   {id:'historia', name:'Historia de Buena Vista', icon:'📜', desc:'Cómo se formó la comunidad y los hechos que marcaron su historia.'},
   {id:'personajes', name:'Gente interesante del corregimiento', icon:'🧓', desc:'Los moradores más antiguos, personas con historias de vida interesantes, y vecinos que se destacan o que han marcado la vida de Buena Vista.'},
   {id:'entrevistas', name:'Entrevistas comunitarias', icon:'🎤', desc:'Conversaciones realizadas por estudiantes a moradores, líderes, comerciantes y otras personas de Buena Vista. Los videos se publican en YouTube y se muestran aquí.'},
@@ -811,40 +837,48 @@ const GRUPOS_COMUNITARIOS = [
 const TEMAS_SUGERIDOS = {
   lugares: LUGARES_CENSALES,
   autoridades: [
-    'Representante de Corregimiento',
-    'Corregidor(a) de Buena Vista',
-    'Junta Comunal: qué es y para qué sirve',
-    'Presidente(a) de la Junta Comunal',
-    'Delegado(a) del MIDES en el sector',
-    'Jefatura de la Policía Nacional del sector',
-    'Presidente(a) de una junta de vecinos o comité local',
-    'Delegado(a) electoral del corregimiento',
-    'Cómo se elige al representante de corregimiento',
-    'Autoridades tradicionales o históricas de la comunidad'
+    'Representante principal',
+    'Representante suplente',
+    'Miembros de la Junta Comunal',
+    '¿Qué es y qué hace la Junta Comunal?',
+    'Juez o jueza de Paz',
+    'Juntas de Desarrollo Local de Buena Vista',
+    'Presidente y directiva de cada Junta de Desarrollo Local',
+    'Delegado electoral',
+    'Policía Nacional',
+    'Directores de escuelas y centros de salud',
+    'Historia de las autoridades del corregimiento'
   ],
   instituciones: [
-    'Corregiduría de Buena Vista',
-    'Oficina de MEDUCA en la zona',
-    'Oficina de MIDA (agricultura y ganadería)',
-    'IDAAN o el sistema de acueducto comunitario',
-    'ANATI (tierras y catastro)',
-    'Registro Civil / Tribunal Electoral',
-    'Subestación o puesto de la Policía Nacional',
-    'SINAPROC: gestión de riesgos en la comunidad',
-    'Oficina de correos o telecomunicaciones',
-    'Otra institución pública presente en el corregimiento'
+    'Centro de Salud Henry Simmons',
+    'Policía Nacional de Buena Vista',
+    'Puesto de paramédicos y ambulancia',
+    'Cuerpo de Bomberos',
+    'Juzgado de Paz',
+    'MIDA',
+    'MEDUCA y escuelas oficiales',
+    'IDAAN y acueductos rurales',
+    'Tribunal Electoral y Registro Civil',
+    'MIDES',
+    'SINAPROC',
+    'MiAmbiente',
+    'ANATI',
+    'MOP',
+    'COTEL',
+    'Otras entidades públicas presentes'
+  ],
+  servicios: [
+    'ENSA: servicio eléctrico',
+    'Tigo Panamá: telefonía, internet y televisión',
+    '+Móvil / Cable & Wireless Panamá: telefonía e internet',
+    'Empresas de transporte colectivo y selectivo',
+    'Empresas recolectoras de basura',
+    'Proveedores privados de internet',
+    'Gasolineras y estaciones de combustible',
+    'Otras empresas de servicios presentes'
   ],
   escuelas: [
-    'C.E.B.G. El Jiral: historia y datos generales',
-    'Escuela primaria del sector (nombre y matrícula)',
-    'Centro de educación inicial o preescolar',
-    'Biblioteca escolar o comunitaria',
-    'Programas de educación media a distancia o para jóvenes y adultos',
-    'Docentes destacados de la comunidad',
-    'Logros y actividades de los estudiantes',
-    'Cómo y cuándo se fundó una escuela del corregimiento',
-    'Transporte o comedor escolar',
-    'Otra escuela o centro educativo de Buena Vista'
+    'Registrar una escuela o centro educativo'
   ],
   iglesias: [
     'Iglesia católica de Buena Vista',
@@ -888,13 +922,14 @@ const TEMAS_SUGERIDOS = {
     'Persona que dona su tiempo como voluntario(a)'
   ],
   salud: [
-    'Centro de salud o puesto médico de Buena Vista',
-    'Farmacia comunitaria',
-    'Promotor(a) de salud del sector',
-    'Partera o curandero(a) tradicional',
-    'Campañas de vacunación o salud pública',
-    'Botiquín comunitario',
-    'Cómo se atienden las emergencias médicas en la zona'
+    'Centro de salud público',
+    'Clínica o consultorio privado',
+    'Clínica odontológica',
+    'Farmacia',
+    'Laboratorio clínico',
+    'Ambulancia o paramédicos',
+    'Veterinaria',
+    'Otro servicio de salud'
   ],
   transporte: [
     'Ruta de buses o chivas hacia la cabecera',
@@ -906,14 +941,32 @@ const TEMAS_SUGERIDOS = {
     'Punto de parada principal del corregimiento',
     'Cómo era el transporte en Buena Vista hace años'
   ],
+  carga_mudanzas: [
+    'Registrar transporte de carga o mudanza'
+  ],
   historia: [
-    'Cómo se fundó Buena Vista',
-    'Origen del nombre del corregimiento',
-    'Hechos importantes que marcaron a la comunidad',
-    'Cómo era la vida hace 30 o 50 años',
-    'Antiguos oficios o formas de trabajo',
-    'Los cambios más grandes que ha vivido la comunidad',
-    'Historia de una familia fundadora'
+    'Registrar un acontecimiento histórico',
+    'Surgimiento y fundación de Buena Vista',
+    'Origen del nombre “Buena Vista”',
+    'Fecha de creación del corregimiento',
+    'Primeros habitantes y familias fundadoras',
+    'Traslado de pobladores por la construcción del lago Gatún',
+    'Formación de las comunidades y barriadas',
+    'Historia de una comunidad',
+    'Crecimiento de la población',
+    'Construcción de carreteras, calles y puentes',
+    'Llegada de la electricidad, agua potable y telefonía',
+    'Fundación de escuelas, iglesias y centros de salud',
+    'Desarrollo del transporte público',
+    'Antiguos trabajos y actividades económicas',
+    'Agricultura, ganadería y comercio',
+    'Historia de la Feria Nacional de Colón',
+    'Autoridades que ha tenido el corregimiento',
+    'Personajes destacados',
+    'Agregar fotografía antigua',
+    'Cambios ocurridos durante los últimos 50 años',
+    'Problemas actuales y visión futura del corregimiento',
+    'Registrar testimonio de un residente antiguo'
   ],
   personajes: [
     'El morador o la moradora más antigua de la comunidad',
@@ -971,7 +1024,14 @@ const TEMAS_SUGERIDOS = {
 /* Instrucciones especiales para ciertas secciones (aparecen arriba de los temas sugeridos) */
 const SECCION_NOTA = {
   lugares: 'Cada ficha debe incluir: descripción, historia, fotografías, pobladores destacados, qué contiene, sitios de interés, negocios cercanos y ubicación. Para límites oficiales, sube un mapa o croquis proporcionado por una fuente confiable.',
-  negocios: 'Como mínimo, menciona el nombre del negocio, la dirección, el lugar poblado al que pertenece y un teléfono de contacto. Escribe claramente el nombre del lugar para que el negocio aparezca también dentro de su ficha.',
+  autoridades: 'Primera investigación recomendada: para conocer la cantidad exacta y los nombres actuales de las Juntas de Desarrollo Local de Buena Vista, solicita en la Junta Comunal el “Listado de Juntas de Desarrollo Local registradas, comunidades que representan y nombres de sus presidentes”. Verifica siempre los nombres y cargos antes de publicar.',
+  instituciones: 'Incluye solamente instituciones gubernamentales. Investiga el nombre oficial, servicio que presta, responsable, horario, teléfono, dirección y ubicación.',
+  servicios: 'Esta categoría reúne empresas públicas o privadas, no instituciones gubernamentales. Investiga qué servicio ofrecen, sectores atendidos, horarios, teléfonos, dirección y ubicación.',
+  escuelas: 'Cada estudiante investigará un centro educativo real del corregimiento de Buena Vista, público o privado. Debe incluir: nombre oficial; tipo y categoría; comunidad y dirección; historia y año de fundación; director, directora o propietario; niveles que ofrece; cantidad aproximada de estudiantes; teléfono y horario; fotografías antiguas y actuales; ubicación en el mapa y fuente de la información.',
+  salud: 'Cada estudiante investigará un establecimiento real y verificable del corregimiento de Buena Vista. Debe incluir: nombre oficial; si es público o privado; categoría; servicios y especialidades; dirección y comunidad; teléfono y WhatsApp; días y horarios; atención de emergencias; encargado, propietario o director; requisitos para recibir atención; costo gratuito, asegurado o privado; fotografías; ubicación en Google Maps y fuente de la información. No incluyas parteras, curanderos ni botiquines comunitarios salvo que realmente existan y puedan comprobarse.',
+  carga_mudanzas: 'Registra un servicio real de transporte de carga, mudanzas residenciales o comerciales, traslado de muebles y electrodomésticos, camiones o pick-up, materiales de construcción, mercancías, acarreo de tierra, arena y piedras, grúas o asistencia vehicular. Debe incluir: nombre de la empresa o propietario; tipo de servicio; comunidad donde se ubica; lugares donde trabaja; tipo y capacidad del vehículo; teléfono y WhatsApp; días y horarios; tarifas aproximadas; disponibilidad para viajes fuera del corregimiento; si ofrece ayudantes para cargar y descargar; fotografías del vehículo; ubicación o punto de salida y forma de pago.',
+  historia: 'Esta sección reconstruirá la historia completa de Buena Vista con información verificable. Cada publicación debe indicar sus fuentes. Para la historia de una comunidad incluye: origen del nombre; fundación aproximada; primeros habitantes y familias fundadoras; llegada de los pobladores; población actual; escuelas, iglesias, negocios e instituciones; actividades económicas; servicios públicos; problemas y necesidades; personajes; fotografías; ubicación en Google Maps; testimonio de un residente antiguo y fuentes consultadas.',
+  negocios: 'A un estudiante se le pueden asignar varios negocios, incluso varios del mismo tipo. Cada negocio debe presentarse por separado e incluir nombre, tipo, descripción, dirección, lugar poblado, teléfono, fotografías y su ubicación marcada en el mapa. Todas las ubicaciones publicadas aparecerán juntas en el mapa principal.',
   entrevistas: 'Sube primero el video a YouTube. Después agrega el bloque Video y pega el enlace. Incluye nombre del entrevistado, entrevistadores, lugar poblado, fecha, tema y una breve reseña.'
 };
 
@@ -1233,7 +1293,7 @@ async function renderHome(){
     <section class="home-intro" id="quienesSomos">
       <div class="kicker">QUIÉNES SOMOS</div>
       <h2>Una comunidad que cuenta su propia historia</h2>
-      <p>Somos estudiantes y docentes del C.E.B.G. El Jiral comprometidos con investigar, organizar y compartir información útil sobre el corregimiento de Buena Vista. Esta página crece con las voces, fotografías y aportes de sus habitantes.</p>
+      <p>Somos estudiantes del C.E.B.G. El Jiral comprometidos con investigar, organizar y compartir información útil sobre el corregimiento de Buena Vista. Esta página crece con las voces, fotografías y aportes de sus habitantes, con el acompañamiento de docentes y miembros de la comunidad.</p>
     </section>
     <div class="feature-grid">
       <article class="feature-card accent"><div class="feature-icon">🎯</div><h3>Misión</h3><p>Investigar, preservar y divulgar la identidad, la historia y los servicios del corregimiento de Buena Vista mediante una página confiable, educativa y construida con participación estudiantil y comunitaria.</p></article>
@@ -1242,11 +1302,12 @@ async function renderHome(){
     </div>
     <section class="about-band">
       <h2>📖 ¿Cómo surge esta página web?</h2>
-      <p>La página nace en 2026 como una iniciativa educativa del C.E.B.G. El Jiral, coordinada por el Prof. Samuel Ortega. Estudiantes de 8.º y 9.º grado investigan las comunidades, entrevistan a sus habitantes y documentan sus instituciones, tradiciones, negocios, logros y necesidades.</p>
+      <p>La página nace en 2026 como una iniciativa educativa del C.E.B.G. El Jiral. Su creadora y fundadora estudiantil es <strong>Romina Vargas</strong>, con la coordinación del <strong>Prof. Samuel Ortega</strong> y el valioso apoyo de la directora <strong>Teresa Atencio</strong>.</p>
+      <p>Estudiantes de 8.º y 9.º grado investigan las comunidades, entrevistan a sus habitantes y documentan sus instituciones, tradiciones, negocios, logros y necesidades.</p>
       <p>Así, el aprendizaje sale del salón de clases y se convierte en un servicio para Buena Vista: una memoria digital que se completa y mejora poco a poco con la participación de todos.</p>
     </section>
     <div class="objectives-grid">
-      <article class="card"><h2>Objetivos</h2><ul class="clean-list"><li>Dar a conocer los poblados y sectores del corregimiento.</li><li>Conservar la historia, cultura, tradiciones y memoria de sus habitantes.</li><li>Facilitar información sobre autoridades, instituciones, escuelas, salud, transporte y negocios.</li><li>Desarrollar en los estudiantes habilidades de investigación, comunicación y ciudadanía digital.</li><li>Promover la participación y colaboración de toda la comunidad.</li></ul></article>
+      <article class="card"><h2>Objetivos</h2><p><strong>Todo el contenido de esta página será investigado y realizado por estudiantes.</strong> Así tendrán la oportunidad de aprender haciendo, desarrollar nuevas habilidades y descubrir sus talentos.</p><ul class="clean-list"><li>Dar a conocer los poblados y sectores del corregimiento.</li><li>Conservar la historia, cultura, tradiciones y memoria de sus habitantes.</li><li>Facilitar información sobre autoridades, instituciones, escuelas, salud, transporte y negocios.</li><li>Desarrollar habilidades de investigación, redacción, fotografía, entrevistas, tecnología, creatividad, comunicación y trabajo en equipo.</li><li>Ayudar a cada estudiante a reconocer y fortalecer sus propios talentos.</li><li>Promover la participación y colaboración de toda la comunidad.</li></ul></article>
       <article class="card"><h2>Valores</h2><p>Los principios que guían cada investigación y publicación:</p><div class="values"><span class="value-pill">Respeto</span><span class="value-pill">Identidad</span><span class="value-pill">Responsabilidad</span><span class="value-pill">Honestidad</span><span class="value-pill">Colaboración</span><span class="value-pill">Servicio</span><span class="value-pill">Inclusión</span></div></article>
     </div>
     <div class="lugares-resumen" style="cursor:pointer" onclick="goTo('lugares')">
@@ -1256,7 +1317,7 @@ async function renderHome(){
     </div>
     <div class="section-divider"><div class="icon">🧭</div><h2>Encuentra lo que necesitas</h2><div class="rule"></div></div>
     <div class="quick-grid"><button class="quick-link" onclick="goTo('autoridades')"><span>🏛️</span>Autoridades</button><button class="quick-link" onclick="goTo('instituciones')"><span>🏢</span>Instituciones</button><button class="quick-link" onclick="goTo('escuelas')"><span>🏫</span>Escuelas</button><button class="quick-link" onclick="goTo('negocios')"><span>🏪</span>Negocios</button><button class="quick-link" onclick="goTo('proyectos')"><span>🛠️</span>Proyectos</button><button class="quick-link" onclick="goTo('noticias')"><span>📰</span>Noticias</button><button class="quick-link" onclick="goTo('galeria')"><span>📸</span>Galería</button><button class="quick-link" onclick="goTo('contacto')"><span>✉️</span>Contacto</button></div>
-    <div class="card"><h2>👥 Equipo responsable</h2><p><strong>Coordinación:</strong> Prof. Samuel Ortega.</p><p><strong>Equipo investigador:</strong> estudiantes de 8.º y 9.º grado del C.E.B.G. El Jiral.</p><p><strong>Aliados:</strong> moradores, autoridades, instituciones, comercios y organizaciones que aportan información a este proyecto comunitario.</p></div>
+    <div class="card"><h2>👥 Creadores y equipo responsable</h2><p><strong>Creadora y fundadora estudiantil:</strong> Romina Vargas.</p><p><strong>Coordinación:</strong> Prof. Samuel Ortega.</p><p><strong>Apoyo institucional:</strong> directora Teresa Atencio.</p><p><strong>Equipo investigador y creador de contenidos:</strong> estudiantes de 8.º y 9.º grado del C.E.B.G. El Jiral.</p><p><strong>Aliados:</strong> moradores, autoridades, instituciones, comercios y organizaciones que aportan información a este proyecto comunitario.</p></div>
     <div class="mosaic" id="mosaic">Cargando…</div>
     <div class="section-divider"><div class="icon">🏆</div><h2>Proyectos, actividades y logros</h2><div class="rule"></div></div>
     <p class="section-desc">Aquí destacamos investigaciones, actividades escolares, reconocimientos y aportes que llenan de orgullo a Buena Vista.</p>
@@ -1342,6 +1403,53 @@ async function registrarYMostrarVisitas(){
   }catch(e){ cont.textContent = ''; }
 }
 document.getElementById('footerContactoLink').onclick = (e)=>{ e.preventDefault(); goTo('contacto'); window.scrollTo({top:0,behavior:'smooth'}); };
+
+/* =====================  BUSCADOR INTERNO  ===================== */
+let busquedaPublicacionesCache=null;
+async function cargarDatosBusqueda(){
+  if(busquedaPublicacionesCache) return busquedaPublicacionesCache;
+  const {data}=await db.from('bv_contenido').select('id,seccion_id,titulo,cuerpo,resumen,bloques').eq('estado','publicado').order('creado_en',{ascending:false});
+  busquedaPublicacionesCache=data||[];
+  return busquedaPublicacionesCache;
+}
+function resumenBusqueda(item){
+  const texto=String(item.resumen||item.cuerpo||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+  return texto.length>145 ? texto.slice(0,145)+'…' : texto;
+}
+async function ejecutarBusquedaGeneral(){
+  const input=document.getElementById('buscarGeneralInput');
+  const cont=document.getElementById('buscarGeneralResultados');
+  const q=normalizarTexto(input.value);
+  if(q.length<2){ cont.innerHTML='<div class="empty">Escribe al menos dos letras para comenzar.</div>'; return; }
+  cont.innerHTML='<div class="empty">Buscando…</div>';
+  const publicaciones=await cargarDatosBusqueda();
+  const secciones=SECTIONS.filter(s=>normalizarTexto([s.name,s.desc,...(TEMAS_SUGERIDOS[s.id]||[])].join(' ')).includes(q));
+  const hallados=publicaciones.filter(p=>normalizarTexto([p.titulo,p.cuerpo,p.resumen,JSON.stringify(p.bloques||[])].join(' ')).includes(q));
+  const resultados=[
+    ...secciones.map(s=>({tipo:'seccion',seccion_id:s.id,titulo:s.name,resumen:s.desc,icon:s.icon})),
+    ...hallados.map(p=>({tipo:'publicacion',seccion_id:p.seccion_id,titulo:p.titulo,resumen:resumenBusqueda(p),icon:(SECTIONS.find(s=>s.id===p.seccion_id)||{}).icon||'📄'}))
+  ].slice(0,40);
+  if(!resultados.length){ cont.innerHTML='<div class="empty">No encontramos información con esas palabras. Prueba con otro nombre o término.</div>'; return; }
+  cont.innerHTML=resultados.map((r,i)=>{
+    const sec=SECTIONS.find(s=>s.id===r.seccion_id);
+    return `<button class="busqueda-item" data-busqueda-idx="${i}"><small>${r.tipo==='seccion'?'SECCIÓN':escapeHtml(sec?sec.name:'PUBLICACIÓN')}</small><strong>${r.icon} ${escapeHtml(r.titulo)}</strong>${r.resumen?`<div class="busqueda-resumen">${escapeHtml(r.resumen)}</div>`:''}</button>`;
+  }).join('');
+  cont.querySelectorAll('[data-busqueda-idx]').forEach(btn=>btn.onclick=()=>{
+    const r=resultados[+btn.dataset.busquedaIdx];
+    closeModal('buscarModal');
+    goTo(r.seccion_id);
+  });
+}
+document.getElementById('buscarBtn').onclick=()=>{
+  openModal('buscarModal');
+  const input=document.getElementById('buscarGeneralInput');
+  setTimeout(()=>input.focus(),80);
+};
+let busquedaTemporizador=null;
+document.getElementById('buscarGeneralInput').oninput=()=>{
+  clearTimeout(busquedaTemporizador);
+  busquedaTemporizador=setTimeout(ejecutarBusquedaGeneral,220);
+};
 
 
 function detectarYoutubeId(url){
@@ -1484,6 +1592,63 @@ function renderBloquesHTML(filas){
   }).join('')}</div>`;
 }
 
+/* Reúne las ubicaciones guardadas dentro de las páginas publicadas y las
+   presenta juntas en el mapa principal de Lugares o Directorio de negocios. */
+function extraerUbicacionesPublicadas(publicaciones){
+  const puntos=[];
+  function recorrer(valor, pub){
+    if(!valor) return;
+    if(Array.isArray(valor)){ valor.forEach(v=>recorrer(v,pub)); return; }
+    if(typeof valor!=='object') return;
+    if(valor.tipo==='mapa' && valor.lat!=null && valor.lng!=null && Number.isFinite(+valor.lat) && Number.isFinite(+valor.lng)){
+      puntos.push({lat:+valor.lat,lng:+valor.lng,titulo:pub.titulo||'Ubicación',autor:pub.autor_nombre||''});
+    }
+    Object.values(valor).forEach(v=>recorrer(v,pub));
+  }
+  (publicaciones||[]).forEach(pub=>{
+    let bloques=pub.bloques||[];
+    if(typeof bloques==='string'){ try{ bloques=JSON.parse(bloques); }catch(e){ bloques=[]; } }
+    recorrer(bloques,pub);
+  });
+  return puntos;
+}
+function renderMapaGeneral(id, publicaciones){
+  const el=document.getElementById('mapaGeneral-'+id);
+  const estado=document.getElementById('mapaGeneralEstado-'+id);
+  if(!el || typeof L==='undefined') return;
+  const puntos=extraerUbicacionesPublicadas(publicaciones);
+  if(!puntos.length){
+    el.innerHTML='<div class="empty" style="height:100%;display:grid;place-items:center;border:0;">Todavía no hay ubicaciones publicadas en el mapa.</div>';
+    if(estado) estado.textContent='El mapa se llenará automáticamente cuando se publiquen páginas con una ubicación marcada.';
+    return;
+  }
+  const map=L.map(el,{scrollWheelZoom:false}).setView([9.2,-79.8],11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; colaboradores de OpenStreetMap',maxZoom:19}).addTo(map);
+  const limites=[];
+  puntos.forEach(p=>{
+    const destino=`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
+    L.marker([p.lat,p.lng]).addTo(map).bindPopup(`<strong>${escapeHtml(p.titulo)}</strong>${p.autor?`<br><small>Investigado por: ${escapeHtml(p.autor)}</small>`:''}<br><a href="${destino}" target="_blank" rel="noopener">🧭 Cómo llegar</a>`);
+    limites.push([p.lat,p.lng]);
+  });
+  if(limites.length===1) map.setView(limites[0],16); else map.fitBounds(limites,{padding:[35,35],maxZoom:16});
+  if(estado) estado.textContent=`${puntos.length} ${puntos.length===1?'ubicación publicada':'ubicaciones publicadas'} en este mapa.`;
+  setTimeout(()=>map.invalidateSize(),100);
+}
+function historiaResumenHTML(){
+  const censos=[{anio:1990,poblacion:7547},{anio:2000,poblacion:10428},{anio:2010,poblacion:14285},{anio:2023,poblacion:19221}];
+  const maximo=Math.max(...censos.map(c=>c.poblacion));
+  return `<section class="historia-resumen">
+    <h2>📜 Historia y crecimiento de Buena Vista</h2>
+    <p>Esta sección presentará el origen, formación, comunidades, familias fundadoras, desarrollo y crecimiento poblacional del corregimiento.</p>
+    <div class="historia-dos-cols">
+      <div><h3>📈 Crecimiento poblacional</h3><div role="img" aria-label="Gráfica de población de Buena Vista entre 1990 y 2023">${censos.map(c=>`<div class="pob-barra-fila"><strong>${c.anio}</strong><div class="pob-barra-pista"><div class="pob-barra" style="width:${(c.poblacion/maximo*100).toFixed(1)}%"></div></div><span class="pob-num">${c.poblacion.toLocaleString('es-PA')}</span></div>`).join('')}</div><p class="hint" style="margin:.8em 0 0;">Entre 1990 y 2023 la población aumentó en <strong>11,674 habitantes</strong>, aproximadamente <strong>155 %</strong>.</p></div>
+      <div><h3>Datos censales</h3><table><thead><tr><th>Año</th><th>Población</th></tr></thead><tbody>${censos.map(c=>`<tr><td>${c.anio}</td><td>${c.poblacion.toLocaleString('es-PA')} habitantes</td></tr>`).join('')}</tbody></table><p><a href="https://es.wikipedia.org/wiki/Buena_Vista_%28Col%C3%B3n%29" target="_blank" rel="noopener">Consultar referencia de los datos censales</a></p></div>
+    </div>
+    <h3 style="margin-top:1.2em;">Presentación de la historia</h3>
+    <div class="historia-guia"><div>1. Línea del tiempo</div><div>2. Gráfica poblacional</div><div>3. Mapa histórico</div><div>4. Galería “Antes y ahora”</div><div>5. Entrevistas a adultos mayores</div><div>6. Historia por comunidades</div><div>7. Documentos históricos</div><div>8. Personas y fuentes consultadas</div></div>
+  </section>`;
+}
+
 /* =====================  VISTA: SECCIÓN  ===================== */
 function cardHTML(item, permitirEditar){
   let pill = '';
@@ -1525,7 +1690,7 @@ async function abrirFichaLugar(nombre,boton){
   });
   const deLugar=relacionados.filter(x=>x.seccion_id==='lugares');
   const negocios=relacionados.filter(x=>x.seccion_id==='negocios');
-  const sitios=relacionados.filter(x=>['instituciones','escuelas','iglesias','deportes','salud','cultura','historia'].includes(x.seccion_id));
+  const sitios=relacionados.filter(x=>['instituciones','servicios','escuelas','iglesias','deportes','salud','transporte','carga_mudanzas','cultura','historia'].includes(x.seccion_id));
   const entrevistas=relacionados.filter(x=>x.seccion_id==='entrevistas');
   const grupo=(titulo,icon,lista)=>`<h4>${icon} ${titulo}</h4>${lista.length?lista.map(x=>cardHTML(x,false)).join(''):'<p class="hint">Todavía no hay información publicada en esta categoría.</p>'}`;
   ficha.innerHTML=`<div class="lugar-ficha"><button class="btn small outline" id="cerrarFichaLugar" style="float:right">✕ Cerrar</button><h3>📍 ${escapeHtml(nombre)}</h3><p>Ficha comunitaria construida con las investigaciones de los estudiantes.</p><div class="lugar-resultados">${grupo('Descripción, historia, fotografías y mapas','🗺️',deLugar)}${grupo('Negocios de este lugar','🏪',negocios)}${grupo('Sitios de interés y servicios','⭐',sitios)}${grupo('Entrevistas realizadas aquí','🎤',entrevistas)}</div></div>`;
@@ -1539,6 +1704,8 @@ async function renderSection(id){
   main.innerHTML = `
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>${s.name}</h2><div class="rule"></div></div>
     <p class="section-desc">${s.desc}</p>
+    ${id==='historia' ? historiaResumenHTML() : ''}
+    ${['lugares','negocios'].includes(id) ? `<div class="mapa-general-card"><h3>${id==='negocios'?'📍 Mapa general de negocios':'🗺️ Mapa general de lugares'}</h3><p class="hint" id="mapaGeneralEstado-${id}">Cargando todas las ubicaciones publicadas…</p><div class="mapa-general" id="mapaGeneral-${id}"></div></div>` : ''}
     ${id==='lugares' ? '<div id="directorioLugares"></div>' : ''}
     <div id="temasPanel"></div>
     ${canEdit ? `<div class="row-actions" style="margin-bottom:1.4em;"><button class="btn gold" id="addContentBtn">+ Agregar publicación</button></div>` : ''}
@@ -1559,6 +1726,7 @@ async function renderSection(id){
 
   document.getElementById('temasPanel').innerHTML = temasPanelHTML(id, publicados);
   if(id==='lugares') renderDirectorioLugares();
+  if(['lugares','negocios'].includes(id)) renderMapaGeneral(id, publicados);
   document.getElementById('sectionList').innerHTML = visibles.length ? visibles.map(item=>{
     const esMio = canEdit && misPublicaciones.some(m=>m.id===item.id);
     return cardHTML(item, esMio);
@@ -1582,6 +1750,16 @@ async function renderSection(id){
 /* =====================  VISTA: MI TAREA (bloqueada por estudiante)  ===================== */
 let miTareaBloques = [];
 let miTareaModo = 'editar'; // 'editar' | 'vista'
+const TIPOS_CENTRO_EDUCATIVO = [
+  'Escuela oficial o pública',
+  'Escuela o colegio privado',
+  'C.E.B.G. o centro de educación básica',
+  'Prekínder o kínder',
+  'Parvulario o centro preescolar',
+  'Guardería con programa educativo',
+  'Centro de educación especial',
+  'Centro educativo para jóvenes y adultos'
+];
 
 function nuevoBloqueId(){ return 'b'+Math.random().toString(36).slice(2,10); }
 
@@ -1721,6 +1899,8 @@ async function renderMiTarea(){
   const s = SECTIONS.find(x=>x.id===tarea.seccion_id) || {icon:'🎯', name:tarea.seccion_id};
   miTareaBloques = normalizarFilas(Array.isArray(tarea.bloques) ? JSON.parse(JSON.stringify(tarea.bloques)) : []);
   miTareaModo = 'editar';
+  const bloqueTipoCentro = miTareaBloques.flatMap(f=>f.columnas||[]).flatMap(c=>c.bloques||[]).find(b=>b.esTipoCentroEducativo);
+  const tipoCentroGuardado = bloqueTipoCentro ? (bloqueTipoCentro.tipoCentroEducativo||'') : '';
 
   let pill = '<span class="status-pill status-pending">Borrador</span>';
   if(tarea.estado==='pendiente') pill = '<span class="status-pill status-pending">En revisión</span>';
@@ -1732,7 +1912,8 @@ async function renderMiTarea(){
     <div class="tarea-head">
       <h3 style="margin:0;">${escapeHtml(tarea.tema)} ${pill}</h3>
     </div>
-    <p class="section-desc">Sección: ${escapeHtml(s.name)}. Agrega texto, fotos, un video, la ubicación en el mapa y tus redes sociales si hiciste una entrevista.</p>
+    <p class="section-desc">Sección: ${escapeHtml(s.name)}. ${tarea.seccion_id==='negocios' ? '<strong>Si te asignaron varios negocios, crea una fila o grupo separado para cada uno</strong> y agrega su nombre, tipo, información, fotos, teléfono y un bloque de ubicación. Cada punto aparecerá automáticamente en el mapa general cuando el profesor publique tu trabajo.' : 'Agrega texto, fotos, un video, la ubicación en el mapa y tus redes sociales si hiciste una entrevista.'}</p>
+    ${tarea.seccion_id==='escuelas' ? `<div class="card" style="border-left:5px solid var(--gold);"><h3>🏫 Datos del centro educativo</h3><div class="field"><label>Selecciona el tipo de centro</label><select id="tipoCentroEducativo"><option value="">Selecciona una opción…</option>${TIPOS_CENTRO_EDUCATIVO.map(t=>`<option value="${escapeHtml(t)}" ${t===tipoCentroGuardado?'selected':''}>${escapeHtml(t)}</option>`).join('')}</select></div><p class="hint" style="margin:0;"><strong>Investiga:</strong> nombre oficial; si es público o privado; categoría; comunidad y dirección; historia y fundación; director o propietario; niveles; cantidad aproximada de estudiantes; teléfono y horario; fotografías antiguas y actuales; ubicación en el mapa y fuente.</p></div>` : ''}
     ${tarea.observacion ? `<div class="msg" style="background:#f4dfa8;color:#6b4c0a;">📝 Observación del profesor(a): ${escapeHtml(tarea.observacion)}</div>` : ''}
     <div class="tarea-modo">
       <button id="modoEditarBtn" class="active">✏️ Editar</button>
@@ -1743,6 +1924,26 @@ async function renderMiTarea(){
   `;
   document.getElementById('modoEditarBtn').onclick = ()=>{ miTareaModo='editar'; pintarMiTarea(); };
   document.getElementById('modoVistaBtn').onclick = ()=>{ miTareaModo='vista'; pintarMiTarea(); };
+  const tipoCentroSelect=document.getElementById('tipoCentroEducativo');
+  if(tipoCentroSelect) tipoCentroSelect.onchange=()=>{
+    const elegido=tipoCentroSelect.value;
+    let bloque=miTareaBloques.flatMap(f=>f.columnas||[]).flatMap(c=>c.bloques||[]).find(b=>b.esTipoCentroEducativo);
+    if(!elegido){
+      if(bloque){ const u=ubicarBloque(bloque.id); if(u) u.bloques.splice(u.index,1); }
+    }else if(bloque){
+      bloque.tipoCentroEducativo=elegido;
+      bloque.texto=`Tipo de centro educativo: ${elegido}`;
+    }else{
+      bloque=crearBloqueBase('texto');
+      bloque.esTipoCentroEducativo=true;
+      bloque.tipoCentroEducativo=elegido;
+      bloque.texto=`Tipo de centro educativo: ${elegido}`;
+      bloque.negrita=true;
+      bloque.tamano='grande';
+      miTareaBloques.unshift({id:nuevaFilaId(),columnas:[{id:nuevaColumnaId(),bloques:[bloque]}]});
+    }
+    pintarMiTarea();
+  };
   pintarMiTarea();
 }
 
@@ -3085,7 +3286,7 @@ async function cargarTareas(){
     return `<tr>
       <td>${escapeHtml(t.nombre)}<br><span class="hint" style="margin:0;">${SALON_LABEL[t.salon]||t.salon}</span></td>
       <td>${s?s.icon+' '+s.name:t.seccion_id}</td>
-      <td>${escapeHtml(t.tema)}</td>
+      <td>${escapeHtml(t.tema).replace(/ • /g,'<br>• ')}</td>
       <td><span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoLabel[t.estado]||t.estado}</span></td>
       <td style="white-space:nowrap;">
         <button class="btn small outline" data-ver='${escapeHtml(JSON.stringify(t.bloques||[]))}'>Ver</button>
@@ -3121,8 +3322,11 @@ async function openTareaModal(actual){
     const {data} = await db.rpc('bv_admin_listar_estudiantes', adminCreds());
     estudiantesCache = data || [];
   }
-  const estOptions = estudiantesCache.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'))
-    .map(e=>`<option value="${e.id}" ${actual&&actual.estudiante_id===e.id?'selected':''}>${escapeHtml(e.nombre)} — ${SALON_LABEL[e.salon]||e.salon}</option>`).join('');
+  const alumnoActual = actual ? estudiantesCache.find(e=>String(e.id)===String(actual.estudiante_id)) : null;
+  const salonesDisponibles = [...new Set(estudiantesCache.map(e=>e.salon).filter(Boolean))]
+    .sort((a,b)=>String(a).localeCompare(String(b),'es',{numeric:true}));
+  const salonInicial = alumnoActual ? alumnoActual.salon : (salonesDisponibles[0]||'');
+  const salonOptions = salonesDisponibles.map(s=>`<option value="${escapeHtml(s)}" ${s===salonInicial?'selected':''}>${SALON_LABEL[s]||s}</option>`).join('');
   const secOptions = SECTIONS.map(s=>`<option value="${s.id}" ${actual&&actual.seccion_id===s.id?'selected':''}>${s.icon} ${s.name}</option>`).join('');
   const html = `
     <div class="modal-overlay open" id="tareaModal">
@@ -3130,32 +3334,65 @@ async function openTareaModal(actual){
         <button class="modal-close" id="tareaModalClose">×</button>
         <h3>${actual?'Cambiar tarea':'Asignar una tarea'}</h3>
         <div id="tareaModalMsg"></div>
-        <div class="field"><label>Estudiante</label><select id="tEstudiante">${estOptions}</select></div>
         <div class="field"><label>Sección</label><select id="tSeccion">${secOptions}</select></div>
-        <div class="field"><label>Tema específico</label><select id="tTemaSelect"></select></div>
+        <div class="field" id="tTemaSelectWrap"><label>Tema específico</label><select id="tTemaSelect"></select></div>
         <div class="field" id="tTemaCustomWrap" style="display:none;"><label>Escribe el tema</label><input id="tTemaCustom" placeholder="Ej. Corregidor(a) de Buena Vista"></div>
+        <div class="field negocios-asignacion" id="tNegociosWrap" style="display:none;">
+          <label>Tipos de negocios que investigará</label>
+          <p class="hint" style="margin:0 0 .6em;">Puedes marcar varios tipos. Después escribe abajo los nombres concretos; pueden ser varios restaurantes, tiendas u otros negocios.</p>
+          <div class="check-grid" id="tNegociosTipos">${TEMAS_SUGERIDOS.negocios.map(t=>`<label><input type="checkbox" value="${escapeHtml(t)}"> ${escapeHtml(t)}</label>`).join('')}</div>
+          <label style="margin-top:.8em;">Negocios específicos (uno por línea)</label>
+          <textarea id="tNegociosNombres" rows="5" placeholder="Restaurante El Buen Sabor&#10;Restaurante Delicias de Buena Vista&#10;Minisúper La Esperanza"></textarea>
+        </div>
+        <div class="field"><label>Grado y grupo</label><select id="tSalon">${salonOptions}</select></div>
+        <div class="field"><label>Estudiante</label><select id="tEstudiante"></select></div>
         <button class="btn" id="guardarTareaBtn">Guardar</button>
       </div>
     </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
   const secSelect = document.getElementById('tSeccion');
   const temaSelect = document.getElementById('tTemaSelect');
+  const salonSelect = document.getElementById('tSalon');
+  const estudianteSelect = document.getElementById('tEstudiante');
+  function pintarEstudiantes(){
+    const alumnos=estudiantesCache.filter(e=>e.salon===salonSelect.value).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+    estudianteSelect.innerHTML=alumnos.length
+      ? alumnos.map(e=>`<option value="${e.id}" ${actual&&String(actual.estudiante_id)===String(e.id)?'selected':''}>${escapeHtml(e.nombre)}</option>`).join('')
+      : '<option value="">No hay estudiantes en este grado</option>';
+  }
   function pintarTemas(){
     const temas = TEMAS_SUGERIDOS[secSelect.value] || [];
+    const esNegocios=secSelect.value==='negocios';
+    document.getElementById('tTemaSelectWrap').style.display=esNegocios?'none':'';
+    document.getElementById('tNegociosWrap').style.display=esNegocios?'':'none';
     temaSelect.innerHTML = temas.map(t=>`<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('') + `<option value="__otro__">Otro (escribir)…</option>`;
     if(actual && actual.seccion_id===secSelect.value && temas.includes(actual.tema)) temaSelect.value = actual.tema;
     else if(actual && actual.seccion_id===secSelect.value){ temaSelect.value='__otro__'; }
-    document.getElementById('tTemaCustomWrap').style.display = temaSelect.value==='__otro__' ? '' : 'none';
+    document.getElementById('tTemaCustomWrap').style.display = !esNegocios && temaSelect.value==='__otro__' ? '' : 'none';
     if(temaSelect.value==='__otro__' && actual) document.getElementById('tTemaCustom').value = actual.tema;
+    if(esNegocios && actual && actual.seccion_id==='negocios'){
+      const partes=String(actual.tema||'').split(' • ').map(x=>x.trim()).filter(Boolean);
+      document.querySelectorAll('#tNegociosTipos input').forEach(ch=>ch.checked=partes.includes(ch.value));
+      document.getElementById('tNegociosNombres').value=partes.filter(x=>!TEMAS_SUGERIDOS.negocios.includes(x)).join('\n');
+    }
   }
   secSelect.onchange = pintarTemas;
+  salonSelect.onchange = pintarEstudiantes;
   temaSelect.onchange = ()=>{ document.getElementById('tTemaCustomWrap').style.display = temaSelect.value==='__otro__' ? '' : 'none'; };
   pintarTemas();
+  pintarEstudiantes();
   document.getElementById('tareaModalClose').onclick = ()=> document.getElementById('tareaModal').remove();
   document.getElementById('guardarTareaBtn').onclick = async ()=>{
     const estudianteId = document.getElementById('tEstudiante').value;
     const seccionId = secSelect.value;
-    const tema = temaSelect.value==='__otro__' ? document.getElementById('tTemaCustom').value.trim() : temaSelect.value;
+    let tema;
+    if(seccionId==='negocios'){
+      const tipos=[...document.querySelectorAll('#tNegociosTipos input:checked')].map(ch=>ch.value);
+      const nombres=document.getElementById('tNegociosNombres').value.split('\n').map(x=>x.trim()).filter(Boolean);
+      tema=[...tipos,...nombres].join(' • ');
+    }else{
+      tema=temaSelect.value==='__otro__' ? document.getElementById('tTemaCustom').value.trim() : temaSelect.value;
+    }
     const msg = document.getElementById('tareaModalMsg');
     if(!estudianteId || !seccionId || !tema){ msg.innerHTML = '<div class="msg error">Completa estudiante, sección y tema.</div>'; return; }
     const {error} = await db.rpc('bv_admin_asignar_tarea', {...adminCreds(), p_estudiante_id:estudianteId, p_seccion_id:seccionId, p_tema:tema});
