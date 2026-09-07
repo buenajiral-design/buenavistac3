@@ -350,6 +350,28 @@
   .foto-preview{width:100%;max-height:220px;object-fit:cover;border-radius:4px;margin-bottom:.6em;display:block;}
   .upload-row{display:flex;gap:.6em;align-items:center;flex-wrap:wrap;margin-bottom:.6em;}
   .upload-row input[type="file"]{width:auto;flex:1;min-width:160px;}
+  .word-editor{border:1.5px solid var(--line);border-radius:7px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(43,38,32,.07);}
+  .word-toolbar{display:flex;flex-wrap:wrap;gap:.35em;align-items:center;padding:.55em;background:#f5f3ee;border-bottom:1px solid var(--line);}
+  .word-toolbar button,.word-toolbar select{width:auto;min-width:34px;height:34px;padding:.25em .55em;border:1px solid #cfc9bd;border-radius:4px;background:#fff;color:var(--ink);font-weight:700;}
+  .word-toolbar button:hover{background:var(--parchment-2);border-color:var(--gold);}
+  .word-toolbar .sep{width:1px;height:25px;background:var(--line);margin:0 .15em;}
+  .word-page{min-height:150px;padding:1.2em 1.35em;background:#fff;outline:none;line-height:1.6;overflow-wrap:anywhere;}
+  .word-page:empty:before{content:attr(data-placeholder);color:#9a9287;pointer-events:none;}
+  .word-page ul,.word-page ol{padding-left:1.5em;}
+  .donor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.8em;margin:1em 0;}
+  .donor-tier{border:2px solid var(--line);border-radius:10px;padding:1em;text-align:center;background:var(--white);}
+  .donor-tier strong{display:block;font-family:'Bitter',serif;font-size:1.25rem;color:var(--forest-dark);}
+  .donor-tier.selected{border-color:var(--gold);background:#fff7df;box-shadow:0 0 0 3px rgba(201,138,44,.14);}
+  .donor-list-item{display:flex;gap:1em;justify-content:space-between;align-items:center;flex-wrap:wrap;border:1px solid var(--line);background:#fff;padding:.8em 1em;margin:.55em 0;border-radius:7px;}
+  .lugares-resumen{background:linear-gradient(135deg,var(--forest),#426653);color:#fff;border-radius:12px;padding:1.3em;margin-bottom:1.2em;}
+  .lugares-resumen h3{color:#fff}.censo-datos{display:grid;grid-template-columns:repeat(4,1fr);gap:.6em;margin-top:1em}.censo-dato{background:rgba(255,255,255,.12);padding:.7em;border-radius:7px;text-align:center}.censo-dato strong{display:block;font-size:1.2rem;color:#f4c66f}
+  .lugares-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.65em;margin:1em 0 1.5em;}
+  .lugar-card{display:flex;align-items:center;gap:.65em;text-align:left;border:1.5px solid var(--line);background:#fff;padding:.8em;border-radius:8px;color:var(--forest-dark);font-weight:700;}
+  .lugar-card:hover,.lugar-card.active{border-color:var(--gold);background:#fff6df;transform:translateY(-1px)}.lugar-num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:var(--forest-dark);flex:none}
+  .grupo-poblado{border:1.5px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}.grupo-principal{width:100%;display:flex;align-items:center;gap:.7em;text-align:left;border:0;background:#fff;padding:1em;color:var(--forest-dark)}.grupo-principal:hover,.grupo-poblado.open .grupo-principal{background:#fff4d8}.grupo-principal strong{font-family:'Bitter',serif;font-size:1rem;flex:1}.grupo-sectores{display:none;padding:.2em .8em .9em;border-top:1px solid var(--line)}.grupo-poblado.open .grupo-sectores{display:block}.grupo-sectores p{font-size:.75rem;color:#8a7f6e;margin:.55em 0}.sector-btn{width:100%;text-align:left;border:0;border-bottom:1px dashed var(--line);background:#fff;padding:.65em .4em;color:var(--forest-dark)}.sector-btn:hover{color:var(--gold-dark);background:var(--parchment)}
+  .lugar-ficha{border:2px solid var(--gold);border-radius:10px;background:#fff;padding:1.1em;margin:1em 0}.lugar-resultados h4{margin-top:1.2em;border-bottom:1px solid var(--line);padding-bottom:.35em}
+  @media(max-width:640px){.donor-grid{grid-template-columns:1fr;}}
+  @media(max-width:640px){.censo-datos{grid-template-columns:repeat(2,1fr)}.lugares-grid{grid-template-columns:1fr}}
 
   /* ---------- filas y columnas de "Mi tarea" ---------- */
   .fila-editor{border:1.5px solid var(--line);border-radius:8px;background:var(--white);margin-bottom:1.2em;overflow:hidden;}
@@ -724,7 +746,7 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* =====================  DATOS BASE  ===================== */
 const SECTIONS = [
-  {id:'lugares', name:'Lugares bonitos', icon:'🌳', desc:'Los rincones más lindos de Buena Vista: miradores, ríos, senderos y paisajes que vale la pena conocer.'},
+  {id:'lugares', name:'30 lugares poblados', icon:'🗺️', desc:'Directorio censal de las comunidades que integran el corregimiento de Buena Vista, con su historia, fotografías, pobladores destacados, negocios, sitios de interés y mapas.'},
   {id:'autoridades', name:'Autoridades', icon:'🏛️', desc:'Conoce a quienes representan y toman decisiones en Buena Vista: representante de corregimiento, corregidor(a), integrantes de la Junta Comunal, delegados de instituciones y líderes comunitarios.'},
   {id:'instituciones', name:'Instituciones públicas', icon:'🏢', desc:'Las oficinas y entidades del Estado presentes en el corregimiento: corregiduría, oficinas de instituciones nacionales, puestos de policía y demás dependencias que prestan servicio a la comunidad.'},
   {id:'escuelas', name:'Escuelas y centros educativos', icon:'🏫', desc:'Todos los centros educativos de Buena Vista: escuelas primarias, la sede de premedia y media, centros de educación inicial, y los programas, docentes y logros que forman parte de la vida escolar.'},
@@ -736,6 +758,7 @@ const SECTIONS = [
   {id:'transporte', name:'Transporte', icon:'🚌', desc:'Cómo se mueve la gente dentro y fuera de Buena Vista: rutas de buses y chivas, horarios, cooperativas de transporte, estado de las calles y transporte escolar.'},
   {id:'historia', name:'Historia de Buena Vista', icon:'📜', desc:'Cómo se formó la comunidad y los hechos que marcaron su historia.'},
   {id:'personajes', name:'Gente interesante del corregimiento', icon:'🧓', desc:'Los moradores más antiguos, personas con historias de vida interesantes, y vecinos que se destacan o que han marcado la vida de Buena Vista.'},
+  {id:'entrevistas', name:'Entrevistas comunitarias', icon:'🎤', desc:'Conversaciones realizadas por estudiantes a moradores, líderes, comerciantes y otras personas de Buena Vista. Los videos se publican en YouTube y se muestran aquí.'},
   {id:'cultura', name:'Cultura y tradiciones', icon:'🎭', desc:'Fiestas, costumbres y tradiciones que identifican a Buena Vista.'},
   {id:'galeria', name:'Galería comunitaria', icon:'📸', desc:'Fotografías de la vida diaria y los eventos de la comunidad.'},
   {id:'noticias', name:'Noticias y actividades', icon:'📰', desc:'Lo que está pasando ahora mismo en la comunidad.'},
@@ -744,21 +767,25 @@ const SECTIONS = [
 const SALONES = ['9A','9B','9C','8A','8B'];
 const SALON_LABEL = {'9A':'9° A','9B':'9° B','9C':'9° C','8A':'8° A','8B':'8° B'};
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=600&q=60';
+const LUGARES_CENSALES = [
+  'Alto de La Gloria N.° 2','Alto La Gloria','Altos de Divisa','Barriada Nueva Esperanza N.° 1','Barriada Nueva Esperanza N.° 2','Buena Vista','Campo Alegre','Dos Ríos','El Bosque','El Giral','El Valle del Giral','Frijolito o Frijolito Abajo','La Bonga','La Coclesana','Las Colinas o Las Amazonas','Las Tablitas','Los Lotes de Buena Vista o Brisas de Peñas Blancas','Los Playones','Nuevo Veraguas o La Escandalosa','Peñas Blancas','Pueblo Grande N.° 2','Pueblo Grande o Entrada de Sardinilla','Quebrada Ancha','Quebrada Bonita','Quebrada Bonita Adentro','Quebrada Bonita Arriba','Rincón Caliente','Río Duque','Río Gatún','Sardinilla'
+];
+const GRUPOS_COMUNITARIOS = [
+  {principal:'Buena Vista', sectores:['Barriada Nueva Esperanza N.° 1','Barriada Nueva Esperanza N.° 2','Campo Alegre','Dos Ríos','El Bosque','Las Tablitas','Los Playones']},
+  {principal:'El Giral', sectores:['El Valle del Giral','La Coclesana']},
+  {principal:'Alto La Gloria', sectores:['Alto de La Gloria N.° 2','Altos de Divisa','Las Colinas o Las Amazonas']},
+  {principal:'Peñas Blancas', sectores:['Los Lotes de Buena Vista o Brisas de Peñas Blancas']},
+  {principal:'Quebrada Bonita', sectores:['Quebrada Bonita Adentro','Quebrada Bonita Arriba','Quebrada Ancha']},
+  {principal:'Pueblo Grande', nombreCensal:'Pueblo Grande o Entrada de Sardinilla', sectores:['Pueblo Grande N.° 2','Pueblo Grande o Entrada de Sardinilla','Sardinilla']},
+  {principal:'Río Duque', sectores:['Río Gatún','Rincón Caliente']},
+  {principal:'Frijolito', nombreCensal:'Frijolito o Frijolito Abajo', sectores:['Frijolito Abajo','La Bonga','Nuevo Veraguas o La Escandalosa']}
+];
 
 /* Temas sugeridos: una lista de tareas concretas dentro de cada sección grande,
    para que varios estudiantes asignados a la misma sección puedan repartirse
    temas distintos en vez de investigar todos lo mismo. */
 const TEMAS_SUGERIDOS = {
-  lugares: [
-    'Río o quebrada de Buena Vista',
-    'Mirador o cerro con buena vista panorámica',
-    'Sendero o camino natural para caminar',
-    'Cascada o poza del sector',
-    'Parque, plaza o cancha central',
-    'Paisaje agrícola o finca destacada',
-    'Árbol histórico o emblemático de la comunidad',
-    'Lugar donde se reúne la comunidad para eventos'
-  ],
+  lugares: LUGARES_CENSALES,
   autoridades: [
     'Representante de Corregimiento',
     'Corregidor(a) de Buena Vista',
@@ -897,6 +924,18 @@ const TEMAS_SUGERIDOS = {
     'Una campaña o iniciativa comunitaria',
     'Algo que cambió recientemente en el corregimiento'
   ],
+  entrevistas: [
+    'Entrevista a un morador antiguo sobre la historia de su comunidad',
+    'Entrevista a un líder comunitario',
+    'Entrevista a un comerciante o emprendedor local',
+    'Entrevista a una autoridad del corregimiento',
+    'Entrevista a un docente o exdocente',
+    'Entrevista a un deportista, artista o músico local',
+    'Entrevista a un joven destacado',
+    'Entrevista sobre problemas y soluciones de la comunidad',
+    'Entrevista sobre costumbres, fiestas o tradiciones',
+    'Entrevista a una persona que haya contribuido al desarrollo de Buena Vista'
+  ],
   investigaciones: [
     'Un problema que afecta a la comunidad y posibles soluciones',
     'Cómo era Buena Vista antes, comparado con ahora',
@@ -907,7 +946,9 @@ const TEMAS_SUGERIDOS = {
 
 /* Instrucciones especiales para ciertas secciones (aparecen arriba de los temas sugeridos) */
 const SECCION_NOTA = {
-  negocios: 'Como mínimo, menciona el nombre del negocio, la dirección y un teléfono de contacto. Si el dueño quiere, se le puede agregar más: fotos, una descripción, redes sociales o hasta un video — igual que en las demás secciones.'
+  lugares: 'Cada ficha debe incluir: descripción, historia, fotografías, pobladores destacados, qué contiene, sitios de interés, negocios cercanos y ubicación. Para límites oficiales, sube un mapa o croquis proporcionado por una fuente confiable.',
+  negocios: 'Como mínimo, menciona el nombre del negocio, la dirección, el lugar poblado al que pertenece y un teléfono de contacto. Escribe claramente el nombre del lugar para que el negocio aparezca también dentro de su ficha.',
+  entrevistas: 'Sube primero el video a YouTube. Después agrega el bloque Video y pega el enlace. Incluye nombre del entrevistado, entrevistadores, lugar poblado, fecha, tema y una breve reseña.'
 };
 
 function normalizarTexto(str){
@@ -1162,8 +1203,14 @@ async function renderHome(){
       <h1>Conoce Buena Vista</h1>
       <p class="lead">Un espacio hecho por los propios estudiantes del C.E.B.G. El Jiral para mostrar los lugares, la gente y la vida de nuestro corregimiento.</p>
     </div>
+    <div class="lugares-resumen" style="cursor:pointer" onclick="goTo('lugares')">
+      <h3>🗺️ Los 30 lugares poblados de Buena Vista</h3>
+      <p>Explora los 8 poblados principales y abre sus subpoblados o sectores para descubrir descripción, fotografías, habitantes destacados, negocios, sitios de interés, entrevistas y ubicación.</p>
+      <div class="censo-datos"><div class="censo-dato"><strong>30</strong>lugares censales</div><div class="censo-dato"><strong>8</strong>grupos comunitarios</div><div class="censo-dato"><strong>19,221</strong>habitantes</div><div class="censo-dato"><strong>Ver fichas →</strong>directorio comunitario</div></div>
+    </div>
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:1em;flex-wrap:wrap"><div><h3>🎤 Entrevistas comunitarias</h3><p style="margin:0">Videos realizados por estudiantes a personas de las distintas comunidades.</p></div><button class="btn gold" onclick="goTo('entrevistas')">Ver entrevistas</button></div>
     <div class="mosaic" id="mosaic">Cargando…</div>
-    <div class="section-divider"><div class="icon">🌳</div><h2>Lugares bonitos</h2><div class="rule"></div></div>
+    <div class="section-divider"><div class="icon">🗺️</div><h2>Publicaciones recientes de los lugares</h2><div class="rule"></div></div>
     <p class="section-desc">${SECTIONS[0].desc}</p>
     <div id="lugaresPreview">Cargando…</div>
     <div class="row-actions"><button class="btn outline small" onclick="goTo('lugares')">Ver todos los lugares</button></div>
@@ -1282,17 +1329,34 @@ if(typeof L!=='undefined'){
   });
 }
 const TAMANOS_TEXTO = {pequeno:'.85rem', normal:'1rem', grande:'1.3rem', enorme:'1.7rem'};
+function sanitizarHTML(html){
+  const tpl=document.createElement('template'); tpl.innerHTML=html||'';
+  const permitidas=new Set(['B','STRONG','I','EM','U','S','BR','P','DIV','UL','OL','LI','H2','H3','BLOCKQUOTE','SPAN']);
+  [...tpl.content.querySelectorAll('*')].forEach(el=>{
+    if(!permitidas.has(el.tagName)){ el.replaceWith(...el.childNodes); return; }
+    [...el.attributes].forEach(a=>{
+      if(a.name!=='style') el.removeAttribute(a.name);
+    });
+    if(el.hasAttribute('style')){
+      const limpio=[];
+      ['text-align','color','background-color','font-size','font-family'].forEach(p=>{ const v=el.style.getPropertyValue(p); if(v && !/[url()<>]/i.test(v)) limpio.push(`${p}:${v}`); });
+      limpio.length ? el.setAttribute('style',limpio.join(';')) : el.removeAttribute('style');
+    }
+  });
+  return tpl.innerHTML;
+}
 function bloqueHTML(b){
   if(b.tipo==='texto'){
-    if(!b.texto) return '';
+    if(!b.texto && !b.html) return '';
     const fs = TAMANOS_TEXTO[b.tamano] || TAMANOS_TEXTO.normal;
     const color = b.color || 'inherit';
     const peso = b.negrita ? '700' : '400';
     const estilo = b.cursiva ? 'italic' : 'normal';
     const align = {izquierda:'left', centro:'center', derecha:'right'}[b.alineacion] || 'left';
-    return `<p style="white-space:pre-wrap;font-size:${fs};color:${escapeHtml(color)};font-weight:${peso};font-style:${estilo};text-align:${align};">${escapeHtml(b.texto)}</p>`;
+    const contenido=b.html ? sanitizarHTML(b.html) : escapeHtml(b.texto||'').replace(/\n/g,'<br>');
+    return `<div style="font-size:${fs};color:${escapeHtml(color)};font-weight:${peso};font-style:${estilo};text-align:${align};margin-bottom:1em;">${contenido}</div>`;
   }
-  if(b.tipo==='foto'){
+  if(b.tipo==='foto' || b.tipo==='limites'){
     if(!b.url) return '';
     const contain = b.ajuste==='completa';
     return `<figure style="margin:0 0 1em;width:100%;">
@@ -1376,6 +1440,37 @@ function cardHTML(item, permitirEditar){
     </div>
   `;
 }
+async function renderDirectorioLugares(){
+  const cont=document.getElementById('directorioLugares'); if(!cont)return;
+  cont.innerHTML=`<div class="lugares-resumen"><h3>Corregimiento de Buena Vista</h3><p>Según el Censo Nacional de Población y Vivienda 2023, el corregimiento está compuesto por <b>30 lugares poblados</b>. Para facilitar la navegación, esta página los organiza comunitariamente en <b>8 poblados principales</b> con sus sectores relacionados.</p><div class="censo-datos"><div class="censo-dato"><strong>30</strong>lugares censales</div><div class="censo-dato"><strong>8</strong>grupos comunitarios</div><div class="censo-dato"><strong>19,221</strong>habitantes</div><div class="censo-dato"><strong>5,750</strong>viviendas ocupadas</div></div></div>
+    <div class="msg">ℹ️ <b>Organización comunitaria preliminar:</b> el Censo registra los 30 lugares al mismo nivel. Debe confirmarse con residentes o autoridades la relación exacta de La Bonga, Los Playones, Rincón Caliente y Nuevo Veraguas.</div>
+    <div class="field"><label>🔎 Buscar un lugar poblado</label><input id="buscarLugarCensal" placeholder="Ej. El Giral, Sardinilla o Quebrada Bonita"></div>
+    <div class="lugares-grid" id="lugaresCensalesGrid">${GRUPOS_COMUNITARIOS.map((g,i)=>`<div class="grupo-poblado" data-grupo="${escapeHtml([g.principal,...g.sectores].join(' '))}"><button class="grupo-principal" type="button"><span class="lugar-num">${i+1}</span><strong>${escapeHtml(g.principal)}</strong><span>⌄</span></button><div class="grupo-sectores"><button class="sector-btn" data-lugar="${escapeHtml(g.nombreCensal||g.principal)}" type="button">📍 Ver ficha principal</button><p>SUBPOBLADOS O SECTORES RELACIONADOS</p>${g.sectores.map(s=>`<button class="sector-btn" data-lugar="${escapeHtml(s)}" type="button">↳ ${escapeHtml(s)}</button>`).join('')}</div></div>`).join('')}</div><div id="lugarFicha"></div>`;
+  const pintarFiltro=()=>{const q=normalizarTexto(document.getElementById('buscarLugarCensal').value);cont.querySelectorAll('[data-grupo]').forEach(g=>{const mostrar=!q||normalizarTexto(g.dataset.grupo).includes(q);g.style.display=mostrar?'block':'none';if(q&&mostrar)g.classList.add('open');});};
+  document.getElementById('buscarLugarCensal').oninput=pintarFiltro;
+  cont.querySelectorAll('.grupo-principal').forEach(b=>b.onclick=()=>b.closest('.grupo-poblado').classList.toggle('open'));
+  cont.querySelectorAll('[data-lugar]').forEach(b=>b.onclick=()=>abrirFichaLugar(b.dataset.lugar,b));
+}
+async function abrirFichaLugar(nombre,boton){
+  const ficha=document.getElementById('lugarFicha'); if(!ficha)return;
+  document.querySelectorAll('#lugaresCensalesGrid [data-lugar]').forEach(b=>b.classList.toggle('active',b===boton));
+  ficha.innerHTML='<div class="lugar-ficha">Buscando información publicada…</div>';
+  const {data,error}=await db.from('bv_contenido').select('*').eq('estado','publicado').order('creado_en',{ascending:false});
+  if(error){ficha.innerHTML='<div class="msg error">No se pudo cargar la ficha.</div>';return;}
+  const variantes=nombre.split(/\s+o\s+/i).map(normalizarTexto);
+  const relacionados=(data||[]).filter(x=>{
+    const texto=normalizarTexto([x.titulo,x.cuerpo,x.resumen,JSON.stringify(x.bloques||[])].join(' '));
+    return variantes.some(v=>texto.includes(v));
+  });
+  const deLugar=relacionados.filter(x=>x.seccion_id==='lugares');
+  const negocios=relacionados.filter(x=>x.seccion_id==='negocios');
+  const sitios=relacionados.filter(x=>['instituciones','escuelas','iglesias','deportes','salud','cultura','historia'].includes(x.seccion_id));
+  const entrevistas=relacionados.filter(x=>x.seccion_id==='entrevistas');
+  const grupo=(titulo,icon,lista)=>`<h4>${icon} ${titulo}</h4>${lista.length?lista.map(x=>cardHTML(x,false)).join(''):'<p class="hint">Todavía no hay información publicada en esta categoría.</p>'}`;
+  ficha.innerHTML=`<div class="lugar-ficha"><button class="btn small outline" id="cerrarFichaLugar" style="float:right">✕ Cerrar</button><h3>📍 ${escapeHtml(nombre)}</h3><p>Ficha comunitaria construida con las investigaciones de los estudiantes.</p><div class="lugar-resultados">${grupo('Descripción, historia, fotografías y mapas','🗺️',deLugar)}${grupo('Negocios de este lugar','🏪',negocios)}${grupo('Sitios de interés y servicios','⭐',sitios)}${grupo('Entrevistas realizadas aquí','🎤',entrevistas)}</div></div>`;
+  document.getElementById('cerrarFichaLugar').onclick=()=>{ficha.innerHTML='';document.querySelectorAll('#lugaresCensalesGrid [data-lugar]').forEach(b=>b.classList.remove('active'));};
+  ficha.scrollIntoView({behavior:'smooth',block:'start'});
+}
 async function renderSection(id){
   const s = SECTIONS.find(x=>x.id===id);
   const main = document.getElementById('main');
@@ -1383,6 +1478,7 @@ async function renderSection(id){
   main.innerHTML = `
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>${s.name}</h2><div class="rule"></div></div>
     <p class="section-desc">${s.desc}</p>
+    ${id==='lugares' ? '<div id="directorioLugares"></div>' : ''}
     <div id="temasPanel"></div>
     ${canEdit ? `<div class="row-actions" style="margin-bottom:1.4em;"><button class="btn gold" id="addContentBtn">+ Agregar publicación</button></div>` : ''}
     <div id="sectionList">Cargando…</div>
@@ -1401,6 +1497,7 @@ async function renderSection(id){
   }
 
   document.getElementById('temasPanel').innerHTML = temasPanelHTML(id, publicados);
+  if(id==='lugares') renderDirectorioLugares();
   document.getElementById('sectionList').innerHTML = visibles.length ? visibles.map(item=>{
     const esMio = canEdit && misPublicaciones.some(m=>m.id===item.id);
     return cardHTML(item, esMio);
@@ -1433,14 +1530,15 @@ const TIPOS_BLOQUE = [
   {tipo:'galeria', icon:'🖼️', label:'Galería', desc:'Varias fotos juntas en cuadrícula'},
   {tipo:'video', icon:'🎬', label:'Video', desc:'YouTube o archivo de video'},
   {tipo:'mapa', icon:'📍', label:'Ubicación', desc:'Selecciona el lugar en el mapa'},
+  {tipo:'limites', icon:'🧭', label:'Mapa o croquis de límites', desc:'Sube una imagen con los límites del lugar poblado'},
   {tipo:'enlace', icon:'🔗', label:'Enlace', desc:'Un texto que lleva a otra página'},
   {tipo:'redes', icon:'📱', label:'Redes sociales', desc:'WhatsApp, Instagram, TikTok, Facebook, correo…'}
 ];
-const NOMBRES_TIPO_BLOQUE = {texto:'Texto', foto:'Foto', galeria:'Galería', video:'Video', mapa:'Ubicación', enlace:'Enlace', redes:'Redes sociales'};
+const NOMBRES_TIPO_BLOQUE = {texto:'Texto', foto:'Foto', galeria:'Galería', video:'Video', mapa:'Ubicación', limites:'Mapa o croquis de límites', enlace:'Enlace', redes:'Redes sociales'};
 function crearBloqueBase(tipo){
   const base = {id:nuevoBloqueId(), tipo};
-  if(tipo==='texto'){ base.texto=''; base.tamano='normal'; base.color=''; base.negrita=false; base.cursiva=false; base.alineacion='izquierda'; }
-  if(tipo==='foto'){ base.url=''; base.caption=''; base.ajuste='recortada'; }
+  if(tipo==='texto'){ base.texto=''; base.html=''; base.tamano='normal'; base.color=''; base.negrita=false; base.cursiva=false; base.alineacion='izquierda'; }
+  if(tipo==='foto' || tipo==='limites'){ base.url=''; base.caption=tipo==='limites'?'Límites aproximados del lugar poblado':''; base.ajuste='completa'; }
   if(tipo==='galeria'){ base.fotos = []; }
   if(tipo==='video') base.url='';
   if(tipo==='mapa'){ base.url=''; base.lat=null; base.lng=null; }
@@ -1768,6 +1866,24 @@ function pintarBloquesList(){
       input.onchange = actualizar;
     }
   });
+  cont.querySelectorAll('[data-richtext]').forEach(editor=>{
+    const guardar=()=>{
+      const u=ubicarBloque(editor.dataset.richtext); if(!u) return;
+      u.bloque.html=sanitizarHTML(editor.innerHTML);
+      u.bloque.texto=editor.innerText.trim();
+    };
+    editor.oninput=guardar; editor.onblur=guardar;
+    editor.onpaste=()=>setTimeout(guardar,0);
+  });
+  cont.querySelectorAll('[data-word-toolbar] button[data-cmd]').forEach(btn=>{
+    btn.onmousedown=e=>e.preventDefault();
+    btn.onclick=()=>{
+      const editor=cont.querySelector(`[data-richtext="${btn.closest('[data-word-toolbar]').dataset.wordToolbar}"]`);
+      if(!editor) return; editor.focus();
+      document.execCommand(btn.dataset.cmd,false,btn.dataset.value||null);
+      editor.dispatchEvent(new Event('input'));
+    };
+  });
   cont.querySelectorAll('[data-quitarcolor]').forEach(btn=>{
     btn.onclick = ()=>{
       const u = ubicarBloque(btn.dataset.quitarcolor);
@@ -1890,12 +2006,17 @@ function crearMapaLeaflet(el, b, opciones){
   const capaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     attribution:'Tiles &copy; Esri', maxZoom:19
   });
+  /* referencias transparentes sobre el satélite: poblados, carreteras y límites */
+  const capaReferencias = L.layerGroup([
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {maxZoom:19}),
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {maxZoom:19})
+  ]);
   capaCalle.addTo(map);
   let capaActual = 'calle';
   function cambiarCapa(tipo){
     if(tipo===capaActual) return;
-    if(tipo==='satelite'){ map.removeLayer(capaCalle); capaSatelite.addTo(map); }
-    else{ map.removeLayer(capaSatelite); capaCalle.addTo(map); }
+    if(tipo==='satelite'){ map.removeLayer(capaCalle); capaSatelite.addTo(map); capaReferencias.addTo(map); }
+    else{ map.removeLayer(capaSatelite); map.removeLayer(capaReferencias); capaCalle.addTo(map); }
     capaActual = tipo;
   }
   function avisar(lat, lng){
@@ -1961,7 +2082,7 @@ function guardarUbicacionBloque(b, lat, lng){
 function bloqueCamposHTML(b,i){
   if(b.tipo==='texto'){
     return `
-      <p class="hint" style="margin-top:0;">Tip: para un título, usa tamaño "Grande" o "Enorme" + negrita. Para texto normal, deja "Normal" sin negrita.</p>
+      <p class="hint" style="margin-top:0;">Editor amigable estilo Word: selecciona una palabra o párrafo y usa los botones de formato.</p>
       <div class="upload-row">
         <div class="field" style="flex:1;min-width:140px;margin-bottom:0;">
           <label>Tamaño de letra</label>
@@ -1994,11 +2115,28 @@ function bloqueCamposHTML(b,i){
           <input type="checkbox" data-campo="cursiva" style="width:auto;" ${b.cursiva?'checked':''}> Cursiva
         </label>
       </div>
-      <textarea data-campo="texto" rows="4" placeholder="Escribe aquí, o pega texto copiado de Word o de un chat de IA...">${escapeHtml(b.texto||'')}</textarea>
+      <div class="word-editor">
+        <div class="word-toolbar" data-word-toolbar="${i}">
+          <button type="button" data-cmd="bold" title="Negrita"><b>N</b></button>
+          <button type="button" data-cmd="italic" title="Cursiva"><i>K</i></button>
+          <button type="button" data-cmd="underline" title="Subrayado"><u>S</u></button>
+          <button type="button" data-cmd="strikeThrough" title="Tachado"><s>abc</s></button><span class="sep"></span>
+          <button type="button" data-cmd="justifyLeft" title="Alinear izquierda">☰</button>
+          <button type="button" data-cmd="justifyCenter" title="Centrar">≡</button>
+          <button type="button" data-cmd="justifyRight" title="Alinear derecha">☷</button><span class="sep"></span>
+          <button type="button" data-cmd="insertUnorderedList" title="Lista con viñetas">• Lista</button>
+          <button type="button" data-cmd="insertOrderedList" title="Lista numerada">1. Lista</button>
+          <button type="button" data-cmd="formatBlock" data-value="h2">Título</button>
+          <button type="button" data-cmd="formatBlock" data-value="p">Párrafo</button>
+          <button type="button" data-cmd="removeFormat">Borrar formato</button>
+        </div>
+        <div class="word-page" contenteditable="true" data-richtext="${i}" data-placeholder="Escribe aquí o pega texto de Word…">${b.html ? sanitizarHTML(b.html) : escapeHtml(b.texto||'').replace(/\n/g,'<br>')}</div>
+      </div>
     `;
   }
-  if(b.tipo==='foto'){
+  if(b.tipo==='foto' || b.tipo==='limites'){
     return `
+      ${b.tipo==='limites'?'<div class="msg" style="margin-top:0">🧭 Usa preferiblemente un mapa oficial, croquis comunitario o imagen donde se identifique claramente dónde comienza y termina el sector. Indica la fuente.</div>':''}
       ${b.url ? `<img class="foto-preview" src="${escapeHtml(b.url)}">` : ''}
       <div class="upload-row">
         <input type="file" accept="image/*" data-subirfoto="${i}">
@@ -2238,6 +2376,7 @@ function renderAdmin(){
       <button data-tab="salones" class="${adminTab==='salones'?'active':''}">🏫 Salones y estudiantes</button>
       <button data-tab="tareas" class="${adminTab==='tareas'?'active':''}">🎯 Tareas individuales</button>
       <button data-tab="paginas" class="${adminTab==='paginas'?'active':''}">🎨 Páginas</button>
+      <button data-tab="donantes" class="${adminTab==='donantes'?'active':''}">🎁 Donantes</button>
       <button data-tab="mensajes" class="${adminTab==='mensajes'?'active':''}">✉️ Mensajes</button>
       <button data-tab="respaldos" class="${adminTab==='respaldos'?'active':''}">🗄️ Respaldos y papelera</button>
     </div>
@@ -2250,8 +2389,45 @@ function renderAdmin(){
   else if(adminTab==='salones') renderAdminSalones();
   else if(adminTab==='tareas') renderAdminTareas();
   else if(adminTab==='paginas') renderAdminPaginas();
+  else if(adminTab==='donantes') renderAdminDonantes();
   else if(adminTab==='mensajes') renderAdminMensajes();
   else renderAdminRespaldos();
+}
+
+/* =====================  DONANTES, CERTIFICADOS Y RECIBOS  ===================== */
+const DONANTES_KEY='buenavistac3_donantes_v1';
+function leerDonantes(){ try{return JSON.parse(localStorage.getItem(DONANTES_KEY)||'[]');}catch(e){return [];} }
+function guardarDonantes(lista){ localStorage.setItem(DONANTES_KEY,JSON.stringify(lista)); }
+function fechaBonita(fecha){ return new Date(fecha+'T12:00:00').toLocaleDateString('es-PA',{day:'numeric',month:'long',year:'numeric'}); }
+function abrirDocumentoDonante(d,tipo){
+  const esCert=tipo==='certificado';
+  const cuerpo=esCert ? `
+    <div class="cert"><div class="orn">✦</div><h1>CERTIFICADO DE AGRADECIMIENTO</h1><h3>C.E.B.G. EL JIRAL</h3>
+    <p>Otorga el presente reconocimiento a</p><div class="nombre">${escapeHtml(d.nombre)}</div>
+    <p>por su valioso aporte de <b>B/.${Number(d.monto).toFixed(2)}</b> en apoyo al proyecto de la página web <b>Mi Comunidad BuenaVistaC3</b>, realizada por los estudiantes de los grupos <b>8.º A, 8.º B, 9.º A, 9.º B y 9.º C</b>.</p>
+    <p>Su colaboración fortalece la educación, la identidad y la participación de nuestra comunidad.</p>
+    <div class="fecha">Buena Vista, ${fechaBonita(d.fecha)}</div><div class="firmas"><span>________________________<br>Firma autorizada</span><span>________________________<br>Prof. Samuel Ortega<br>Coordinador del proyecto</span></div></div>` : `
+    <div class="rec"><h1>RECIBO DE DINERO RECIBIDO</h1><h3>C.E.B.G. EL JIRAL — Proyecto BuenaVistaC3</h3>
+    <div class="numero">RECIBO N.º ${String(d.numero).padStart(5,'0')}</div><p><b>Fecha:</b> ${fechaBonita(d.fecha)}</p>
+    <p>Recibimos de: <span>${escapeHtml(d.nombre)}</span></p><p>La suma de: <span>B/.${Number(d.monto).toFixed(2)}</span></p>
+    <p>En concepto de: <span>Donación en apoyo al proyecto de la página web Mi Comunidad BuenaVistaC3.</span></p>
+    ${d.nota?`<p><b>Observación:</b> ${escapeHtml(d.nota)}</p>`:''}<div class="firmas"><span>________________________<br>Entregado por</span><span>________________________<br>Recibido por</span></div></div>`;
+  const w=window.open('','_blank'); if(!w){alert('Permite las ventanas emergentes para generar el documento.');return;}
+  w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esCert?'Certificado':'Recibo'} - ${escapeHtml(d.nombre)}</title><style>@page{size:${esCert?'landscape':'portrait'};margin:12mm}body{font-family:Arial;color:#203329;margin:0}.cert,.rec{border:10px double #c98a2c;padding:34px 48px;text-align:center;min-height:620px;box-sizing:border-box;background:#fffdf8}.rec{text-align:left;max-width:780px;margin:auto;min-height:800px}.cert h1,.rec h1{font-family:Georgia;color:#2f4a3c;letter-spacing:2px}.cert h1{font-size:36px}.orn{font-size:42px;color:#c98a2c}.nombre{font-family:Georgia;font-size:34px;font-weight:bold;color:#a6533a;border-bottom:2px solid #c98a2c;padding:12px;margin:10px auto 24px;max-width:680px}.cert p{font-size:19px;line-height:1.55}.fecha{margin-top:28px}.firmas{display:flex;justify-content:space-around;text-align:center;margin-top:70px;gap:40px}.numero{text-align:right;font-weight:bold;color:#a6533a}.rec p{font-size:18px;margin:34px 0}.rec p span{display:inline-block;border-bottom:1px solid #333;min-width:60%;padding:0 8px 5px}@media print{button{display:none}}</style></head><body>${cuerpo}<script>setTimeout(()=>window.print(),400)<\/script></body></html>`); w.document.close();
+}
+function renderAdminDonantes(){
+  const body=document.getElementById('adminBody'); const lista=leerDonantes();
+  body.innerHTML=`<h3>🎁 Registro de donantes</h3><p class="section-desc">Registra el aporte y genera automáticamente el certificado de agradecimiento y el recibo.</p>
+    <div class="donor-grid">${[50,25,5].map((m,i)=>`<button type="button" class="donor-tier ${i===0?'selected':''}" data-monto="${m}"><span>${i===0?'🏆':'💛'}</span><strong>B/.${m.toFixed(2)}</strong><small>Categoría de donación</small></button>`).join('')}</div>
+    <div class="card"><div class="field"><label>Nombre del donante o empresa</label><input id="donNombre" placeholder="Nombre completo o razón social"></div>
+    <div class="upload-row"><div class="field" style="flex:1"><label>Monto</label><input id="donMonto" type="number" min="0" step="0.01" value="50.00"></div><div class="field" style="flex:1"><label>Fecha</label><input id="donFecha" type="date" value="${new Date().toISOString().slice(0,10)}"></div></div>
+    <div class="field"><label>Observación (opcional)</label><input id="donNota" placeholder="Ej. Donación de la empresa"></div><button class="btn gold" id="donGuardar">Guardar y generar documentos</button><div id="donMsg"></div></div>
+    <h3 style="margin-top:1.5em">Donaciones registradas</h3><div id="donLista">${lista.length?lista.map(d=>`<div class="donor-list-item"><div><strong>${escapeHtml(d.nombre)}</strong><br><small>B/.${Number(d.monto).toFixed(2)} · ${fechaBonita(d.fecha)} · Recibo N.º ${String(d.numero).padStart(5,'0')}</small></div><div class="row-actions"><button class="btn small outline" data-cert="${d.id}">🎓 Certificado</button><button class="btn small outline" data-rec="${d.id}">🧾 Recibo</button><button class="btn small danger" data-dondel="${d.id}">🗑️</button></div></div>`).join(''):'<div class="empty">Todavía no hay donaciones registradas.</div>'}</div>`;
+  body.querySelectorAll('[data-monto]').forEach(b=>b.onclick=()=>{body.querySelectorAll('[data-monto]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');document.getElementById('donMonto').value=Number(b.dataset.monto).toFixed(2);});
+  document.getElementById('donGuardar').onclick=()=>{const nombre=document.getElementById('donNombre').value.trim(),monto=+document.getElementById('donMonto').value,fecha=document.getElementById('donFecha').value;if(!nombre||!monto||!fecha){document.getElementById('donMsg').innerHTML='<div class="msg error">Completa el nombre, monto y fecha.</div>';return;}const actual=leerDonantes();const d={id:Date.now().toString(36),numero:(actual.reduce((n,x)=>Math.max(n,+x.numero||0),0)+1),nombre,monto,fecha,nota:document.getElementById('donNota').value.trim()};actual.unshift(d);guardarDonantes(actual);abrirDocumentoDonante(d,'certificado');setTimeout(()=>renderAdminDonantes(),300);};
+  body.querySelectorAll('[data-cert]').forEach(b=>b.onclick=()=>abrirDocumentoDonante(lista.find(x=>x.id===b.dataset.cert),'certificado'));
+  body.querySelectorAll('[data-rec]').forEach(b=>b.onclick=()=>abrirDocumentoDonante(lista.find(x=>x.id===b.dataset.rec),'recibo'));
+  body.querySelectorAll('[data-dondel]').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar este registro?')){guardarDonantes(lista.filter(x=>x.id!==b.dataset.dondel));renderAdminDonantes();}});
 }
 
 /* =====================  EDITOR VISUAL DE PÁGINAS  ===================== */
