@@ -589,6 +589,15 @@
   </div>
 </div>
 
+<!-- ✨ Mejorar con IA -->
+<div class="modal-overlay" id="iaModal">
+  <div class="modal" style="max-width:560px;">
+    <button class="modal-close" data-close="iaModal">×</button>
+    <h3>✨ Mejorar con IA</h3>
+    <div id="iaBody">Pensando…</div>
+  </div>
+</div>
+
 <!-- Editor visual de páginas: elegir columnas al agregar sección -->
 <div class="modal-overlay" id="pgColModal">
   <div class="modal">
@@ -1109,12 +1118,21 @@ function bloqueHTML(b){
   }
   if(b.tipo==='foto'){
     if(!b.url) return '';
-    const media = b.ancho==='media';
     const contain = b.ajuste==='completa';
-    return `<figure style="margin:0 0 1em;${media?'width:48%;display:inline-block;vertical-align:top;':'width:100%;'}${media?'margin-right:2%;':''}">
+    return `<figure style="margin:0 0 1em;width:100%;">
       ${b.caption ? `<figcaption style="font-weight:700;color:var(--forest-dark);margin-bottom:.3em;">${escapeHtml(b.caption)}</figcaption>` : ''}
       <img src="${escapeHtml(b.url)}" alt="${escapeHtml(b.caption||'')}" style="width:100%;${contain?'height:260px;object-fit:contain;background:var(--parchment-2);':'object-fit:cover;'}border-radius:4px;display:block;">
     </figure>`;
+  }
+  if(b.tipo==='galeria'){
+    if(!b.fotos || !b.fotos.length) return '';
+    return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.5em;margin-bottom:1em;">
+      ${b.fotos.map(f=>`<img src="${escapeHtml(f.url)}" style="width:100%;height:110px;object-fit:cover;border-radius:4px;">`).join('')}
+    </div>`;
+  }
+  if(b.tipo==='enlace'){
+    if(!b.url) return '';
+    return `<p style="margin:0 0 1em;"><a href="${escapeHtml(b.url)}" target="_blank" rel="noopener" style="color:var(--sky);font-weight:700;">🔗 ${escapeHtml(b.texto||b.url)}</a></p>`;
   }
   if(b.tipo==='video'){
     if(!b.url) return '';
@@ -1150,7 +1168,14 @@ function bloqueHTML(b){
 }
 function renderBloquesHTML(bloques){
   if(!bloques || !bloques.length) return '';
-  return `<div class="bloques-vista">${bloques.map(bloqueHTML).join('')}</div>`;
+  return `<div class="bloques-vista">${bloques.map(b=>{
+    const html = bloqueHTML(b);
+    if(!html) return '';
+    if(b.ancho==='media'){
+      return `<div style="width:48%;display:inline-block;vertical-align:top;margin-right:2%;">${html}</div>`;
+    }
+    return html;
+  }).join('')}</div>`;
 }
 
 /* =====================  VISTA: SECCIÓN  ===================== */
@@ -1222,18 +1247,22 @@ let miTareaModo = 'editar'; // 'editar' | 'vista'
 function nuevoBloqueId(){ return 'b'+Math.random().toString(36).slice(2,10); }
 
 const TIPOS_BLOQUE = [
-  {tipo:'texto', icon:'📝', label:'Texto', desc:'Un párrafo o un título'},
+  {tipo:'texto', icon:'📝', label:'Texto / Título', desc:'Un párrafo, o un título si usas letra grande'},
   {tipo:'foto', icon:'🖼️', label:'Foto', desc:'Sube una imagen o pega un enlace'},
+  {tipo:'galeria', icon:'🖼️', label:'Galería', desc:'Varias fotos juntas en cuadrícula'},
   {tipo:'video', icon:'🎬', label:'Video', desc:'YouTube o archivo de video'},
   {tipo:'mapa', icon:'📍', label:'Ubicación', desc:'Selecciona el lugar en el mapa'},
-  {tipo:'redes', icon:'🔗', label:'Redes sociales', desc:'WhatsApp, Instagram, TikTok, correo…'}
+  {tipo:'enlace', icon:'🔗', label:'Enlace', desc:'Un texto que lleva a otra página'},
+  {tipo:'redes', icon:'📱', label:'Redes sociales', desc:'WhatsApp, Instagram, TikTok, Facebook, correo…'}
 ];
 function crearBloqueBase(tipo){
-  const base = {id:nuevoBloqueId(), tipo};
+  const base = {id:nuevoBloqueId(), tipo, ancho:'completa'};
   if(tipo==='texto'){ base.texto=''; base.tamano='normal'; base.color=''; base.negrita=false; base.cursiva=false; base.alineacion='izquierda'; }
-  if(tipo==='foto'){ base.url=''; base.caption=''; base.ancho='completa'; base.ajuste='recortada'; }
+  if(tipo==='foto'){ base.url=''; base.caption=''; base.ajuste='recortada'; }
+  if(tipo==='galeria'){ base.fotos = []; }
   if(tipo==='video') base.url='';
   if(tipo==='mapa'){ base.url=''; base.lat=null; base.lng=null; }
+  if(tipo==='enlace'){ base.texto=''; base.url=''; }
   if(tipo==='redes'){ base.whatsapp=''; base.instagram=''; base.tiktok=''; base.facebook=''; base.telegram=''; base.youtube=''; base.correo=''; }
   return base;
 }
@@ -1308,10 +1337,12 @@ function pintarMiTarea(){
   }
   body.innerHTML = `
     <div id="bloquesList"></div>
+    <p class="hint" style="margin-top:0;">Tip: en cada bloque puedes elegir "Dos columnas" en "Columnas" para acomodar dos cosas una junto a la otra (por ejemplo, dos fotos, o una foto y un texto).</p>
     <div class="row-actions" style="margin:1em 0 1.6em;">
       <button class="btn gold" id="abrirPickerFinal" type="button">＋ Agregar contenido</button>
     </div>
     <div class="row-actions">
+      <button class="btn outline" id="mejorarIABtn" type="button">✨ Mejorar con IA</button>
       <button class="btn outline" id="guardarBorradorBtn">💾 Guardar borrador</button>
       <button class="btn gold" id="enviarRevisionBtn">📩 Enviar para revisión</button>
       ${session.tarea && session.tarea.id ? `<button class="btn outline" id="verHistorialBtn">🕓 Historial de versiones</button>` : ''}
@@ -1346,6 +1377,7 @@ function pintarMiTarea(){
   });
   document.getElementById('guardarBorradorBtn').onclick = ()=> guardarMiTarea(false);
   document.getElementById('enviarRevisionBtn').onclick = ()=> guardarMiTarea(true);
+  document.getElementById('mejorarIABtn').onclick = abrirMejorarIA;
   const histBtn = document.getElementById('verHistorialBtn');
   if(histBtn) histBtn.onclick = ()=> abrirHistorial(session.tarea.id, renderMiTarea);
 }
@@ -1353,7 +1385,7 @@ function pintarMiTarea(){
 function pintarBloquesList(){
   const cont = document.getElementById('bloquesList');
   if(!cont) return;
-  const nombresTipo = {texto:'Texto', foto:'Foto', video:'Video', mapa:'Ubicación', redes:'Redes sociales'};
+  const nombresTipo = {texto:'Texto', foto:'Foto', galeria:'Galería', video:'Video', mapa:'Ubicación', enlace:'Enlace', redes:'Redes sociales'};
   const insertBtnHTML = idx => `<div class="bloque-insert"><button type="button" data-insert="${idx}">＋ Insertar aquí</button></div>`;
   cont.innerHTML = miTareaBloques.length ? (
     insertBtnHTML(0) + miTareaBloques.map((b,i)=>`
@@ -1365,6 +1397,13 @@ function pintarBloquesList(){
             <button data-bajar="${i}" title="Mover abajo" ${i===miTareaBloques.length-1?'disabled':''}>▼</button>
             <button data-borrar="${i}" title="Eliminar">🗑️</button>
           </div>
+        </div>
+        <div class="field" style="max-width:280px;margin-bottom:.8em;">
+          <label>Columnas</label>
+          <select data-campo="ancho">
+            <option value="completa" ${!b.ancho||b.ancho==='completa'?'selected':''}>Una columna (ancho completo)</option>
+            <option value="media" ${b.ancho==='media'?'selected':''}>Dos columnas (mitad — se acomoda junto al siguiente)</option>
+          </select>
         </div>
         ${bloqueCamposHTML(b,i)}
       </div>
@@ -1409,6 +1448,34 @@ function pintarBloquesList(){
       if(error){ if(statusEl) statusEl.textContent = 'No se pudo subir: '+error.message; return; }
       const { data: pub } = db.storage.from('bv-media').getPublicUrl(path);
       miTareaBloques[i].url = pub.publicUrl;
+      pintarBloquesList();
+    };
+  });
+  cont.querySelectorAll('[data-subirgaleria]').forEach(input=>{
+    input.onchange = async ()=>{
+      const i = +input.dataset.subirgaleria;
+      const files = Array.from(input.files||[]);
+      if(!files.length) return;
+      const cardEl = input.closest('.bloque-editor');
+      const statusEl = cardEl.querySelector('.foto-status');
+      for(let idx=0; idx<files.length; idx++){
+        const file = files[idx];
+        if(statusEl) statusEl.textContent = `Subiendo ${idx+1} de ${files.length}…`;
+        const path = `tarea-${session.id}-${Date.now()}-${idx}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,'')}`;
+        const {error} = await db.storage.from('bv-media').upload(path, file);
+        if(error) continue;
+        const {data: pub} = db.storage.from('bv-media').getPublicUrl(path);
+        miTareaBloques[i].fotos.push({url: pub.publicUrl});
+      }
+      if(statusEl) statusEl.textContent = '';
+      pintarBloquesList();
+    };
+  });
+  cont.querySelectorAll('[data-galeria-del]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const i = +btn.dataset.galeriaDel;
+      const fi = +btn.dataset.galeriaFi;
+      miTareaBloques[i].fotos.splice(fi,1);
       pintarBloquesList();
     };
   });
@@ -1537,22 +1604,24 @@ function bloqueCamposHTML(b,i){
       </div>
       <div class="field"><label>O pega el enlace de una foto</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="https://..."></div>
       <div class="field"><label>Título de la foto (opcional)</label><input data-campo="caption" value="${escapeHtml(b.caption||'')}" placeholder="Ej. Entrada de la escuela"></div>
-      <div class="upload-row">
-        <div class="field" style="flex:1;min-width:160px;margin-bottom:0;">
-          <label>Ancho</label>
-          <select data-campo="ancho">
-            <option value="completa" ${!b.ancho||b.ancho==='completa'?'selected':''}>Una columna (foto completa)</option>
-            <option value="media" ${b.ancho==='media'?'selected':''}>Dos columnas (media foto)</option>
-          </select>
-        </div>
-        <div class="field" style="flex:1;min-width:160px;margin-bottom:0;">
-          <label>Cómo se ve</label>
-          <select data-campo="ajuste">
-            <option value="recortada" ${!b.ajuste||b.ajuste==='recortada'?'selected':''}>Recortada (rellena el espacio)</option>
-            <option value="completa" ${b.ajuste==='completa'?'selected':''}>Completa (se ve toda la foto)</option>
-          </select>
-        </div>
+      <div class="field" style="max-width:260px;margin-bottom:0;">
+        <label>Cómo se ve</label>
+        <select data-campo="ajuste">
+          <option value="recortada" ${!b.ajuste||b.ajuste==='recortada'?'selected':''}>Recortada (rellena el espacio)</option>
+          <option value="completa" ${b.ajuste==='completa'?'selected':''}>Completa (se ve toda la foto)</option>
+        </select>
       </div>
+    `;
+  }
+  if(b.tipo==='galeria'){
+    return `
+      <div class="upload-row">
+        <input type="file" accept="image/*" multiple data-subirgaleria="${i}">
+        <span class="foto-status hint" style="margin:0;"></span>
+      </div>
+      ${b.fotos && b.fotos.length ? `<div class="pg-galeria-grid">${b.fotos.map((f,fi)=>`
+        <div class="pg-galeria-item"><img src="${escapeHtml(f.url)}"><button type="button" data-galeria-del="${i}" data-galeria-fi="${fi}" title="Quitar">✕</button></div>
+      `).join('')}</div>` : `<p class="hint" style="margin:0;">Todavía no has agregado fotos. Puedes elegir varias a la vez.</p>`}
     `;
   }
   if(b.tipo==='video'){
@@ -1568,6 +1637,12 @@ function bloqueCamposHTML(b,i){
       <div class="mapa-lienzo" id="mapaLienzo-${b.id}"></div>
       <p class="hint mapa-coords" id="mapaCoords-${b.id}">${b.lat!=null ? `📍 Ubicación seleccionada (${(+b.lat).toFixed(5)}, ${(+b.lng).toFixed(5)})` : 'Todavía no has marcado un lugar.'}</p>
       <div class="field" style="margin-bottom:0;"><label>O pega el enlace de Google Maps (opcional)</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="Pega aquí el enlace de Google Maps"></div>
+    `;
+  }
+  if(b.tipo==='enlace'){
+    return `
+      <div class="field"><label>Texto del enlace</label><input data-campo="texto" value="${escapeHtml(b.texto||'')}" placeholder="Ej. Ver más información"></div>
+      <div class="field" style="margin-bottom:0;"><label>Enlace (URL)</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="https://..."></div>
     `;
   }
   if(b.tipo==='redes'){
@@ -1600,6 +1675,61 @@ async function guardarMiTarea(enviar){
   if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
   msg.innerHTML = `<div class="msg ok">${enviar ? '✅ Enviado para revisión.' : '💾 Borrador guardado.'} Puedes seguir editando cuando quieras.</div>`;
   renderMiTarea();
+}
+
+/* ---- ✨ Mejorar con IA ----
+   Envía el texto que ya escribió el estudiante a una función de Supabase
+   (Edge Function "mejorar-texto") que llama a la IA de forma segura desde
+   el servidor. El estudiante revisa la sugerencia y decide si la usa;
+   nada se aplica automáticamente. */
+async function abrirMejorarIA(){
+  const textoActual = miTareaBloques.filter(b=>b.tipo==='texto').map(b=>b.texto).filter(Boolean).join('\n\n');
+  if(!textoActual.trim()){
+    alert('Primero escribe algo de texto en tu tarea. La IA mejora lo que ya escribiste, no lo inventa desde cero.');
+    return;
+  }
+  const seccionNombre = (SECTIONS.find(s=>s.id===(session.tarea?session.tarea.seccion_id:'')) || {}).name || '';
+  openModal('iaModal');
+  const body = document.getElementById('iaBody');
+  body.innerHTML = '<div class="msg">✨ Pensando… esto puede tardar unos segundos.</div>';
+  try{
+    const {data, error} = await db.functions.invoke('mejorar-texto', {
+      body: { texto: textoActual, seccion: seccionNombre }
+    });
+    if(error) throw error;
+    if(!data || !data.texto_mejorado) throw new Error('La IA no devolvió una respuesta válida.');
+    body.innerHTML = `
+      <p class="hint" style="margin-top:0;">Esto es lo que sugiere la IA. Revísalo, cámbialo si quieres, y decide si lo usas — todavía no se ha aplicado nada.</p>
+      ${data.titulo_sugerido ? `<div class="field"><label>Título sugerido</label><input id="iaTituloSugerido" value="${escapeHtml(data.titulo_sugerido)}"></div>` : ''}
+      <div class="field" style="margin-bottom:.4em;"><label>Texto mejorado</label><textarea id="iaTextoSugerido" rows="8">${escapeHtml(data.texto_mejorado)}</textarea></div>
+      <div class="row-actions">
+        <button class="btn gold" id="iaAplicarBtn" type="button">✅ Usar este texto</button>
+        <button class="btn outline" type="button" onclick="closeModal('iaModal')">Descartar</button>
+      </div>
+    `;
+    document.getElementById('iaAplicarBtn').onclick = ()=>{
+      const nuevoTexto = document.getElementById('iaTextoSugerido').value;
+      const campoTitulo = document.getElementById('iaTituloSugerido');
+      const nuevoTitulo = campoTitulo ? campoTitulo.value.trim() : '';
+      const primerTexto = miTareaBloques.find(b=>b.tipo==='texto');
+      if(primerTexto){ primerTexto.texto = nuevoTexto; }
+      else{ const nb = crearBloqueBase('texto'); nb.texto = nuevoTexto; miTareaBloques.push(nb); }
+      const yaHayTitulo = miTareaBloques[0] && miTareaBloques[0].tipo==='texto' && (miTareaBloques[0].tamano==='enorme' || miTareaBloques[0].tamano==='grande');
+      if(nuevoTitulo && !yaHayTitulo){
+        const tb = crearBloqueBase('texto');
+        tb.texto = nuevoTitulo; tb.tamano = 'enorme'; tb.negrita = true;
+        miTareaBloques.unshift(tb);
+      }
+      closeModal('iaModal');
+      pintarBloquesList();
+    };
+  }catch(e){
+    body.innerHTML = `
+      <div class="msg error">No se pudo conectar con la IA (${escapeHtml((e&&e.message)||'error desconocido')}).</div>
+      <p class="hint">Si eres el profesor: esta función necesita que se despliegue "mejorar-texto" como Edge Function en Supabase. Mientras tanto puedes seguir escribiendo y guardando tu tarea normalmente.</p>
+      <div class="row-actions"><button class="btn outline" type="button" onclick="closeModal('iaModal')">Cerrar</button></div>
+    `;
+  }
 }
 
 
