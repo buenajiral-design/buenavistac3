@@ -340,6 +340,10 @@
     background:var(--parchment-2);border:none;border-radius:4px;width:1.8em;height:1.8em;font-size:.85rem;
   }
   .bloque-editor .bloque-tools button:hover{background:var(--parchment);}
+  .bloque-fila{display:flex;gap:1em;align-items:flex-start;}
+  .bloque-fila .bloque-editor{flex:1 1 0;min-width:0;}
+  .bloque-editor.media-col{border-left:3px solid var(--gold);}
+  @media(max-width:640px){ .bloque-fila{flex-direction:column;} }
   .add-bloque-bar{display:flex;flex-wrap:wrap;gap:.5em;margin:1em 0 1.6em;}
   .add-bloque-bar button{
     background:var(--white);border:1.5px dashed var(--gold);color:var(--gold-dark);
@@ -349,6 +353,19 @@
   .foto-preview{width:100%;max-height:220px;object-fit:cover;border-radius:4px;margin-bottom:.6em;display:block;}
   .upload-row{display:flex;gap:.6em;align-items:center;flex-wrap:wrap;margin-bottom:.6em;}
   .upload-row input[type="file"]{width:auto;flex:1;min-width:160px;}
+
+  /* ---------- cuadro simbólico (esquema en vivo del orden/columnas) ---------- */
+  .esquema-box{background:var(--parchment-2);border:1px solid var(--line);border-radius:8px;padding:.9em 1em .3em;margin-bottom:1.2em;}
+  .esquema-title{font-size:.78rem;font-weight:700;color:#6b6152;margin-bottom:.6em;letter-spacing:.02em;}
+  .esquema-tira{line-height:0;}
+  .esquema-caja{
+    display:inline-block;vertical-align:top;box-sizing:border-box;
+    height:52px;line-height:1.25;border-radius:6px;margin:0 2% 8px 0;
+    color:#fff;font-weight:700;font-size:.72rem;text-align:center;
+    padding-top:8px;cursor:pointer;opacity:.92;transition:opacity .12s ease, transform .12s ease;
+  }
+  .esquema-caja:hover{opacity:1;transform:translateY(-1px);}
+  .esquema-caja .esq-icon{display:block;font-size:1.05rem;margin-bottom:1px;line-height:1;}
 
   /* ---------- panel lateral: elegir qué agregar ---------- */
   .bloque-picker-overlay{position:fixed;inset:0;background:rgba(20,16,10,.45);z-index:70;display:none;}
@@ -1255,6 +1272,16 @@ const TIPOS_BLOQUE = [
   {tipo:'enlace', icon:'🔗', label:'Enlace', desc:'Un texto que lleva a otra página'},
   {tipo:'redes', icon:'📱', label:'Redes sociales', desc:'WhatsApp, Instagram, TikTok, Facebook, correo…'}
 ];
+const NOMBRES_TIPO_BLOQUE = {texto:'Texto', foto:'Foto', galeria:'Galería', video:'Video', mapa:'Ubicación', enlace:'Enlace', redes:'Redes sociales'};
+const ESQUEMA_TIPO_INFO = {
+  texto:{icon:'📝', color:'#4C7A93'},
+  foto:{icon:'🖼️', color:'#C98A2C'},
+  galeria:{icon:'🖼️', color:'#a86f1e'},
+  video:{icon:'🎬', color:'#A6533A'},
+  mapa:{icon:'📍', color:'#2F4A3C'},
+  enlace:{icon:'🔗', color:'#5c4a33'},
+  redes:{icon:'📱', color:'#203329'}
+};
 function crearBloqueBase(tipo){
   const base = {id:nuevoBloqueId(), tipo, ancho:'completa'};
   if(tipo==='texto'){ base.texto=''; base.tamano='normal'; base.color=''; base.negrita=false; base.cursiva=false; base.alineacion='izquierda'; }
@@ -1336,6 +1363,7 @@ function pintarMiTarea(){
     return;
   }
   body.innerHTML = `
+    <div id="bloquesEsquema"></div>
     <div id="bloquesList"></div>
     <p class="hint" style="margin-top:0;">Tip: en cada bloque puedes elegir "Dos columnas" en "Columnas" para acomodar dos cosas una junto a la otra (por ejemplo, dos fotos, o una foto y un texto).</p>
     <div class="row-actions" style="margin:1em 0 1.6em;">
@@ -1385,31 +1413,50 @@ function pintarMiTarea(){
 function pintarBloquesList(){
   const cont = document.getElementById('bloquesList');
   if(!cont) return;
-  const nombresTipo = {texto:'Texto', foto:'Foto', galeria:'Galería', video:'Video', mapa:'Ubicación', enlace:'Enlace', redes:'Redes sociales'};
+  const nombresTipo = NOMBRES_TIPO_BLOQUE;
   const insertBtnHTML = idx => `<div class="bloque-insert"><button type="button" data-insert="${idx}">＋ Insertar aquí</button></div>`;
-  cont.innerHTML = miTareaBloques.length ? (
-    insertBtnHTML(0) + miTareaBloques.map((b,i)=>`
-      <div class="bloque-editor" data-i="${i}">
-        <div class="bloque-top">
-          <span class="bloque-tipo">${nombresTipo[b.tipo]||b.tipo}</span>
-          <div class="bloque-tools">
-            <button data-subir="${i}" title="Mover arriba" ${i===0?'disabled':''}>▲</button>
-            <button data-bajar="${i}" title="Mover abajo" ${i===miTareaBloques.length-1?'disabled':''}>▼</button>
-            <button data-borrar="${i}" title="Eliminar">🗑️</button>
-          </div>
+  const bloqueCardHTML = (b,i) => `
+    <div class="bloque-editor${b.ancho==='media'?' media-col':''}" data-i="${i}">
+      <div class="bloque-top">
+        <span class="bloque-tipo">${nombresTipo[b.tipo]||b.tipo}</span>
+        <div class="bloque-tools">
+          <button data-subir="${i}" title="Mover arriba" ${i===0?'disabled':''}>▲</button>
+          <button data-bajar="${i}" title="Mover abajo" ${i===miTareaBloques.length-1?'disabled':''}>▼</button>
+          <button data-borrar="${i}" title="Eliminar">🗑️</button>
         </div>
-        <div class="field" style="max-width:280px;margin-bottom:.8em;">
-          <label>Columnas</label>
-          <select data-campo="ancho">
-            <option value="completa" ${!b.ancho||b.ancho==='completa'?'selected':''}>Una columna (ancho completo)</option>
-            <option value="media" ${b.ancho==='media'?'selected':''}>Dos columnas (mitad — se acomoda junto al siguiente)</option>
-          </select>
-        </div>
-        ${bloqueCamposHTML(b,i)}
       </div>
-      ${insertBtnHTML(i+1)}
-    `).join('')
-  ) : `<div class="empty">Usa el botón "＋ Agregar contenido" de abajo para agregar tu primer bloque.</div>`;
+      <div class="field" style="max-width:280px;margin-bottom:.8em;">
+        <label>Columnas</label>
+        <select data-campo="ancho">
+          <option value="completa" ${!b.ancho||b.ancho==='completa'?'selected':''}>Una columna (ancho completo)</option>
+          <option value="media" ${b.ancho==='media'?'selected':''}>Dos columnas (mitad — junto al siguiente)</option>
+        </select>
+      </div>
+      ${bloqueCamposHTML(b,i)}
+    </div>
+  `;
+
+  if(!miTareaBloques.length){
+    cont.innerHTML = `<div class="empty">Usa el botón "＋ Agregar contenido" de abajo para agregar tu primer bloque.</div>`;
+  }else{
+    let html = insertBtnHTML(0);
+    let i = 0;
+    while(i < miTareaBloques.length){
+      const b = miTareaBloques[i];
+      const sig = miTareaBloques[i+1];
+      if(b.ancho==='media' && sig && sig.ancho==='media'){
+        // dos bloques marcados "Dos columnas", uno junto al otro, ambos editables ahí mismo
+        html += `<div class="bloque-fila">${bloqueCardHTML(b,i)}${bloqueCardHTML(sig,i+1)}</div>`;
+        html += insertBtnHTML(i+2);
+        i += 2;
+      }else{
+        html += bloqueCardHTML(b,i);
+        html += insertBtnHTML(i+1);
+        i += 1;
+      }
+    }
+    cont.innerHTML = html;
+  }
 
   cont.querySelectorAll('[data-insert]').forEach(b=> b.onclick = ()=> abrirPickerBloque(+b.dataset.insert));
   cont.querySelectorAll('[data-subir]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.subir; [miTareaBloques[i-1],miTareaBloques[i]]=[miTareaBloques[i],miTareaBloques[i-1]]; pintarBloquesList(); });
@@ -1514,6 +1561,35 @@ function pintarBloquesList(){
         e.preventDefault();
         cont.querySelector(`[data-buscarmapa-btn="${input.dataset.buscarmapa}"]`)?.click();
       }
+    };
+  });
+
+  pintarEsquemaBloques();
+}
+
+/* ---- cuadro simbólico: muestra de un vistazo cómo van quedando el orden y las columnas ---- */
+function pintarEsquemaBloques(){
+  const cont = document.getElementById('bloquesEsquema');
+  if(!cont) return;
+  if(!miTareaBloques.length){ cont.innerHTML = ''; return; }
+  cont.innerHTML = `
+    <div class="esquema-box">
+      <div class="esquema-title">👁️ Así va quedando el orden y las columnas:</div>
+      <div class="esquema-tira">
+        ${miTareaBloques.map((b,i)=>{
+          const info = ESQUEMA_TIPO_INFO[b.tipo] || {icon:'▫️', color:'#8a7f6e'};
+          const media = b.ancho==='media';
+          return `<div class="esquema-caja" data-esquema-i="${i}" style="width:${media?'48%':'100%'};background:${info.color};" title="${NOMBRES_TIPO_BLOQUE[b.tipo]||b.tipo}">
+            <span class="esq-icon">${info.icon}</span>${NOMBRES_TIPO_BLOQUE[b.tipo]||b.tipo}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+  cont.querySelectorAll('[data-esquema-i]').forEach(el=>{
+    el.onclick = ()=>{
+      const target = document.querySelector(`.bloque-editor[data-i="${el.dataset.esquemaI}"]`);
+      if(target) target.scrollIntoView({behavior:'smooth', block:'center'});
     };
   });
 }
