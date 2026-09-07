@@ -1632,7 +1632,7 @@ function renderMapaGeneral(id, publicaciones){
     if(estado) estado.textContent='El mapa se llenará automáticamente cuando se publiquen páginas con una ubicación marcada.';
     return;
   }
-  const map=L.map(el,{scrollWheelZoom:false}).setView([9.2,-79.8],11);
+  const map=L.map(el,{scrollWheelZoom:false}).setView([9.273936,-79.695537],14);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; colaboradores de OpenStreetMap',maxZoom:19}).addTo(map);
   const limites=[];
   puntos.forEach(p=>{
@@ -2269,8 +2269,8 @@ let mapaLeaflets = {};
 function crearMapaLeaflet(el, b, opciones){
   opciones = opciones || {};
   const tieneUbicacion = b.lat!=null && b.lng!=null;
-  const startLat = tieneUbicacion ? b.lat : 8.4;   // centro aproximado de Panamá
-  const startLng = tieneUbicacion ? b.lng : -80.6;
+  const startLat = tieneUbicacion ? b.lat : 9.273936;   // Buena Vista / punto inicial solicitado
+  const startLng = tieneUbicacion ? b.lng : -79.695537;
   const map = L.map(el, {
     scrollWheelZoom: !!opciones.scrollWheelZoom,
     wheelDebounceTime:25,
@@ -2369,7 +2369,7 @@ function cerrarMapaFullscreen(){
 }
 function guardarUbicacionBloque(b, lat, lng){
   b.lat = lat; b.lng = lng;
-  b.url = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+  b.url = `https://www.google.com/maps?q=${lat},${lng}&z=18&output=embed`;
   const coordsEl = document.getElementById('mapaCoords-'+b.id);
   if(coordsEl) coordsEl.textContent = `📍 Ubicación seleccionada (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
   const editorEl = document.querySelector(`.bloque-editor[data-blockid="${b.id}"] input[data-campo="url"]`);
@@ -2466,7 +2466,7 @@ function bloqueCamposHTML(b,i){
   }
   if(b.tipo==='mapa'){
     return `
-      <p class="hint" style="margin-top:0;">Busca el lugar o toca el mapa para marcarlo. También puedes arrastrar el marcador.</p>
+      <p class="hint" style="margin-top:0;">Busca el lugar o toca el mapa para marcarlo. También puedes arrastrar el marcador. El punto inicial es Buena Vista (9.273936, -79.695537).</p>
       <div class="upload-row">
         <input type="text" data-buscarmapa="${i}" placeholder="Busca un lugar o dirección...">
         <button type="button" class="btn small outline" data-buscarmapa-btn="${i}">🔎 Buscar</button>
