@@ -507,6 +507,29 @@
     .pg-columnas{grid-template-columns:1fr !important;}
     .pg-col-opciones{grid-template-columns:repeat(2,1fr);}
   }
+
+  /* ---------- portada institucional ---------- */
+  .home-cover{margin:-2em -1.3em 2.2em;padding:clamp(3.2em,8vw,6.5em) 1.3em 3.5em;position:relative;overflow:hidden;background:linear-gradient(125deg,rgba(24,57,44,.97),rgba(47,74,60,.91) 55%,rgba(76,122,147,.82)),url('https://images.unsplash.com/photo-1500534623283-312aade485b7?w=1600&q=80') center/cover;color:var(--white)}
+  .home-cover:after{content:'';position:absolute;right:-90px;bottom:-130px;width:330px;height:330px;border:55px solid rgba(201,138,44,.18);border-radius:50%}
+  .home-cover-inner{max-width:880px;margin:auto;position:relative;z-index:1}
+  .home-badge{display:inline-flex;align-items:center;gap:.5em;padding:.4em .8em;border:1px solid rgba(255,255,255,.35);border-radius:50px;background:rgba(255,255,255,.1);font-weight:700;font-size:.82rem}
+  .home-cover h1{color:#fff;font-size:clamp(2.5rem,7vw,5rem);max-width:760px;margin:.25em 0 .2em;text-shadow:0 3px 18px rgba(0,0,0,.25)}
+  .home-cover .lead{font-size:clamp(1.05rem,2vw,1.3rem);max-width:680px;color:#fff;margin:0 0 1.5em}
+  .cover-actions{display:flex;gap:.7em;flex-wrap:wrap}.cover-actions .btn{padding:.8em 1.25em}
+  .cover-actions .btn.cover-light{background:#fff;color:var(--forest-dark)}
+  .home-intro{text-align:center;max-width:760px;margin:0 auto 2em}.home-intro h2{font-size:clamp(1.7rem,4vw,2.35rem)}
+  .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1em;margin:1.2em 0 2.5em}
+  .feature-card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:1.35em;box-shadow:0 5px 18px rgba(43,38,32,.06)}
+  .feature-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:12px;background:var(--parchment);font-size:1.5rem;margin-bottom:.8em}.feature-card p{margin:.3em 0 0}
+  .feature-card.accent{background:var(--forest);color:#fff;border-color:var(--forest)}.feature-card.accent h3{color:#fff}.feature-card.accent .feature-icon{background:rgba(255,255,255,.13)}
+  .about-band{background:#fff8e8;border-left:5px solid var(--gold);padding:1.5em;border-radius:0 10px 10px 0;margin:0 0 2.5em}.about-band p:last-child{margin-bottom:0}
+  .objectives-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:1em;margin-bottom:2.5em}
+  .clean-list{padding-left:1.2em;margin:.6em 0}.clean-list li{margin:.45em 0}
+  .values{display:flex;flex-wrap:wrap;gap:.6em;margin-top:.8em}.value-pill{background:var(--parchment);border:1px solid var(--line);border-radius:50px;padding:.45em .8em;font-weight:700;color:var(--forest-dark)}
+  .quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75em;margin-bottom:2.5em}.quick-link{border:1px solid var(--line);background:var(--white);padding:1em .7em;border-radius:9px;text-align:center;font-weight:700;color:var(--forest-dark);transition:.18s}.quick-link:hover{transform:translateY(-3px);box-shadow:0 6px 15px rgba(43,38,32,.1)}.quick-link span{display:block;font-size:1.5rem;margin-bottom:.25em}
+  .home-contact{display:flex;align-items:center;justify-content:space-between;gap:1em;background:linear-gradient(120deg,var(--gold),#e1ae54);padding:1.5em;border-radius:10px;margin:2.5em 0}.home-contact h2{margin:0}.home-contact p{margin:.3em 0 0}
+  details.faq{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:.9em 1em;margin:.6em 0}details.faq summary{font-weight:700;cursor:pointer;color:var(--forest-dark)}details.faq p{margin:.7em 0 0}
+  @media(max-width:720px){.feature-grid,.objectives-grid{grid-template-columns:1fr}.quick-grid{grid-template-columns:repeat(2,1fr)}.home-contact{align-items:flex-start;flex-direction:column}.home-cover{padding-top:3em}.top-actions .who{display:none}}
 </style>
 </head>
 <body>
@@ -761,6 +784,7 @@ const SECTIONS = [
   {id:'entrevistas', name:'Entrevistas comunitarias', icon:'🎤', desc:'Conversaciones realizadas por estudiantes a moradores, líderes, comerciantes y otras personas de Buena Vista. Los videos se publican en YouTube y se muestran aquí.'},
   {id:'cultura', name:'Cultura y tradiciones', icon:'🎭', desc:'Fiestas, costumbres y tradiciones que identifican a Buena Vista.'},
   {id:'galeria', name:'Galería comunitaria', icon:'📸', desc:'Fotografías de la vida diaria y los eventos de la comunidad.'},
+  {id:'proyectos', name:'Proyectos y actividades', icon:'🛠️', desc:'Iniciativas, jornadas, obras y actividades que realizan la escuela, las autoridades y las organizaciones de Buena Vista.'},
   {id:'noticias', name:'Noticias y actividades', icon:'📰', desc:'Lo que está pasando ahora mismo en la comunidad.'},
   {id:'investigaciones', name:'Investigaciones de los estudiantes', icon:'🎓', desc:'Trabajos de investigación realizados por los estudiantes del C.E.B.G. El Jiral.'}
 ];
@@ -1198,22 +1222,52 @@ function goTo(sectionId){
 async function renderHome(){
   const main = document.getElementById('main');
   main.innerHTML = `
-    <div class="hero">
-      <div class="kicker">C.E.B.G. El Jiral · Proyecto comunitario</div>
-      <h1>Conoce Buena Vista</h1>
-      <p class="lead">Un espacio hecho por los propios estudiantes del C.E.B.G. El Jiral para mostrar los lugares, la gente y la vida de nuestro corregimiento.</p>
+    <section class="home-cover">
+      <div class="home-cover-inner">
+        <div class="home-badge">🌿 Proyecto comunitario estudiantil · 2026</div>
+        <h1>Buena Vista vive aquí</h1>
+        <p class="lead">Descubre nuestra gente, comunidades, historia, instituciones y todo lo que hace especial al corregimiento de Buena Vista.</p>
+        <div class="cover-actions"><button class="btn gold" onclick="goTo('lugares')">Explorar comunidades</button><button class="btn cover-light" onclick="document.getElementById('quienesSomos').scrollIntoView({behavior:'smooth'})">Conocer el proyecto</button></div>
+      </div>
+    </section>
+    <section class="home-intro" id="quienesSomos">
+      <div class="kicker">QUIÉNES SOMOS</div>
+      <h2>Una comunidad que cuenta su propia historia</h2>
+      <p>Somos estudiantes y docentes del C.E.B.G. El Jiral comprometidos con investigar, organizar y compartir información útil sobre el corregimiento de Buena Vista. Esta página crece con las voces, fotografías y aportes de sus habitantes.</p>
+    </section>
+    <div class="feature-grid">
+      <article class="feature-card accent"><div class="feature-icon">🎯</div><h3>Misión</h3><p>Investigar, preservar y divulgar la identidad, la historia y los servicios del corregimiento de Buena Vista mediante una página confiable, educativa y construida con participación estudiantil y comunitaria.</p></article>
+      <article class="feature-card"><div class="feature-icon">👁️</div><h3>Visión</h3><p>Ser el principal punto de encuentro digital de Buena Vista: una fuente actualizada que fortalezca el sentido de pertenencia, conecte a sus comunidades y motive a las nuevas generaciones a cuidar su patrimonio.</p></article>
+      <article class="feature-card"><div class="feature-icon">🤝</div><h3>Nuestro compromiso</h3><p>Publicar información respetuosa, clara y verificada, reconocer a quienes aportan y mantener este espacio abierto a las ideas y necesidades de la comunidad.</p></article>
+    </div>
+    <section class="about-band">
+      <h2>📖 ¿Cómo surge esta página web?</h2>
+      <p>La página nace en 2026 como una iniciativa educativa del C.E.B.G. El Jiral, coordinada por el Prof. Samuel Ortega. Estudiantes de 8.º y 9.º grado investigan las comunidades, entrevistan a sus habitantes y documentan sus instituciones, tradiciones, negocios, logros y necesidades.</p>
+      <p>Así, el aprendizaje sale del salón de clases y se convierte en un servicio para Buena Vista: una memoria digital que se completa y mejora poco a poco con la participación de todos.</p>
+    </section>
+    <div class="objectives-grid">
+      <article class="card"><h2>Objetivos</h2><ul class="clean-list"><li>Dar a conocer los poblados y sectores del corregimiento.</li><li>Conservar la historia, cultura, tradiciones y memoria de sus habitantes.</li><li>Facilitar información sobre autoridades, instituciones, escuelas, salud, transporte y negocios.</li><li>Desarrollar en los estudiantes habilidades de investigación, comunicación y ciudadanía digital.</li><li>Promover la participación y colaboración de toda la comunidad.</li></ul></article>
+      <article class="card"><h2>Valores</h2><p>Los principios que guían cada investigación y publicación:</p><div class="values"><span class="value-pill">Respeto</span><span class="value-pill">Identidad</span><span class="value-pill">Responsabilidad</span><span class="value-pill">Honestidad</span><span class="value-pill">Colaboración</span><span class="value-pill">Servicio</span><span class="value-pill">Inclusión</span></div></article>
     </div>
     <div class="lugares-resumen" style="cursor:pointer" onclick="goTo('lugares')">
       <h3>🗺️ Los 30 lugares poblados de Buena Vista</h3>
       <p>Explora los 8 poblados principales y abre sus subpoblados o sectores para descubrir descripción, fotografías, habitantes destacados, negocios, sitios de interés, entrevistas y ubicación.</p>
       <div class="censo-datos"><div class="censo-dato"><strong>30</strong>lugares censales</div><div class="censo-dato"><strong>8</strong>grupos comunitarios</div><div class="censo-dato"><strong>19,221</strong>habitantes</div><div class="censo-dato"><strong>Ver fichas →</strong>directorio comunitario</div></div>
     </div>
-    <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:1em;flex-wrap:wrap"><div><h3>🎤 Entrevistas comunitarias</h3><p style="margin:0">Videos realizados por estudiantes a personas de las distintas comunidades.</p></div><button class="btn gold" onclick="goTo('entrevistas')">Ver entrevistas</button></div>
+    <div class="section-divider"><div class="icon">🧭</div><h2>Encuentra lo que necesitas</h2><div class="rule"></div></div>
+    <div class="quick-grid"><button class="quick-link" onclick="goTo('autoridades')"><span>🏛️</span>Autoridades</button><button class="quick-link" onclick="goTo('instituciones')"><span>🏢</span>Instituciones</button><button class="quick-link" onclick="goTo('escuelas')"><span>🏫</span>Escuelas</button><button class="quick-link" onclick="goTo('negocios')"><span>🏪</span>Negocios</button><button class="quick-link" onclick="goTo('proyectos')"><span>🛠️</span>Proyectos</button><button class="quick-link" onclick="goTo('noticias')"><span>📰</span>Noticias</button><button class="quick-link" onclick="goTo('galeria')"><span>📸</span>Galería</button><button class="quick-link" onclick="goTo('contacto')"><span>✉️</span>Contacto</button></div>
+    <div class="card"><h2>👥 Equipo responsable</h2><p><strong>Coordinación:</strong> Prof. Samuel Ortega.</p><p><strong>Equipo investigador:</strong> estudiantes de 8.º y 9.º grado del C.E.B.G. El Jiral.</p><p><strong>Aliados:</strong> moradores, autoridades, instituciones, comercios y organizaciones que aportan información a este proyecto comunitario.</p></div>
     <div class="mosaic" id="mosaic">Cargando…</div>
-    <div class="section-divider"><div class="icon">🗺️</div><h2>Publicaciones recientes de los lugares</h2><div class="rule"></div></div>
-    <p class="section-desc">${SECTIONS[0].desc}</p>
+    <div class="section-divider"><div class="icon">🏆</div><h2>Proyectos, actividades y logros</h2><div class="rule"></div></div>
+    <p class="section-desc">Aquí destacamos investigaciones, actividades escolares, reconocimientos y aportes que llenan de orgullo a Buena Vista.</p>
     <div id="lugaresPreview">Cargando…</div>
-    <div class="row-actions"><button class="btn outline small" onclick="goTo('lugares')">Ver todos los lugares</button></div>
+    <div class="row-actions"><button class="btn outline small" onclick="goTo('noticias')">Ver noticias y actividades</button><button class="btn outline small" onclick="goTo('investigaciones')">Ver investigaciones</button></div>
+    <div class="section-divider"><div class="icon">❓</div><h2>Preguntas frecuentes</h2><div class="rule"></div></div>
+    <details class="faq"><summary>¿Quién puede aportar información?</summary><p>Cualquier residente, institución, autoridad, comercio u organización de Buena Vista puede enviar datos, fotografías o sugerencias mediante el formulario de contacto.</p></details>
+    <details class="faq"><summary>¿Cómo se publica la información?</summary><p>Los estudiantes investigan y preparan el contenido. Luego, el equipo responsable lo revisa antes de publicarlo.</p></details>
+    <details class="faq"><summary>¿Puedo solicitar una corrección?</summary><p>Sí. Envíanos el dato correcto y una explicación desde la sección Contacto para que pueda ser verificado.</p></details>
+    <details class="faq"><summary>¿Esta página seguirá creciendo?</summary><p>Sí. Es un proyecto vivo: se añadirán nuevas historias, servicios, noticias, fotografías y logros a medida que la comunidad participe.</p></details>
+    <section class="home-contact"><div><h2>¿Quieres aportar a Buena Vista?</h2><p>Comparte una historia, noticia, fotografía, reconocimiento o corrección.</p></div><button class="btn cover-light" onclick="goTo('contacto')">Enviar un mensaje</button></section>
   `;
   const {data: lugares} = await db.from('bv_contenido').select('*').eq('seccion_id','lugares').eq('estado','publicado').order('creado_en',{ascending:false}).limit(6);
   const items = lugares || [];
@@ -1225,8 +1279,8 @@ async function renderHome(){
       <div class="cell"><img src="${p.img_url||PLACEHOLDER_IMG}" alt="${escapeHtml(p.titulo)}"><div class="cap">${escapeHtml(p.titulo)}</div></div>
     `).join('');
   }
-  document.getElementById('lugaresPreview').innerHTML = items.length ? items.slice(0,3).map(cardHTML).join('') :
-    `<div class="empty">Aún no hay publicaciones aquí.</div>`;
+  const {data: recientes} = await db.from('bv_contenido').select('*').eq('estado','publicado').order('creado_en',{ascending:false}).limit(3);
+  document.getElementById('lugaresPreview').innerHTML = recientes && recientes.length ? recientes.map(cardHTML).join('') : `<div class="empty">Aún no hay publicaciones. Este espacio mostrará las primeras actividades y logros aprobados.</div>`;
 }
 
 /* =====================  VISTA: CONTACTO  ===================== */
@@ -1235,6 +1289,13 @@ function renderContacto(){
   main.innerHTML = `
     <div class="section-divider"><div class="icon">✉️</div><h2>Contacto</h2><div class="rule"></div></div>
     <p class="section-desc">¿Tienes una sugerencia, un dato para la página o quieres contarnos algo sobre Buena Vista? Escríbenos.</p>
+    <div class="feature-grid">
+      <div class="feature-card"><div class="feature-icon">📞</div><h3>Teléfono</h3><p>Dato oficial pendiente de publicación.</p></div>
+      <div class="feature-card"><div class="feature-icon">📧</div><h3>Correo electrónico</h3><p>Dato oficial pendiente de publicación.</p></div>
+      <div class="feature-card"><div class="feature-icon">📱</div><h3>Redes sociales</h3><p>Enlaces oficiales pendientes de publicación.</p></div>
+    </div>
+    <div class="about-band"><h3>Directorio de contactos</h3><p>Los números y enlaces de autoridades, instituciones, centros educativos, servicios de salud y negocios se incorporarán en sus respectivas secciones después de ser confirmados.</p></div>
+    <h2>Formulario de contacto</h2>
     <div id="contactoMsg"></div>
     <div class="field"><label>Nombre</label><input id="ctNombre" placeholder="Tu nombre"></div>
     <div class="field"><label>Teléfono (opcional)</label><input id="ctTelefono" placeholder="Ej. 6000-0000"></div>
