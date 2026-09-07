@@ -219,6 +219,27 @@
     text-align:center;color:#8a7f6e;font-size:.82rem;
     padding:2em 1em 3em;
   }
+
+  /* ---------- extras: tabs admin, chips, login toggle ---------- */
+  .tabs{display:flex;gap:.4em;margin:1.2em 0 1.4em;flex-wrap:wrap;}
+  .tabs button{
+    background:var(--parchment-2);border:1px solid var(--line);color:var(--forest-dark);
+    padding:.5em 1em;border-radius:20px;font-weight:700;font-size:.85rem;
+  }
+  .tabs button.active{background:var(--forest);color:var(--white);border-color:var(--forest);}
+  .login-toggle{display:flex;margin-bottom:1.2em;border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  .login-toggle button{flex:1;background:var(--white);border:none;padding:.6em;font-weight:700;color:#8a7f6e;font-size:.85rem;}
+  .login-toggle button.active{background:var(--forest);color:var(--white);}
+  .chip-list{display:flex;flex-wrap:wrap;gap:.4em;margin-top:.3em;}
+  .chip{
+    display:inline-flex;align-items:center;gap:.3em;background:var(--parchment-2);
+    border-radius:20px;padding:.2em .8em;font-size:.78rem;font-weight:700;color:var(--forest-dark);
+  }
+  .salon-block h4{margin:1.6em 0 .5em;font-size:1rem;color:var(--clay);}
+  .hint{font-size:.8rem;color:#8a7f6e;margin:-0.4em 0 1em;}
+  .check-grid{max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:4px;padding:.6em;}
+  .check-grid label{display:flex;align-items:center;gap:.5em;font-weight:400;margin-bottom:.35em;}
+  .check-grid input{width:auto;}
 </style>
 </head>
 <body>
@@ -252,35 +273,62 @@
   <div class="modal">
     <button class="modal-close" data-close="loginModal">×</button>
     <h3>Iniciar sesión</h3>
+    <div class="login-toggle">
+      <button id="tabLoginEstudiante" class="active">Soy estudiante</button>
+      <button id="tabLoginProfesor">Soy el profesor(a)</button>
+    </div>
     <div id="loginMsg"></div>
-    <div class="field">
-      <label>Usuario</label>
-      <input id="loginUser" placeholder="tu usuario">
+
+    <div id="loginEstudianteFields">
+      <div class="field">
+        <label>Tu nombre completo</label>
+        <input id="loginNombre" placeholder="Como está escrito en la lista del salón">
+      </div>
+      <div class="field">
+        <label>Tu cédula</label>
+        <input id="loginCedula" placeholder="Ej. 8-441-121">
+      </div>
+      <p class="hint">Si tu nombre o cédula no funcionan, pídele a tu profesor(a) que los revise en el panel.</p>
     </div>
-    <div class="field">
-      <label>Contraseña</label>
-      <input id="loginPass" type="password" placeholder="tu contraseña">
+
+    <div id="loginProfesorFields" style="display:none;">
+      <div class="field">
+        <label>Usuario</label>
+        <input id="loginUser" placeholder="usuario">
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input id="loginPass" type="password" placeholder="contraseña">
+      </div>
     </div>
+
     <button class="btn" id="doLogin">Entrar</button>
-    <p style="font-size:.8rem;color:#7a7062;margin-top:1em;">¿No tienes cuenta? Pídele a tu profesor que te cree una desde el panel de administrador.</p>
   </div>
 </div>
 
-<!-- Create/edit account modal (admin) -->
-<div class="modal-overlay" id="accountModal">
+<!-- Add/edit student modal (admin) -->
+<div class="modal-overlay" id="estudianteModal">
   <div class="modal">
-    <button class="modal-close" data-close="accountModal">×</button>
-    <h3>Nueva cuenta de estudiante</h3>
-    <div id="accountMsg"></div>
-    <div class="field"><label>Nombre completo</label><input id="accName" placeholder="Ej. María González"></div>
-    <div class="field"><label>Grado</label><input id="accGrade" placeholder="Ej. 8.º B"></div>
-    <div class="field"><label>Usuario</label><input id="accUser" placeholder="usuario para entrar"></div>
-    <div class="field"><label>Contraseña</label><input id="accPass" placeholder="contraseña"></div>
+    <button class="modal-close" data-close="estudianteModal">×</button>
+    <h3 id="estudianteModalTitle">Agregar estudiante</h3>
+    <div id="estudianteMsg"></div>
+    <div class="field"><label>Nombre completo</label><input id="estNombre" placeholder="Ej. María González"></div>
+    <div class="field"><label>Cédula</label><input id="estCedula" placeholder="Ej. 8-441-121"></div>
     <div class="field">
-      <label>Sección(es) a cargo</label>
-      <div id="accSections" style="max-height:180px;overflow-y:auto;border:1px solid var(--line);border-radius:4px;padding:.6em;"></div>
+      <label>Salón</label>
+      <select id="estSalon">
+        <option value="9A">9° A</option>
+        <option value="9B">9° B</option>
+        <option value="9C">9° C</option>
+        <option value="8A">8° A</option>
+        <option value="8B">8° B</option>
+      </select>
     </div>
-    <button class="btn" id="doCreateAccount">Crear cuenta</button>
+    <div class="field">
+      <label>Sección(es) / trabajo asignado</label>
+      <div id="estSecciones" class="check-grid"></div>
+    </div>
+    <button class="btn" id="doGuardarEstudiante">Guardar</button>
   </div>
 </div>
 
@@ -297,7 +345,24 @@
   </div>
 </div>
 
+<!-- View backup snapshot modal -->
+<div class="modal-overlay" id="respaldoModal">
+  <div class="modal" style="max-width:640px;">
+    <button class="modal-close" data-close="respaldoModal">×</button>
+    <h3>Contenido del respaldo</h3>
+    <pre id="respaldoContenido" style="max-height:50vh;overflow:auto;background:var(--parchment);padding:1em;border-radius:4px;font-size:.75rem;white-space:pre-wrap;"></pre>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.js"></script>
 <script>
+/* =====================  CONEXIÓN A LA BASE DE DATOS  ===================== */
+// Mismo proyecto de Supabase que ya usan en "control-notas-jiral"
+// (tablas nuevas, todas con el prefijo "bv_", para no chocar con las suyas).
+const SUPABASE_URL = "https://lscvlvbdjrebobqhvbvx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_96_GcA6a5qzqWXsDKg8TtA_lCx_D1Sq";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 /* =====================  DATOS BASE  ===================== */
 const SECTIONS = [
   {id:'lugares', name:'Lugares bonitos', icon:'🌳', desc:'Los rincones más lindos de Buena Vista: miradores, ríos, senderos y paisajes que vale la pena conocer.'},
@@ -315,36 +380,30 @@ const SECTIONS = [
   {id:'noticias', name:'Noticias y actividades', icon:'📰', desc:'Lo que está pasando ahora mismo en la comunidad.'},
   {id:'investigaciones', name:'Investigaciones de los estudiantes', icon:'🎓', desc:'Trabajos de investigación realizados por los estudiantes del C.E.B.G. El Jiral.'}
 ];
-const ADMIN = {user:'samuelortega', pass:'8-441-121', name:'Prof. Samuel Ortega'};
+const SALONES = ['9A','9B','9C','8A','8B'];
+const SALON_LABEL = {'9A':'9° A','9B':'9° B','9C':'9° C','8A':'8° A','8B':'8° B'};
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=600&q=60';
 
-/* =====================  ESTADO  ===================== */
-let session = null;      // {role:'admin'|'student', user, name, grade, sections:[]}
-let accounts = [];       // [{name,grade,user,pass,sections:[]}]
-let content = {};        // {sectionId: [{id,title,body,img,author,grade,status}]}
-let currentSection = 'home';
-
-/* =====================  STORAGE  ===================== */
-async function loadData(){
-  try{
-    const acc = await window.storage.get('bv:accounts', true);
-    accounts = acc ? JSON.parse(acc.value) : [];
-  }catch(e){ accounts = []; }
-  try{
-    const c = await window.storage.get('bv:content', true);
-    content = c ? JSON.parse(c.value) : {};
-  }catch(e){ content = {}; }
-  SECTIONS.forEach(s=>{ if(!content[s.id]) content[s.id]=[]; });
+function escapeHtml(str){
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-async function saveAccounts(){ await window.storage.set('bv:accounts', JSON.stringify(accounts), true); }
-async function saveContent(){ await window.storage.set('bv:content', JSON.stringify(content), true); }
+
+/* =====================  ESTADO  ===================== */
+let session = null;      // {role:'admin',usuario,contrasena,name} | {role:'student',id,nombre,cedula,salon,secciones:[]}
+let currentSection = 'home';
+let adminTab = 'pendientes';
+
+try{
+  const saved = sessionStorage.getItem('bv_session');
+  if(saved) session = JSON.parse(saved);
+}catch(e){ session = null; }
 
 /* =====================  UI: TOPBAR / DRAWER  ===================== */
 function renderWho(){
   const who = document.getElementById('whoLabel');
   const loginBtn = document.getElementById('loginBtn');
   if(session){
-    who.textContent = (session.role==='admin' ? '👑 ' : '🧑‍🎓 ') + session.name;
+    who.textContent = (session.role==='admin' ? '👑 ' : '🧑‍🎓 ') + (session.role==='admin'? session.name : session.nombre);
     loginBtn.textContent = 'Salir';
   }else{
     who.textContent = '';
@@ -362,7 +421,8 @@ function renderDrawer(){
   SECTIONS.forEach(s=>{
     const item = document.createElement('div');
     item.className = 'drawer-item' + (currentSection===s.id ? ' active':'');
-    item.innerHTML = `<span class="drawer-icon">${s.icon}</span> ${s.name}`;
+    const mio = session && session.role==='student' && session.secciones.includes(s.id);
+    item.innerHTML = `<span class="drawer-icon">${s.icon}</span> ${s.name}${mio?' ✏️':''}`;
     item.onclick = ()=>{ goTo(s.id); closeDrawer(); };
     list.appendChild(item);
   });
@@ -386,37 +446,67 @@ document.getElementById('brandHome').onclick = ()=> goTo('home');
 /* =====================  MODALES  ===================== */
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('[data-close]').forEach(b=>{
-  b.onclick = ()=> closeModal(b.dataset.close);
-});
+document.querySelectorAll('[data-close]').forEach(b=>{ b.onclick = ()=> closeModal(b.dataset.close); });
+
+/* ---- login: toggle estudiante / profesor ---- */
+const tabLoginEstudiante = document.getElementById('tabLoginEstudiante');
+const tabLoginProfesor = document.getElementById('tabLoginProfesor');
+function setLoginTab(cual){
+  const esEst = cual==='estudiante';
+  tabLoginEstudiante.classList.toggle('active', esEst);
+  tabLoginProfesor.classList.toggle('active', !esEst);
+  document.getElementById('loginEstudianteFields').style.display = esEst ? '' : 'none';
+  document.getElementById('loginProfesorFields').style.display = esEst ? 'none' : '';
+}
+tabLoginEstudiante.onclick = ()=> setLoginTab('estudiante');
+tabLoginProfesor.onclick = ()=> setLoginTab('profesor');
 
 document.getElementById('loginBtn').onclick = ()=>{
   if(session){
     session = null;
+    sessionStorage.removeItem('bv_session');
     renderWho(); renderDrawer(); goTo('home');
   }else{
     document.getElementById('loginMsg').innerHTML='';
+    document.getElementById('loginNombre').value='';
+    document.getElementById('loginCedula').value='';
     document.getElementById('loginUser').value='';
     document.getElementById('loginPass').value='';
+    setLoginTab('estudiante');
     openModal('loginModal');
   }
 };
-document.getElementById('doLogin').onclick = ()=>{
-  const u = document.getElementById('loginUser').value.trim();
-  const p = document.getElementById('loginPass').value;
+
+document.getElementById('doLogin').onclick = async ()=>{
   const msg = document.getElementById('loginMsg');
-  if(u===ADMIN.user && p===ADMIN.pass){
-    session = {role:'admin', user:u, name:ADMIN.name, sections:SECTIONS.map(s=>s.id)};
+  msg.innerHTML = '';
+  const esEst = tabLoginEstudiante.classList.contains('active');
+
+  if(!esEst){
+    const u = document.getElementById('loginUser').value.trim();
+    const p = document.getElementById('loginPass').value;
+    if(!u || !p){ msg.innerHTML = '<div class="msg error">Escribe usuario y contraseña.</div>'; return; }
+    const {data, error} = await db.rpc('bv_admin_login', {p_usuario:u, p_contrasena:p});
+    if(error || !data){ msg.innerHTML = '<div class="msg error">Usuario o contraseña incorrectos.</div>'; return; }
+    session = {role:'admin', usuario:u, contrasena:p, name:'Prof. Samuel Ortega'};
+    sessionStorage.setItem('bv_session', JSON.stringify(session));
     closeModal('loginModal'); renderWho(); renderDrawer(); goTo('admin');
     return;
   }
-  const acc = accounts.find(a=>a.user===u && a.pass===p);
-  if(acc){
-    session = {role:'student', user:acc.user, name:acc.name, grade:acc.grade, sections:acc.sections};
-    closeModal('loginModal'); renderWho(); renderDrawer(); goTo(acc.sections[0] || 'home');
+
+  const nombre = document.getElementById('loginNombre').value.trim();
+  const cedula = document.getElementById('loginCedula').value.trim();
+  if(!nombre || !cedula){ msg.innerHTML = '<div class="msg error">Escribe tu nombre y tu cédula.</div>'; return; }
+  const {data, error} = await db.rpc('bv_login_estudiante', {p_nombre:nombre, p_cedula:cedula});
+  if(error || !data || data.length===0){
+    msg.innerHTML = '<div class="msg error">No encontramos ese nombre y cédula juntos. Revisa que estén escritos igual que en la lista del salón.</div>';
     return;
   }
-  msg.innerHTML = '<div class="msg error">Usuario o contraseña incorrectos.</div>';
+  const est = data[0];
+  session = {role:'student', id:est.id, nombre:est.nombre, cedula, salon:est.salon, secciones: est.secciones || []};
+  sessionStorage.setItem('bv_session', JSON.stringify(session));
+  closeModal('loginModal'); renderWho(); renderDrawer();
+  goTo(session.secciones[0] || 'home');
 };
 
 /* =====================  NAVEGACIÓN  ===================== */
@@ -430,64 +520,71 @@ function goTo(sectionId){
 }
 
 /* =====================  VISTA: INICIO  ===================== */
-function renderHome(){
+async function renderHome(){
   const main = document.getElementById('main');
-  const lugares = content['lugares'].filter(p=>p.status==='published').slice(0,3);
   main.innerHTML = `
     <div class="hero">
       <div class="kicker">C.E.B.G. El Jiral · Proyecto comunitario</div>
       <h1>Conoce Buena Vista</h1>
       <p class="lead">Un espacio hecho por los propios estudiantes para mostrar los lugares, la gente y la vida de nuestro corregimiento.</p>
     </div>
-    <div class="mosaic" id="mosaic"></div>
+    <div class="mosaic" id="mosaic">Cargando…</div>
     <div class="section-divider"><div class="icon">🌳</div><h2>Lugares bonitos</h2><div class="rule"></div></div>
     <p class="section-desc">${SECTIONS[0].desc}</p>
-    <div id="lugaresPreview"></div>
+    <div id="lugaresPreview">Cargando…</div>
     <div class="row-actions"><button class="btn outline small" onclick="goTo('lugares')">Ver todos los lugares</button></div>
   `;
+  const {data: lugares} = await db.from('bv_contenido').select('*').eq('seccion_id','lugares').eq('estado','publicado').order('creado_en',{ascending:false}).limit(6);
+  const items = lugares || [];
   const mosaic = document.getElementById('mosaic');
-  if(lugares.length===0){
+  if(items.length===0){
     mosaic.innerHTML = `<div class="empty" style="grid-column:1/-1;">Todavía no hay lugares publicados. ¡Un estudiante encargado de "Lugares bonitos" puede agregar el primero!</div>`;
   }else{
-    mosaic.innerHTML = lugares.map(p=>`
-      <div class="cell"><img src="${p.img||PLACEHOLDER_IMG}" alt="${p.title}"><div class="cap">${p.title}</div></div>
+    mosaic.innerHTML = items.map(p=>`
+      <div class="cell"><img src="${p.img_url||PLACEHOLDER_IMG}" alt="${escapeHtml(p.titulo)}"><div class="cap">${escapeHtml(p.titulo)}</div></div>
     `).join('');
   }
-  document.getElementById('lugaresPreview').innerHTML = lugares.length ? lugares.map(cardHTML).join('') :
+  document.getElementById('lugaresPreview').innerHTML = items.length ? items.slice(0,3).map(cardHTML).join('') :
     `<div class="empty">Aún no hay publicaciones aquí.</div>`;
 }
 
 /* =====================  VISTA: SECCIÓN  ===================== */
 function cardHTML(item){
   let pill = '';
-  if(session && (session.role==='admin' || (session.role==='student' && session.user===item.author))){
-    if(item.status==='pending') pill = '<span class="status-pill status-pending">En revisión</span>';
-    if(item.status==='rejected') pill = '<span class="status-pill status-rejected">Devuelto</span>';
-    if(item.status==='published') pill = '<span class="status-pill status-published">Publicado</span>';
-  }
+  if(item.estado==='pendiente') pill = '<span class="status-pill status-pending">En revisión</span>';
+  if(item.estado==='devuelto') pill = '<span class="status-pill status-rejected">Devuelto</span>';
   return `
     <div class="card">
-      ${item.img ? `<img src="${item.img}" alt="${item.title}">` : ''}
-      <h3>${item.title} ${pill}</h3>
-      <p>${item.body}</p>
-      <div class="byline">Investigado por: ${item.authorName}${item.grade? ' · '+item.grade : ''}</div>
+      ${item.img_url ? `<img src="${item.img_url}" alt="${escapeHtml(item.titulo)}">` : ''}
+      <h3>${escapeHtml(item.titulo)} ${pill}</h3>
+      <p>${escapeHtml(item.cuerpo)}</p>
+      <div class="byline">Investigado por: ${escapeHtml(item.autor_nombre||'')}${item.autor_salon? ' · '+SALON_LABEL[item.autor_salon] || item.autor_salon : ''}</div>
     </div>
   `;
 }
-function renderSection(id){
+async function renderSection(id){
   const s = SECTIONS.find(x=>x.id===id);
   const main = document.getElementById('main');
-  const canEdit = session && session.sections && session.sections.includes(id);
-  const items = content[id] || [];
-  const visible = items.filter(i => i.status==='published' || (session && (session.role==='admin' || session.user===i.author)));
+  const canEdit = session && session.role==='student' && session.secciones.includes(id);
   main.innerHTML = `
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>${s.name}</h2><div class="rule"></div></div>
     <p class="section-desc">${s.desc}</p>
     ${canEdit ? `<div class="row-actions" style="margin-bottom:1.4em;"><button class="btn gold" id="addContentBtn">+ Agregar publicación</button></div>` : ''}
-    <div id="sectionList"></div>
+    <div id="sectionList">Cargando…</div>
   `;
-  document.getElementById('sectionList').innerHTML = visible.length ? visible.map(cardHTML).join('') :
+
+  const {data: publicados} = await db.from('bv_contenido').select('*').eq('seccion_id',id).eq('estado','publicado').order('creado_en',{ascending:false});
+  let visibles = publicados || [];
+
+  if(canEdit){
+    const {data: mios} = await db.rpc('bv_mi_contenido', {p_nombre:session.nombre, p_cedula:session.cedula});
+    const propiosNoPublicados = (mios||[]).filter(i=>i.seccion_id===id && i.estado!=='publicado');
+    visibles = [...propiosNoPublicados, ...visibles];
+  }
+
+  document.getElementById('sectionList').innerHTML = visibles.length ? visibles.map(cardHTML).join('') :
     `<div class="empty">${canEdit ? 'Todavía no has agregado nada aquí. ¡Empieza con la primera publicación!' : 'Todavía no hay publicaciones en esta sección.'}</div>`;
+
   if(canEdit){
     document.getElementById('addContentBtn').onclick = ()=> openContentModal(id);
   }
@@ -510,122 +607,218 @@ document.getElementById('doSaveContent').onclick = async ()=>{
   const img = document.getElementById('cImg').value.trim();
   const msg = document.getElementById('contentMsg');
   if(!title || !body){ msg.innerHTML = '<div class="msg error">Escribe un título y una descripción.</div>'; return; }
-  const item = {
-    id: 'c'+Date.now(),
-    title, body, img,
-    author: session.user,
-    authorName: session.name,
-    grade: session.grade || '',
-    status: 'pending'
-  };
-  content[contentTargetSection].push(item);
-  await saveContent();
+  const {error} = await db.rpc('bv_agregar_contenido', {
+    p_nombre: session.nombre, p_cedula: session.cedula, p_seccion_id: contentTargetSection,
+    p_titulo: title, p_cuerpo: body, p_img_url: img
+  });
+  if(error){ msg.innerHTML = '<div class="msg error">No se pudo guardar: '+escapeHtml(error.message)+'</div>'; return; }
   closeModal('contentModal');
   renderSection(contentTargetSection);
 };
 
 /* =====================  PANEL ADMIN  ===================== */
+function adminCreds(){ return {p_usuario: session.usuario, p_contrasena: session.contrasena}; }
+
 function renderAdmin(){
   if(!session || session.role!=='admin'){ goTo('home'); return; }
   const main = document.getElementById('main');
   main.innerHTML = `
     <div class="section-divider"><div class="icon">⚙️</div><h2>Panel del profesor</h2><div class="rule"></div></div>
-
-    <h3 style="margin-top:1.4em;">Publicaciones pendientes de revisión</h3>
-    <div id="pendingList"></div>
-
-    <h3 style="margin-top:2em;">Cuentas de estudiantes</h3>
-    <div class="row-actions" style="margin-bottom:1em;"><button class="btn gold" id="newAccountBtn">+ Crear cuenta de estudiante</button></div>
-    <table>
-      <thead><tr><th>Nombre</th><th>Grado</th><th>Usuario</th><th>Secciones a cargo</th><th></th></tr></thead>
-      <tbody id="accountsTable"></tbody>
-    </table>
+    <div class="tabs">
+      <button data-tab="pendientes" class="${adminTab==='pendientes'?'active':''}">📝 Pendientes de revisión</button>
+      <button data-tab="salones" class="${adminTab==='salones'?'active':''}">🏫 Salones y estudiantes</button>
+      <button data-tab="respaldos" class="${adminTab==='respaldos'?'active':''}">🗄️ Respaldos y papelera</button>
+    </div>
+    <div id="adminBody">Cargando…</div>
   `;
-  const pendingList = document.getElementById('pendingList');
-  let pendingHTML = '';
-  SECTIONS.forEach(s=>{
-    (content[s.id]||[]).filter(i=>i.status==='pending').forEach(item=>{
-      pendingHTML += `
-        <div class="card">
-          <h3>${s.icon} ${item.title} <span class="status-pill status-pending">En revisión</span></h3>
-          <p>${item.body}</p>
-          <div class="byline">${item.authorName}${item.grade? ' · '+item.grade:''} — sección: ${s.name}</div>
-          <div class="row-actions">
-            <button class="btn small" data-approve="${s.id}|${item.id}">✅ Publicar</button>
-            <button class="btn small danger" data-reject="${s.id}|${item.id}">✏️ Devolver</button>
-          </div>
-        </div>
-      `;
-    });
+  main.querySelectorAll('[data-tab]').forEach(b=>{
+    b.onclick = ()=>{ adminTab = b.dataset.tab; renderAdmin(); };
   });
-  pendingList.innerHTML = pendingHTML || '<div class="empty">No hay publicaciones esperando revisión.</div>';
-  pendingList.querySelectorAll('[data-approve]').forEach(b=>{
-    b.onclick = async ()=>{
-      const [sid,iid] = b.dataset.approve.split('|');
-      const it = content[sid].find(x=>x.id===iid); it.status='published';
-      await saveContent(); renderAdmin();
-    };
-  });
-  pendingList.querySelectorAll('[data-reject]').forEach(b=>{
-    b.onclick = async ()=>{
-      const [sid,iid] = b.dataset.reject.split('|');
-      const it = content[sid].find(x=>x.id===iid); it.status='rejected';
-      await saveContent(); renderAdmin();
-    };
-  });
+  if(adminTab==='pendientes') renderAdminPendientes();
+  else if(adminTab==='salones') renderAdminSalones();
+  else renderAdminRespaldos();
+}
 
-  const tbody = document.getElementById('accountsTable');
-  tbody.innerHTML = accounts.length ? accounts.map(a=>`
-    <tr>
-      <td>${a.name}</td><td>${a.grade}</td><td>${a.user}</td>
-      <td>${a.sections.map(id=>SECTIONS.find(s=>s.id===id)?.name).filter(Boolean).join(', ')}</td>
-      <td><button class="btn small danger" data-del="${a.user}">Eliminar</button></td>
-    </tr>
-  `).join('') : `<tr><td colspan="5" style="color:#8a7f6e;">Todavía no has creado cuentas.</td></tr>`;
-  tbody.querySelectorAll('[data-del]').forEach(b=>{
-    b.onclick = async ()=>{
-      accounts = accounts.filter(a=>a.user!==b.dataset.del);
-      await saveAccounts(); renderAdmin();
-    };
+/* ---- tab: pendientes ---- */
+async function renderAdminPendientes(){
+  const body = document.getElementById('adminBody');
+  const {data, error} = await db.rpc('bv_admin_pendientes', adminCreds());
+  if(error){ body.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  if(!data || data.length===0){ body.innerHTML = '<div class="empty">No hay publicaciones esperando revisión.</div>'; return; }
+  body.innerHTML = data.map(item=>{
+    const s = SECTIONS.find(x=>x.id===item.seccion_id);
+    return `
+      <div class="card">
+        <h3>${s?s.icon:''} ${escapeHtml(item.titulo)} <span class="status-pill status-pending">En revisión</span></h3>
+        <p>${escapeHtml(item.cuerpo)}</p>
+        <div class="byline">${escapeHtml(item.autor_nombre||'')}${item.autor_salon? ' · '+(SALON_LABEL[item.autor_salon]||item.autor_salon):''} — sección: ${s?s.name:item.seccion_id}</div>
+        <div class="row-actions">
+          <button class="btn small" data-approve="${item.id}">✅ Publicar</button>
+          <button class="btn small danger" data-reject="${item.id}">✏️ Devolver</button>
+          <button class="btn small danger" data-del="${item.id}">🗑️ Eliminar</button>
+        </div>
+      </div>`;
+  }).join('');
+  body.querySelectorAll('[data-approve]').forEach(b=> b.onclick = async ()=>{
+    await db.rpc('bv_admin_moderar', {...adminCreds(), p_id:b.dataset.approve, p_estado:'publicado'});
+    renderAdminPendientes();
   });
-  document.getElementById('newAccountBtn').onclick = openAccountModal;
+  body.querySelectorAll('[data-reject]').forEach(b=> b.onclick = async ()=>{
+    await db.rpc('bv_admin_moderar', {...adminCreds(), p_id:b.dataset.reject, p_estado:'devuelto'});
+    renderAdminPendientes();
+  });
+  body.querySelectorAll('[data-del]').forEach(b=> b.onclick = async ()=>{
+    if(!confirm('¿Eliminar esta publicación? Quedará guardada en la papelera por si acaso.')) return;
+    await db.rpc('bv_admin_eliminar_contenido', {...adminCreds(), p_id:b.dataset.del});
+    renderAdminPendientes();
+  });
 }
-function openAccountModal(){
-  document.getElementById('accName').value='';
-  document.getElementById('accGrade').value='';
-  document.getElementById('accUser').value='';
-  document.getElementById('accPass').value='';
-  document.getElementById('accountMsg').innerHTML='';
-  const box = document.getElementById('accSections');
+
+/* ---- tab: salones ---- */
+let estudiantesCache = [];
+async function renderAdminSalones(){
+  const body = document.getElementById('adminBody');
+  const {data, error} = await db.rpc('bv_admin_listar_estudiantes', adminCreds());
+  if(error){ body.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  estudiantesCache = data || [];
+  body.innerHTML = `
+    <div class="row-actions" style="margin-bottom:1em;"><button class="btn gold" id="newStudentBtn">+ Agregar estudiante</button></div>
+    <div id="salonesTables"></div>
+  `;
+  const cont = document.getElementById('salonesTables');
+  cont.innerHTML = SALONES.map(sal=>{
+    const del = estudiantesCache.filter(e=>e.salon===sal);
+    return `
+      <div class="salon-block">
+        <h4>${SALON_LABEL[sal]} — ${del.length} estudiante${del.length===1?'':'s'}</h4>
+        ${del.length? `<table>
+          <thead><tr><th>Nombre</th><th>Cédula</th><th>Secciones asignadas</th><th></th></tr></thead>
+          <tbody>${del.map(e=>`
+            <tr>
+              <td>${escapeHtml(e.nombre)}</td>
+              <td>${escapeHtml(e.cedula)}</td>
+              <td>${(e.secciones||[]).map(id=>{const s=SECTIONS.find(x=>x.id===id);return s?s.icon+' '+s.name:id;}).join(', ') || '—'}</td>
+              <td style="white-space:nowrap;">
+                <button class="btn small outline" data-edit="${e.id}">Editar</button>
+                <button class="btn small danger" data-del="${e.id}">Eliminar</button>
+              </td>
+            </tr>`).join('')}</tbody>
+        </table>` : `<div class="empty">Todavía no hay estudiantes en ${SALON_LABEL[sal]}.</div>`}
+      </div>`;
+  }).join('');
+  cont.querySelectorAll('[data-edit]').forEach(b=> b.onclick = ()=> openEstudianteModal(b.dataset.edit));
+  cont.querySelectorAll('[data-del]').forEach(b=> b.onclick = async ()=>{
+    const e = estudiantesCache.find(x=>x.id===b.dataset.del);
+    if(!confirm(`¿Eliminar a ${e.nombre}? Queda guardado en la papelera por si hay que restaurarlo.`)) return;
+    await db.rpc('bv_admin_eliminar_estudiante', {...adminCreds(), p_id:b.dataset.del});
+    renderAdminSalones();
+  });
+  document.getElementById('newStudentBtn').onclick = ()=> openEstudianteModal(null);
+}
+
+function openEstudianteModal(id){
+  const est = id ? estudiantesCache.find(e=>e.id===id) : null;
+  document.getElementById('estudianteModalTitle').textContent = est ? 'Editar estudiante' : 'Agregar estudiante';
+  document.getElementById('estNombre').value = est ? est.nombre : '';
+  document.getElementById('estCedula').value = est ? est.cedula : '';
+  document.getElementById('estSalon').value = est ? est.salon : '9A';
+  document.getElementById('estudianteMsg').innerHTML = '';
+  const box = document.getElementById('estSecciones');
+  const asignadas = est ? (est.secciones||[]) : [];
   box.innerHTML = SECTIONS.map(s=>`
-    <label style="display:flex;align-items:center;gap:.5em;font-weight:400;margin-bottom:.3em;">
-      <input type="checkbox" value="${s.id}" style="width:auto;"> ${s.icon} ${s.name}
-    </label>
+    <label><input type="checkbox" value="${s.id}" ${asignadas.includes(s.id)?'checked':''}> ${s.icon} ${s.name}</label>
   `).join('');
-  openModal('accountModal');
+  document.getElementById('doGuardarEstudiante').dataset.id = est ? est.id : '';
+  openModal('estudianteModal');
 }
-document.getElementById('doCreateAccount').onclick = async ()=>{
-  const name = document.getElementById('accName').value.trim();
-  const grade = document.getElementById('accGrade').value.trim();
-  const user = document.getElementById('accUser').value.trim();
-  const pass = document.getElementById('accPass').value;
-  const msg = document.getElementById('accountMsg');
-  const sections = Array.from(document.querySelectorAll('#accSections input:checked')).map(i=>i.value);
-  if(!name || !user || !pass){ msg.innerHTML='<div class="msg error">Completa nombre, usuario y contraseña.</div>'; return; }
-  if(accounts.some(a=>a.user===user) || user===ADMIN.user){ msg.innerHTML='<div class="msg error">Ese usuario ya existe.</div>'; return; }
-  if(sections.length===0){ msg.innerHTML='<div class="msg error">Elige al menos una sección para este estudiante.</div>'; return; }
-  accounts.push({name,grade,user,pass,sections});
-  await saveAccounts();
-  closeModal('accountModal');
-  renderAdmin();
+document.getElementById('doGuardarEstudiante').onclick = async function(){
+  const msg = document.getElementById('estudianteMsg');
+  const nombre = document.getElementById('estNombre').value.trim();
+  const cedula = document.getElementById('estCedula').value.trim();
+  const salon = document.getElementById('estSalon').value;
+  const secciones = Array.from(document.querySelectorAll('#estSecciones input:checked')).map(i=>i.value);
+  if(!nombre || !cedula){ msg.innerHTML = '<div class="msg error">Escribe el nombre y la cédula.</div>'; return; }
+  const id = this.dataset.id || null;
+  const {error} = await db.rpc('bv_admin_guardar_estudiante', {
+    ...adminCreds(), p_id:id, p_nombre:nombre, p_cedula:cedula, p_salon:salon, p_secciones:secciones
+  });
+  if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  closeModal('estudianteModal');
+  renderAdminSalones();
 };
 
+/* ---- tab: respaldos y papelera ---- */
+async function renderAdminRespaldos(){
+  const body = document.getElementById('adminBody');
+  body.innerHTML = `
+    <div class="row-actions" style="margin-bottom:1.2em;">
+      <button class="btn gold" id="btnCrearRespaldo">📦 Crear respaldo ahora</button>
+    </div>
+    <h3>Respaldos guardados</h3>
+    <div id="listaRespaldos">Cargando…</div>
+    <h3 style="margin-top:2em;">Papelera (borrados recientes)</h3>
+    <p class="hint">Aquí quedan guardados automáticamente los estudiantes y publicaciones que se eliminan, por si alguien borró algo por error.</p>
+    <div id="listaPapelera">Cargando…</div>
+  `;
+  document.getElementById('btnCrearRespaldo').onclick = async ()=>{
+    await db.rpc('bv_admin_crear_respaldo', adminCreds());
+    cargarRespaldos();
+  };
+  cargarRespaldos();
+  cargarPapelera();
+}
+async function cargarRespaldos(){
+  const cont = document.getElementById('listaRespaldos');
+  const {data, error} = await db.rpc('bv_admin_listar_respaldos', adminCreds());
+  if(error){ cont.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  if(!data || data.length===0){ cont.innerHTML = '<div class="empty">Todavía no se ha creado ningún respaldo.</div>'; return; }
+  cont.innerHTML = `<table><thead><tr><th>Fecha</th><th></th></tr></thead><tbody>${data.map(r=>`
+    <tr><td>${new Date(r.creado_en).toLocaleString('es-PA')}</td>
+    <td style="white-space:nowrap;">
+      <button class="btn small outline" data-ver="${r.id}">Ver</button>
+      <button class="btn small outline" data-descargar="${r.id}">Descargar .json</button>
+    </td></tr>`).join('')}</tbody></table>`;
+  cont.querySelectorAll('[data-ver]').forEach(b=> b.onclick = async ()=>{
+    const {data: snap} = await db.rpc('bv_admin_ver_respaldo', {...adminCreds(), p_id:b.dataset.ver});
+    document.getElementById('respaldoContenido').textContent = JSON.stringify(snap, null, 2);
+    openModal('respaldoModal');
+  });
+  cont.querySelectorAll('[data-descargar]').forEach(b=> b.onclick = async ()=>{
+    const {data: snap} = await db.rpc('bv_admin_ver_respaldo', {...adminCreds(), p_id:b.dataset.descargar});
+    const blob = new Blob([JSON.stringify(snap, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `respaldo-buenavista-${b.dataset.descargar}.json`;
+    a.click();
+  });
+}
+async function cargarPapelera(){
+  const cont = document.getElementById('listaPapelera');
+  const {data, error} = await db.rpc('bv_admin_listar_papelera', adminCreds());
+  if(error){ cont.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  if(!data || data.length===0){ cont.innerHTML = '<div class="empty">La papelera está vacía.</div>'; return; }
+  cont.innerHTML = `<table><thead><tr><th>Qué era</th><th>Detalle</th><th>Borrado</th><th></th></tr></thead><tbody>${data.map(p=>{
+    const esEst = p.tabla_origen==='bv_estudiantes';
+    const detalle = esEst ? `${escapeHtml(p.dato.nombre)} (${escapeHtml(p.dato.cedula)})` : escapeHtml(p.dato.titulo||'');
+    return `<tr>
+      <td>${esEst?'👤 Estudiante':'📝 Publicación'}</td>
+      <td>${detalle}</td>
+      <td>${new Date(p.borrado_en).toLocaleString('es-PA')}</td>
+      <td>${esEst ? `<button class="btn small outline" data-restore="${p.id}">Restaurar</button>` : ''}</td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+  cont.querySelectorAll('[data-restore]').forEach(b=> b.onclick = async ()=>{
+    await db.rpc('bv_admin_restaurar_estudiante', {...adminCreds(), p_papelera_id:b.dataset.restore});
+    cargarPapelera();
+    if(adminTab==='salones') renderAdminSalones();
+  });
+}
+
 /* =====================  INICIO  ===================== */
-(async function init(){
-  await loadData();
+(function init(){
   renderWho();
   renderDrawer();
-  goTo('home');
+  goTo(session ? (session.role==='admin' ? 'admin' : 'home') : 'home');
 })();
 </script>
 </body>
