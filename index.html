@@ -281,8 +281,16 @@
 
     <div id="loginEstudianteFields">
       <div class="field">
-        <label>Tu nombre completo</label>
-        <input id="loginNombre" placeholder="Como está escrito en la lista del salón">
+        <label>Grado y grupo</label>
+        <select id="loginSalon">
+          <option value="">Primero selecciona tu salón</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tu nombre</label>
+        <select id="loginNombre" disabled>
+          <option value="">Selecciona primero tu salón</option>
+        </select>
       </div>
       <div class="field">
         <label>Tu cédula</label>
@@ -451,6 +459,41 @@ document.querySelectorAll('[data-close]').forEach(b=>{ b.onclick = ()=> closeMod
 /* ---- login: toggle estudiante / profesor ---- */
 const tabLoginEstudiante = document.getElementById('tabLoginEstudiante');
 const tabLoginProfesor = document.getElementById('tabLoginProfesor');
+let listaLoginEstudiantes = [];
+
+async function cargarListaParaLogin(){
+  const salonSelect = document.getElementById('loginSalon');
+  const nombreSelect = document.getElementById('loginNombre');
+  try{
+    const response = await fetch('estudiantes.csv', {cache:'no-store'});
+    if(!response.ok) throw new Error('No se encontró la lista de estudiantes.');
+    const text = (await response.text()).replace(/^\uFEFF/, '');
+    listaLoginEstudiantes = text.split(/\r?\n/).slice(1).filter(Boolean).map(parseCSVLine)
+      .map(r=>({nombre:r[0], cedula:r[1], salon:r[2]}));
+    const salones = [...new Set(listaLoginEstudiantes.map(e=>e.salon).filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b, 'es', {numeric:true}));
+    salonSelect.innerHTML = '<option value="">Selecciona tu grado y grupo</option>' +
+      salones.map(s=>`<option value="${escapeHtml(s)}">${SALON_LABEL[s]||escapeHtml(s)}</option>`).join('');
+    nombreSelect.innerHTML = '<option value="">Selecciona primero tu salón</option>';
+    nombreSelect.disabled = true;
+  }catch(error){
+    salonSelect.innerHTML = '<option value="">Lista no disponible</option>';
+    nombreSelect.innerHTML = '<option value="">Lista no disponible</option>';
+    document.getElementById('loginMsg').innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+document.getElementById('loginSalon').onchange = function(){
+  const nombreSelect = document.getElementById('loginNombre');
+  const estudiantes = listaLoginEstudiantes
+    .filter(e=>e.salon===this.value)
+    .sort((a,b)=>a.nombre.localeCompare(b.nombre, 'es'));
+  nombreSelect.disabled = !this.value;
+  nombreSelect.innerHTML = this.value
+    ? '<option value="">Selecciona tu nombre</option>' + estudiantes.map(e=>`<option value="${escapeHtml(e.nombre)}">${escapeHtml(e.nombre)}</option>`).join('')
+    : '<option value="">Selecciona primero tu salón</option>';
+};
+
 function setLoginTab(cual){
   const esEst = cual==='estudiante';
   tabLoginEstudiante.classList.toggle('active', esEst);
@@ -469,11 +512,13 @@ document.getElementById('loginBtn').onclick = ()=>{
   }else{
     document.getElementById('loginMsg').innerHTML='';
     document.getElementById('loginNombre').value='';
+    document.getElementById('loginSalon').value='';
     document.getElementById('loginCedula').value='';
     document.getElementById('loginUser').value='';
     document.getElementById('loginPass').value='';
     setLoginTab('estudiante');
     openModal('loginModal');
+    cargarListaParaLogin();
   }
 };
 
@@ -495,8 +540,9 @@ document.getElementById('doLogin').onclick = async ()=>{
   }
 
   const nombre = document.getElementById('loginNombre').value.trim();
+  const salon = document.getElementById('loginSalon').value;
   const cedula = document.getElementById('loginCedula').value.trim();
-  if(!nombre || !cedula){ msg.innerHTML = '<div class="msg error">Escribe tu nombre y tu cédula.</div>'; return; }
+  if(!salon || !nombre || !cedula){ msg.innerHTML = '<div class="msg error">Selecciona tu salón, tu nombre y escribe tu cédula.</div>'; return; }
   const {data, error} = await db.rpc('bv_login_estudiante', {p_nombre:nombre, p_cedula:cedula});
   if(error || !data || data.length===0){
     msg.innerHTML = '<div class="msg error">No encontramos ese nombre y cédula juntos. Revisa que estén escritos igual que en la lista del salón.</div>';
@@ -682,7 +728,12 @@ async function renderAdminSalones(){
   if(error){ body.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
   estudiantesCache = data || [];
   body.innerHTML = `
-    <div class="row-actions" style="margin-bottom:1em;"><button class="btn gold" id="newStudentBtn">+ Agregar estudiante</button></div>
+    <div class="row-actions" style="margin-bottom:1em;">
+      <button class="btn gold" id="newStudentBtn">+ Agregar estudiante</button>
+      <button class="btn outline" id="importStudentsBtn">📋 Cargar lista de 100 estudiantes</button>
+    </div>
+    <div id="importStudentsMsg"></div>
+    <p class="hint">Después de cargar la lista, pulsa <strong>Editar</strong> junto a cada estudiante y marca la sección o tarea que investigará para alimentar la página.</p>
     <div id="salonesTables"></div>
   `;
   const cont = document.getElementById('salonesTables');
@@ -714,6 +765,67 @@ async function renderAdminSalones(){
     renderAdminSalones();
   });
   document.getElementById('newStudentBtn').onclick = ()=> openEstudianteModal(null);
+  document.getElementById('importStudentsBtn').onclick = importarListaEstudiantes;
+}
+
+/* Carga inicial desde estudiantes.csv. Evita repetir cédulas ya registradas. */
+function parseCSVLine(line){
+  const values = [];
+  let value = '';
+  let quoted = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch==='"'){
+      if(quoted && line[i+1]==='"'){ value += '"'; i++; }
+      else quoted = !quoted;
+    }else if(ch===',' && !quoted){
+      values.push(value.trim()); value = '';
+    }else value += ch;
+  }
+  values.push(value.trim());
+  return values;
+}
+
+async function importarListaEstudiantes(){
+  const btn = document.getElementById('importStudentsBtn');
+  const msg = document.getElementById('importStudentsMsg');
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg">Preparando la lista…</div>';
+  try{
+    const response = await fetch('estudiantes.csv', {cache:'no-store'});
+    if(!response.ok) throw new Error('No se encontró el archivo estudiantes.csv.');
+    const text = (await response.text()).replace(/^\uFEFF/, '');
+    const rows = text.split(/\r?\n/).slice(1).filter(Boolean).map(parseCSVLine)
+      .map((r, index)=>({
+        nombre:r[0],
+        cedula:(!r[1] || r[1].toLowerCase()==='null') ? `PENDIENTE-${r[2]}-${String(index+1).padStart(3,'0')}` : r[1],
+        salon:r[2],
+        provisional:!r[1] || r[1].toLowerCase()==='null'
+      }));
+    const existentes = new Set(estudiantesCache.map(e=>String(e.cedula).trim()));
+    const vistos = new Set(existentes);
+    const nuevos = rows.filter(r=>{
+      if(!r.nombre || !r.cedula || !r.salon || vistos.has(r.cedula)) return false;
+      vistos.add(r.cedula);
+      return true;
+    });
+    let agregados = 0;
+    for(const {nombre, cedula, salon} of nuevos){
+      msg.innerHTML = `<div class="msg">Agregando ${agregados+1} de ${nuevos.length}: ${escapeHtml(nombre)}</div>`;
+      const {error} = await db.rpc('bv_admin_guardar_estudiante', {
+        ...adminCreds(), p_id:null, p_nombre:nombre, p_cedula:cedula, p_salon:salon, p_secciones:[]
+      });
+      if(error) throw new Error(`${nombre}: ${error.message}`);
+      agregados++;
+    }
+    const omitidos = rows.length - nuevos.length;
+    const provisionales = nuevos.filter(r=>r.provisional).length;
+    msg.innerHTML = `<div class="msg success">✅ Se agregaron ${agregados} estudiantes.${omitidos ? ` ${omitidos} ya estaban registrados y no se duplicaron.` : ''}${provisionales ? ` ${provisionales} quedaron con cédula provisional para corregirla después.` : ''}</div>`;
+    setTimeout(renderAdminSalones, 1400);
+  }catch(error){
+    msg.innerHTML = `<div class="msg error">No se pudo cargar la lista: ${escapeHtml(error.message)}</div>`;
+    btn.disabled = false;
+  }
 }
 
 function openEstudianteModal(id){
