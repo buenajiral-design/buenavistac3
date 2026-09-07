@@ -454,15 +454,25 @@
   .mapa-lienzo{height:260px;border-radius:4px;overflow:hidden;margin:.5em 0;border:1.5px solid var(--line);background:var(--parchment-2);}
   .mapa-coords{margin:0 0 .8em;}
   .mapa-fullscreen-overlay{
-    position:fixed;inset:0;background:var(--white);z-index:90;
-    display:none;flex-direction:column;
+    position:fixed!important;top:0!important;right:0!important;bottom:0!important;left:0!important;
+    width:100vw!important;height:100vh!important;height:100dvh!important;
+    margin:0!important;padding:0!important;background:var(--white);z-index:2147483647!important;
+    display:none;flex-direction:column;overflow:hidden;isolation:isolate;
   }
   .mapa-fullscreen-overlay.open{display:flex;}
   .mapa-fullscreen-bar{
-    display:flex;gap:.6em;align-items:center;flex-wrap:wrap;
-    padding:.7em 1em;border-bottom:1px solid var(--line);background:var(--parchment-2);
+    display:flex;gap:.6em;align-items:center;flex-wrap:wrap;flex:0 0 auto;
+    padding:.7em 1em;border-bottom:1px solid var(--line);background:var(--parchment-2);z-index:2;
   }
-  #mapaFullscreenLienzo{flex:1;min-height:0;}
+  #mapaFullscreenLienzo{flex:1 1 auto;min-height:0;width:100%;touch-action:none;position:relative;z-index:1;}
+  body.mapa-fullscreen-activo{overflow:hidden!important;position:fixed;width:100%;height:100%;}
+  @media(max-width:640px){
+    .mapa-fullscreen-bar{padding:.45em;gap:.35em;align-items:stretch;max-height:42vh;overflow-y:auto}
+    .mapa-fullscreen-bar .upload-row{flex-basis:100%!important}
+    .mapa-fullscreen-bar .mapa-tipo-switch{flex:1;margin:0}
+    .mapa-fullscreen-bar .mapa-tipo-switch button{flex:1;padding:.45em .5em}
+    #mapaFullscreenCerrar{width:100%;padding:.6em}
+  }
 
   /* ---------- íconos de redes (svg) ---------- */
   .red-icono svg{display:block;}
@@ -2261,7 +2271,17 @@ function crearMapaLeaflet(el, b, opciones){
   const tieneUbicacion = b.lat!=null && b.lng!=null;
   const startLat = tieneUbicacion ? b.lat : 8.4;   // centro aproximado de Panamá
   const startLng = tieneUbicacion ? b.lng : -80.6;
-  const map = L.map(el, {scrollWheelZoom: !!opciones.scrollWheelZoom}).setView([startLat, startLng], tieneUbicacion ? 16 : 8);
+  const map = L.map(el, {
+    scrollWheelZoom: !!opciones.scrollWheelZoom,
+    wheelDebounceTime:25,
+    wheelPxPerZoomLevel:70,
+    touchZoom:true,
+    dragging:true,
+    doubleClickZoom:true,
+    boxZoom:true,
+    keyboard:true,
+    zoomControl:true
+  }).setView([startLat, startLng], tieneUbicacion ? 16 : 8);
   const capaCalle = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution:'&copy; colaboradores de OpenStreetMap', maxZoom:19
   });
@@ -2311,10 +2331,19 @@ function initMapaPicker(b){
 /* ---- ver el mapa en pantalla completa, para marcar el lugar con más espacio ---- */
 let mapaFullscreenBlockId = null;
 let mapaFullscreenInst = null;
+let paginaScrollAntesMapa = 0;
 function abrirMapaFullscreen(b){
   if(typeof L==='undefined') return;
   mapaFullscreenBlockId = b.id;
-  document.getElementById('mapaFullscreenOverlay').classList.add('open');
+  const overlay=document.getElementById('mapaFullscreenOverlay');
+  paginaScrollAntesMapa=window.scrollY||0;
+  document.body.style.top=`-${paginaScrollAntesMapa}px`;
+  document.body.classList.add('mapa-fullscreen-activo');
+  overlay.classList.add('open');
+  try{
+    const pedir=overlay.requestFullscreen||overlay.webkitRequestFullscreen;
+    if(pedir) Promise.resolve(pedir.call(overlay,{navigationUI:'hide'})).catch(()=>{});
+  }catch(e){}
   if(mapaFullscreenInst){ try{ mapaFullscreenInst.map.remove(); }catch(e){} mapaFullscreenInst = null; }
   const el = document.getElementById('mapaFullscreenLienzo');
   const coordsEl = document.getElementById('mapaFullscreenCoords');
@@ -2325,11 +2354,17 @@ function abrirMapaFullscreen(b){
   });
   document.getElementById('mapaFullscreenBuscar').value = '';
   document.querySelectorAll('#mapaFullscreenTipoSwitch [data-fstipo]').forEach(b2=> b2.classList.toggle('active', b2.dataset.fstipo==='calle'));
+  setTimeout(()=>mapaFullscreenInst&&mapaFullscreenInst.map.invalidateSize(),250);
 }
 function cerrarMapaFullscreen(){
-  document.getElementById('mapaFullscreenOverlay').classList.remove('open');
+  const overlay=document.getElementById('mapaFullscreenOverlay');
+  overlay.classList.remove('open');
+  try{ if(document.fullscreenElement===overlay && document.exitFullscreen) document.exitFullscreen().catch(()=>{}); }catch(e){}
   if(mapaFullscreenInst){ try{ mapaFullscreenInst.map.remove(); }catch(e){} mapaFullscreenInst = null; }
   mapaFullscreenBlockId = null;
+  document.body.classList.remove('mapa-fullscreen-activo');
+  document.body.style.top='';
+  window.scrollTo(0,paginaScrollAntesMapa);
   pintarBloquesList(); // refresca el mapa chico y las coordenadas del editor normal
 }
 function guardarUbicacionBloque(b, lat, lng){
@@ -3690,6 +3725,9 @@ function initColManagerEstatico(){
 }
 function initMapaFullscreenEstatico(){
   document.getElementById('mapaFullscreenCerrar').onclick = cerrarMapaFullscreen;
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape' && document.getElementById('mapaFullscreenOverlay').classList.contains('open')) cerrarMapaFullscreen();
+  });
   document.querySelectorAll('#mapaFullscreenTipoSwitch [data-fstipo]').forEach(btn=>{
     btn.onclick = ()=>{
       if(!mapaFullscreenInst) return;
