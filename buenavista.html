@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buena Vista — Nuestro Corregimiento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,600;0,700;1,500&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#2F4A3C;
+    --forest-dark:#203329;
+    --gold:#C98A2C;
+    --gold-dark:#a86f1e;
+    --parchment:#F3EAD3;
+    --parchment-2:#EADFC0;
+    --clay:#A6533A;
+    --ink:#2B2620;
+    --sky:#4C7A93;
+    --white:#FFFDF8;
+    --line: rgba(43,38,32,0.16);
+    --radius: 4px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--parchment);
+    color:var(--ink);
+    font-family:'Karla',sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{
+    font-family:'Bitter',serif;
+    margin:0 0 .4em 0;
+    font-weight:700;
+    color:var(--forest-dark);
+    line-height:1.15;
+  }
+  a{color:var(--sky);}
+  button{
+    font-family:'Karla',sans-serif;
+    cursor:pointer;
+  }
+  .btn{
+    display:inline-block;
+    background:var(--forest);
+    color:var(--white);
+    border:none;
+    padding:.65em 1.3em;
+    border-radius:var(--radius);
+    font-weight:700;
+    font-size:.95rem;
+    letter-spacing:.01em;
+    transition:background .15s ease;
+  }
+  .btn:hover{background:var(--forest-dark);}
+  .btn.gold{background:var(--gold);color:var(--forest-dark);}
+  .btn.gold:hover{background:var(--gold-dark);}
+  .btn.outline{background:transparent;color:var(--forest);border:1.5px solid var(--forest);}
+  .btn.outline:hover{background:var(--forest);color:var(--white);}
+  .btn.small{padding:.4em .9em;font-size:.82rem;}
+  .btn.danger{background:var(--clay);color:var(--white);}
+  input,select,textarea{
+    font-family:'Karla',sans-serif;
+    font-size:.95rem;
+    padding:.6em .7em;
+    border:1.5px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--white);
+    color:var(--ink);
+    width:100%;
+  }
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--sky);outline-offset:1px;}
+  label{font-size:.82rem;font-weight:700;display:block;margin-bottom:.25em;color:var(--forest-dark);}
+  .field{margin-bottom:1em;}
+
+  /* ---------- top bar ---------- */
+  header.topbar{
+    position:sticky;top:0;z-index:40;
+    background:var(--forest);
+    color:var(--white);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.8em 1.3em;
+    box-shadow:0 1px 0 rgba(0,0,0,.15);
+  }
+  .brand{display:flex;align-items:center;gap:.6em;cursor:pointer;}
+  .brand .mark{
+    width:34px;height:34px;border-radius:50%;
+    background:var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Bitter',serif;font-weight:700;color:var(--forest-dark);
+    flex-shrink:0;
+  }
+  .brand-text{font-family:'Bitter',serif;font-weight:700;font-size:1.15rem;color:var(--white);}
+  .brand-text small{display:block;font-family:'Karla',sans-serif;font-weight:400;font-size:.68rem;color:var(--parchment-2);letter-spacing:.03em;}
+  .top-actions{display:flex;align-items:center;gap:.6em;}
+  .top-actions .who{font-size:.85rem;color:var(--parchment-2);margin-right:.4em;}
+  .menu-btn{
+    background:transparent;border:1.5px solid rgba(255,255,255,.5);color:var(--white);
+    padding:.5em .8em;border-radius:var(--radius);font-weight:700;font-size:.9rem;
+  }
+  .menu-btn:hover{background:rgba(255,255,255,.12);}
+
+  /* ---------- section drawer ---------- */
+  .drawer-overlay{
+    position:fixed;inset:0;background:rgba(20,16,10,.45);z-index:50;
+    display:none;
+  }
+  .drawer-overlay.open{display:block;}
+  .drawer{
+    position:fixed;top:0;left:0;bottom:0;width:min(300px,84vw);
+    background:var(--white);z-index:51;
+    transform:translateX(-100%);transition:transform .22s ease;
+    overflow-y:auto;padding:1.2em 0 2em;
+  }
+  .drawer.open{transform:translateX(0);}
+  .drawer h4{padding:0 1.2em;font-size:.75rem;letter-spacing:.04em;color:var(--clay);margin-bottom:.6em;}
+  .drawer-item{
+    display:flex;align-items:center;gap:.7em;
+    padding:.7em 1.2em;font-weight:700;color:var(--ink);
+    border-left:3px solid transparent;
+  }
+  .drawer-item:hover{background:var(--parchment);}
+  .drawer-item.active{border-left-color:var(--gold);background:var(--parchment);color:var(--forest-dark);}
+  .drawer-icon{font-size:1.15rem;width:1.4em;text-align:center;}
+  .drawer-close{position:absolute;top:.8em;right:1em;background:none;border:none;font-size:1.4rem;color:var(--ink);}
+
+  main{max-width:960px;margin:0 auto;padding:2em 1.3em 4em;}
+
+  /* ---------- hero / home ---------- */
+  .hero{margin-bottom:2.2em;}
+  .hero .kicker{color:var(--clay);font-weight:700;font-size:.85rem;margin-bottom:.3em;}
+  .hero h1{font-size:2.3rem;max-width:14ch;}
+  .hero p.lead{max-width:56ch;font-size:1.05rem;color:#4a4237;}
+
+  .mosaic{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    grid-auto-rows:90px;
+    gap:8px;
+    margin:1.6em 0 2em;
+  }
+  .mosaic .cell{
+    grid-column:span 3;grid-row:span 2;
+    border-radius:var(--radius);
+    overflow:hidden;position:relative;
+    background:var(--parchment-2);
+  }
+  .mosaic .cell:nth-child(1){grid-column:span 4;grid-row:span 3;}
+  .mosaic .cell:nth-child(2){grid-column:span 2;grid-row:span 2;}
+  .mosaic .cell:nth-child(3){grid-column:span 2;grid-row:span 1;}
+  .mosaic .cell img{width:100%;height:100%;object-fit:cover;display:block;}
+  .mosaic .cell .cap{
+    position:absolute;left:0;right:0;bottom:0;
+    background:linear-gradient(transparent,rgba(20,16,10,.75));
+    color:var(--white);font-family:'Bitter',serif;font-weight:600;
+    padding:1.4em .7em .5em;font-size:.9rem;
+  }
+  @media(max-width:640px){
+    .mosaic{grid-template-columns:repeat(2,1fr);grid-auto-rows:120px;}
+    .mosaic .cell,.mosaic .cell:nth-child(1),.mosaic .cell:nth-child(2),.mosaic .cell:nth-child(3){grid-column:span 1;grid-row:span 1;}
+  }
+
+  .section-divider{
+    display:flex;align-items:center;gap:.8em;margin:2.4em 0 1.2em;
+  }
+  .section-divider h2{margin:0;font-size:1.35rem;}
+  .section-divider .rule{flex:1;height:1px;background:var(--line);}
+  .section-divider .icon{font-size:1.4rem;}
+
+  .section-desc{color:#4a4237;max-width:60ch;margin-bottom:1.2em;}
+
+  .card{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--white);
+    padding:1.1em 1.2em;
+    margin-bottom:1em;
+  }
+  .card h3{font-size:1.08rem;margin-bottom:.25em;}
+  .card img{width:100%;max-height:260px;object-fit:cover;border-radius:var(--radius);margin-bottom:.7em;}
+  .byline{font-size:.78rem;color:var(--clay);font-weight:700;margin-top:.6em;}
+  .empty{
+    border:1.5px dashed var(--line);border-radius:var(--radius);
+    padding:2em 1.2em;text-align:center;color:#7a7062;
+  }
+  .status-pill{
+    display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.02em;
+    padding:.15em .6em;border-radius:20px;margin-left:.5em;vertical-align:middle;
+  }
+  .status-pending{background:#f4dfa8;color:#6b4c0a;}
+  .status-published{background:#cfe3d2;color:#245133;}
+  .status-rejected{background:#eecfc7;color:#7a2e18;}
+
+  /* forms/modals */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(20,16,10,.5);
+    display:none;align-items:flex-start;justify-content:center;
+    z-index:60;padding:5vh 1em;overflow-y:auto;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--white);border-radius:var(--radius);
+    padding:1.6em 1.6em 1.4em;width:100%;max-width:440px;
+  }
+  .modal h3{margin-bottom:.9em;}
+  .modal-close{float:right;background:none;border:none;font-size:1.3rem;color:var(--ink);}
+  .row-actions{display:flex;gap:.6em;margin-top:.4em;flex-wrap:wrap;}
+  .msg{font-size:.85rem;padding:.6em .8em;border-radius:var(--radius);margin-bottom:1em;}
+  .msg.error{background:#eecfc7;color:#7a2e18;}
+  .msg.ok{background:#cfe3d2;color:#245133;}
+
+  table{width:100%;border-collapse:collapse;font-size:.88rem;}
+  th,td{text-align:left;padding:.5em .5em;border-bottom:1px solid var(--line);}
+  th{color:var(--clay);font-size:.75rem;letter-spacing:.03em;}
+
+  footer{
+    text-align:center;color:#8a7f6e;font-size:.82rem;
+    padding:2em 1em 3em;
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand" id="brandHome">
+    <div class="mark">BV</div>
+    <div class="brand-text">Buena Vista<small>Nuestro corregimiento — C.E.B.G. El Jiral</small></div>
+  </div>
+  <div class="top-actions">
+    <span class="who" id="whoLabel"></span>
+    <button class="menu-btn" id="loginBtn">Entrar</button>
+    <button class="menu-btn" id="drawerBtn">☰ Secciones</button>
+  </div>
+</header>
+
+<div class="drawer-overlay" id="drawerOverlay">
+  <nav class="drawer" id="drawer">
+    <button class="drawer-close" id="drawerClose">×</button>
+    <h4>SECCIONES</h4>
+    <div id="drawerList"></div>
+  </nav>
+</div>
+
+<main id="main"></main>
+
+<footer>Buena Vista — construido por los estudiantes del C.E.B.G. El Jiral, 2026.</footer>
+
+<!-- Login modal -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <button class="modal-close" data-close="loginModal">×</button>
+    <h3>Iniciar sesión</h3>
+    <div id="loginMsg"></div>
+    <div class="field">
+      <label>Usuario</label>
+      <input id="loginUser" placeholder="tu usuario">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input id="loginPass" type="password" placeholder="tu contraseña">
+    </div>
+    <button class="btn" id="doLogin">Entrar</button>
+    <p style="font-size:.8rem;color:#7a7062;margin-top:1em;">¿No tienes cuenta? Pídele a tu profesor que te cree una desde el panel de administrador.</p>
+  </div>
+</div>
+
+<!-- Create/edit account modal (admin) -->
+<div class="modal-overlay" id="accountModal">
+  <div class="modal">
+    <button class="modal-close" data-close="accountModal">×</button>
+    <h3>Nueva cuenta de estudiante</h3>
+    <div id="accountMsg"></div>
+    <div class="field"><label>Nombre completo</label><input id="accName" placeholder="Ej. María González"></div>
+    <div class="field"><label>Grado</label><input id="accGrade" placeholder="Ej. 8.º B"></div>
+    <div class="field"><label>Usuario</label><input id="accUser" placeholder="usuario para entrar"></div>
+    <div class="field"><label>Contraseña</label><input id="accPass" placeholder="contraseña"></div>
+    <div class="field">
+      <label>Sección(es) a cargo</label>
+      <div id="accSections" style="max-height:180px;overflow-y:auto;border:1px solid var(--line);border-radius:4px;padding:.6em;"></div>
+    </div>
+    <button class="btn" id="doCreateAccount">Crear cuenta</button>
+  </div>
+</div>
+
+<!-- Add content modal -->
+<div class="modal-overlay" id="contentModal">
+  <div class="modal">
+    <button class="modal-close" data-close="contentModal">×</button>
+    <h3 id="contentModalTitle">Nueva publicación</h3>
+    <div id="contentMsg"></div>
+    <div class="field"><label>Título</label><input id="cTitle" placeholder="Título"></div>
+    <div class="field"><label>Descripción</label><textarea id="cBody" rows="4" placeholder="Escribe la información aquí..."></textarea></div>
+    <div class="field"><label>Foto (URL de una imagen, opcional)</label><input id="cImg" placeholder="https://..."></div>
+    <button class="btn" id="doSaveContent">Enviar para revisión</button>
+  </div>
+</div>
+
+<script>
+/* =====================  DATOS BASE  ===================== */
+const SECTIONS = [
+  {id:'lugares', name:'Lugares bonitos', icon:'🌳', desc:'Los rincones más lindos de Buena Vista: miradores, ríos, senderos y paisajes que vale la pena conocer.'},
+  {id:'autoridades', name:'Autoridades', icon:'🏛️', desc:'Representante, corregidores y líderes comunitarios de Buena Vista.'},
+  {id:'instituciones', name:'Instituciones públicas', icon:'🏢', desc:'Oficinas y entidades del gobierno presentes en el corregimiento.'},
+  {id:'escuelas', name:'Escuelas y centros educativos', icon:'🏫', desc:'Centros educativos donde estudian los niños y jóvenes de la comunidad.'},
+  {id:'iglesias', name:'Iglesias', icon:'⛪', desc:'Templos y congregaciones que forman parte de la vida espiritual de Buena Vista.'},
+  {id:'deportes', name:'Deportes y clubes', icon:'⚽', desc:'Equipos, canchas y actividades deportivas de la comunidad.'},
+  {id:'negocios', name:'Directorio de negocios', icon:'🏪', desc:'Tiendas, ventas y emprendimientos locales.'},
+  {id:'salud', name:'Salud', icon:'🏥', desc:'Centros de salud y servicios médicos disponibles.'},
+  {id:'transporte', name:'Transporte', icon:'🚌', desc:'Rutas, horarios y formas de moverse dentro y fuera del corregimiento.'},
+  {id:'historia', name:'Historia de Buena Vista', icon:'📜', desc:'Cómo se formó la comunidad y los hechos que marcaron su historia.'},
+  {id:'cultura', name:'Cultura y tradiciones', icon:'🎭', desc:'Fiestas, costumbres y tradiciones que identifican a Buena Vista.'},
+  {id:'galeria', name:'Galería comunitaria', icon:'📸', desc:'Fotografías de la vida diaria y los eventos de la comunidad.'},
+  {id:'noticias', name:'Noticias y actividades', icon:'📰', desc:'Lo que está pasando ahora mismo en la comunidad.'},
+  {id:'investigaciones', name:'Investigaciones de los estudiantes', icon:'🎓', desc:'Trabajos de investigación realizados por los estudiantes del C.E.B.G. El Jiral.'}
+];
+const ADMIN = {user:'samuelortega', pass:'8-441-121', name:'Prof. Samuel Ortega'};
+const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=600&q=60';
+
+/* =====================  ESTADO  ===================== */
+let session = null;      // {role:'admin'|'student', user, name, grade, sections:[]}
+let accounts = [];       // [{name,grade,user,pass,sections:[]}]
+let content = {};        // {sectionId: [{id,title,body,img,author,grade,status}]}
+let currentSection = 'home';
+
+/* =====================  STORAGE  ===================== */
+async function loadData(){
+  try{
+    const acc = await window.storage.get('bv:accounts', true);
+    accounts = acc ? JSON.parse(acc.value) : [];
+  }catch(e){ accounts = []; }
+  try{
+    const c = await window.storage.get('bv:content', true);
+    content = c ? JSON.parse(c.value) : {};
+  }catch(e){ content = {}; }
+  SECTIONS.forEach(s=>{ if(!content[s.id]) content[s.id]=[]; });
+}
+async function saveAccounts(){ await window.storage.set('bv:accounts', JSON.stringify(accounts), true); }
+async function saveContent(){ await window.storage.set('bv:content', JSON.stringify(content), true); }
+
+/* =====================  UI: TOPBAR / DRAWER  ===================== */
+function renderWho(){
+  const who = document.getElementById('whoLabel');
+  const loginBtn = document.getElementById('loginBtn');
+  if(session){
+    who.textContent = (session.role==='admin' ? '👑 ' : '🧑‍🎓 ') + session.name;
+    loginBtn.textContent = 'Salir';
+  }else{
+    who.textContent = '';
+    loginBtn.textContent = 'Entrar';
+  }
+}
+function renderDrawer(){
+  const list = document.getElementById('drawerList');
+  list.innerHTML = '';
+  const homeItem = document.createElement('div');
+  homeItem.className = 'drawer-item' + (currentSection==='home' ? ' active':'');
+  homeItem.innerHTML = '<span class="drawer-icon">🏠</span> Inicio';
+  homeItem.onclick = ()=>{ goTo('home'); closeDrawer(); };
+  list.appendChild(homeItem);
+  SECTIONS.forEach(s=>{
+    const item = document.createElement('div');
+    item.className = 'drawer-item' + (currentSection===s.id ? ' active':'');
+    item.innerHTML = `<span class="drawer-icon">${s.icon}</span> ${s.name}`;
+    item.onclick = ()=>{ goTo(s.id); closeDrawer(); };
+    list.appendChild(item);
+  });
+  if(session && session.role==='admin'){
+    const item = document.createElement('div');
+    item.className = 'drawer-item' + (currentSection==='admin' ? ' active':'');
+    item.style.borderTop = '1px solid var(--line)';
+    item.style.marginTop = '.5em';
+    item.innerHTML = '<span class="drawer-icon">⚙️</span> Panel del profesor';
+    item.onclick = ()=>{ goTo('admin'); closeDrawer(); };
+    list.appendChild(item);
+  }
+}
+function openDrawer(){ document.getElementById('drawerOverlay').classList.add('open'); document.getElementById('drawer').classList.add('open'); }
+function closeDrawer(){ document.getElementById('drawerOverlay').classList.remove('open'); document.getElementById('drawer').classList.remove('open'); }
+document.getElementById('drawerBtn').onclick = openDrawer;
+document.getElementById('drawerClose').onclick = closeDrawer;
+document.getElementById('drawerOverlay').onclick = (e)=>{ if(e.target.id==='drawerOverlay') closeDrawer(); };
+document.getElementById('brandHome').onclick = ()=> goTo('home');
+
+/* =====================  MODALES  ===================== */
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('[data-close]').forEach(b=>{
+  b.onclick = ()=> closeModal(b.dataset.close);
+});
+
+document.getElementById('loginBtn').onclick = ()=>{
+  if(session){
+    session = null;
+    renderWho(); renderDrawer(); goTo('home');
+  }else{
+    document.getElementById('loginMsg').innerHTML='';
+    document.getElementById('loginUser').value='';
+    document.getElementById('loginPass').value='';
+    openModal('loginModal');
+  }
+};
+document.getElementById('doLogin').onclick = ()=>{
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const msg = document.getElementById('loginMsg');
+  if(u===ADMIN.user && p===ADMIN.pass){
+    session = {role:'admin', user:u, name:ADMIN.name, sections:SECTIONS.map(s=>s.id)};
+    closeModal('loginModal'); renderWho(); renderDrawer(); goTo('admin');
+    return;
+  }
+  const acc = accounts.find(a=>a.user===u && a.pass===p);
+  if(acc){
+    session = {role:'student', user:acc.user, name:acc.name, grade:acc.grade, sections:acc.sections};
+    closeModal('loginModal'); renderWho(); renderDrawer(); goTo(acc.sections[0] || 'home');
+    return;
+  }
+  msg.innerHTML = '<div class="msg error">Usuario o contraseña incorrectos.</div>';
+};
+
+/* =====================  NAVEGACIÓN  ===================== */
+function goTo(sectionId){
+  currentSection = sectionId;
+  renderDrawer();
+  if(sectionId==='home') renderHome();
+  else if(sectionId==='admin') renderAdmin();
+  else renderSection(sectionId);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* =====================  VISTA: INICIO  ===================== */
+function renderHome(){
+  const main = document.getElementById('main');
+  const lugares = content['lugares'].filter(p=>p.status==='published').slice(0,3);
+  main.innerHTML = `
+    <div class="hero">
+      <div class="kicker">C.E.B.G. El Jiral · Proyecto comunitario</div>
+      <h1>Conoce Buena Vista</h1>
+      <p class="lead">Un espacio hecho por los propios estudiantes para mostrar los lugares, la gente y la vida de nuestro corregimiento.</p>
+    </div>
+    <div class="mosaic" id="mosaic"></div>
+    <div class="section-divider"><div class="icon">🌳</div><h2>Lugares bonitos</h2><div class="rule"></div></div>
+    <p class="section-desc">${SECTIONS[0].desc}</p>
+    <div id="lugaresPreview"></div>
+    <div class="row-actions"><button class="btn outline small" onclick="goTo('lugares')">Ver todos los lugares</button></div>
+  `;
+  const mosaic = document.getElementById('mosaic');
+  if(lugares.length===0){
+    mosaic.innerHTML = `<div class="empty" style="grid-column:1/-1;">Todavía no hay lugares publicados. ¡Un estudiante encargado de "Lugares bonitos" puede agregar el primero!</div>`;
+  }else{
+    mosaic.innerHTML = lugares.map(p=>`
+      <div class="cell"><img src="${p.img||PLACEHOLDER_IMG}" alt="${p.title}"><div class="cap">${p.title}</div></div>
+    `).join('');
+  }
+  document.getElementById('lugaresPreview').innerHTML = lugares.length ? lugares.map(cardHTML).join('') :
+    `<div class="empty">Aún no hay publicaciones aquí.</div>`;
+}
+
+/* =====================  VISTA: SECCIÓN  ===================== */
+function cardHTML(item){
+  let pill = '';
+  if(session && (session.role==='admin' || (session.role==='student' && session.user===item.author))){
+    if(item.status==='pending') pill = '<span class="status-pill status-pending">En revisión</span>';
+    if(item.status==='rejected') pill = '<span class="status-pill status-rejected">Devuelto</span>';
+    if(item.status==='published') pill = '<span class="status-pill status-published">Publicado</span>';
+  }
+  return `
+    <div class="card">
+      ${item.img ? `<img src="${item.img}" alt="${item.title}">` : ''}
+      <h3>${item.title} ${pill}</h3>
+      <p>${item.body}</p>
+      <div class="byline">Investigado por: ${item.authorName}${item.grade? ' · '+item.grade : ''}</div>
+    </div>
+  `;
+}
+function renderSection(id){
+  const s = SECTIONS.find(x=>x.id===id);
+  const main = document.getElementById('main');
+  const canEdit = session && session.sections && session.sections.includes(id);
+  const items = content[id] || [];
+  const visible = items.filter(i => i.status==='published' || (session && (session.role==='admin' || session.user===i.author)));
+  main.innerHTML = `
+    <div class="section-divider"><div class="icon">${s.icon}</div><h2>${s.name}</h2><div class="rule"></div></div>
+    <p class="section-desc">${s.desc}</p>
+    ${canEdit ? `<div class="row-actions" style="margin-bottom:1.4em;"><button class="btn gold" id="addContentBtn">+ Agregar publicación</button></div>` : ''}
+    <div id="sectionList"></div>
+  `;
+  document.getElementById('sectionList').innerHTML = visible.length ? visible.map(cardHTML).join('') :
+    `<div class="empty">${canEdit ? 'Todavía no has agregado nada aquí. ¡Empieza con la primera publicación!' : 'Todavía no hay publicaciones en esta sección.'}</div>`;
+  if(canEdit){
+    document.getElementById('addContentBtn').onclick = ()=> openContentModal(id);
+  }
+}
+
+/* =====================  AGREGAR CONTENIDO  ===================== */
+let contentTargetSection = null;
+function openContentModal(sectionId){
+  contentTargetSection = sectionId;
+  document.getElementById('contentModalTitle').textContent = 'Nueva publicación — ' + SECTIONS.find(s=>s.id===sectionId).name;
+  document.getElementById('cTitle').value='';
+  document.getElementById('cBody').value='';
+  document.getElementById('cImg').value='';
+  document.getElementById('contentMsg').innerHTML='';
+  openModal('contentModal');
+}
+document.getElementById('doSaveContent').onclick = async ()=>{
+  const title = document.getElementById('cTitle').value.trim();
+  const body = document.getElementById('cBody').value.trim();
+  const img = document.getElementById('cImg').value.trim();
+  const msg = document.getElementById('contentMsg');
+  if(!title || !body){ msg.innerHTML = '<div class="msg error">Escribe un título y una descripción.</div>'; return; }
+  const item = {
+    id: 'c'+Date.now(),
+    title, body, img,
+    author: session.user,
+    authorName: session.name,
+    grade: session.grade || '',
+    status: 'pending'
+  };
+  content[contentTargetSection].push(item);
+  await saveContent();
+  closeModal('contentModal');
+  renderSection(contentTargetSection);
+};
+
+/* =====================  PANEL ADMIN  ===================== */
+function renderAdmin(){
+  if(!session || session.role!=='admin'){ goTo('home'); return; }
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="section-divider"><div class="icon">⚙️</div><h2>Panel del profesor</h2><div class="rule"></div></div>
+
+    <h3 style="margin-top:1.4em;">Publicaciones pendientes de revisión</h3>
+    <div id="pendingList"></div>
+
+    <h3 style="margin-top:2em;">Cuentas de estudiantes</h3>
+    <div class="row-actions" style="margin-bottom:1em;"><button class="btn gold" id="newAccountBtn">+ Crear cuenta de estudiante</button></div>
+    <table>
+      <thead><tr><th>Nombre</th><th>Grado</th><th>Usuario</th><th>Secciones a cargo</th><th></th></tr></thead>
+      <tbody id="accountsTable"></tbody>
+    </table>
+  `;
+  const pendingList = document.getElementById('pendingList');
+  let pendingHTML = '';
+  SECTIONS.forEach(s=>{
+    (content[s.id]||[]).filter(i=>i.status==='pending').forEach(item=>{
+      pendingHTML += `
+        <div class="card">
+          <h3>${s.icon} ${item.title} <span class="status-pill status-pending">En revisión</span></h3>
+          <p>${item.body}</p>
+          <div class="byline">${item.authorName}${item.grade? ' · '+item.grade:''} — sección: ${s.name}</div>
+          <div class="row-actions">
+            <button class="btn small" data-approve="${s.id}|${item.id}">✅ Publicar</button>
+            <button class="btn small danger" data-reject="${s.id}|${item.id}">✏️ Devolver</button>
+          </div>
+        </div>
+      `;
+    });
+  });
+  pendingList.innerHTML = pendingHTML || '<div class="empty">No hay publicaciones esperando revisión.</div>';
+  pendingList.querySelectorAll('[data-approve]').forEach(b=>{
+    b.onclick = async ()=>{
+      const [sid,iid] = b.dataset.approve.split('|');
+      const it = content[sid].find(x=>x.id===iid); it.status='published';
+      await saveContent(); renderAdmin();
+    };
+  });
+  pendingList.querySelectorAll('[data-reject]').forEach(b=>{
+    b.onclick = async ()=>{
+      const [sid,iid] = b.dataset.reject.split('|');
+      const it = content[sid].find(x=>x.id===iid); it.status='rejected';
+      await saveContent(); renderAdmin();
+    };
+  });
+
+  const tbody = document.getElementById('accountsTable');
+  tbody.innerHTML = accounts.length ? accounts.map(a=>`
+    <tr>
+      <td>${a.name}</td><td>${a.grade}</td><td>${a.user}</td>
+      <td>${a.sections.map(id=>SECTIONS.find(s=>s.id===id)?.name).filter(Boolean).join(', ')}</td>
+      <td><button class="btn small danger" data-del="${a.user}">Eliminar</button></td>
+    </tr>
+  `).join('') : `<tr><td colspan="5" style="color:#8a7f6e;">Todavía no has creado cuentas.</td></tr>`;
+  tbody.querySelectorAll('[data-del]').forEach(b=>{
+    b.onclick = async ()=>{
+      accounts = accounts.filter(a=>a.user!==b.dataset.del);
+      await saveAccounts(); renderAdmin();
+    };
+  });
+  document.getElementById('newAccountBtn').onclick = openAccountModal;
+}
+function openAccountModal(){
+  document.getElementById('accName').value='';
+  document.getElementById('accGrade').value='';
+  document.getElementById('accUser').value='';
+  document.getElementById('accPass').value='';
+  document.getElementById('accountMsg').innerHTML='';
+  const box = document.getElementById('accSections');
+  box.innerHTML = SECTIONS.map(s=>`
+    <label style="display:flex;align-items:center;gap:.5em;font-weight:400;margin-bottom:.3em;">
+      <input type="checkbox" value="${s.id}" style="width:auto;"> ${s.icon} ${s.name}
+    </label>
+  `).join('');
+  openModal('accountModal');
+}
+document.getElementById('doCreateAccount').onclick = async ()=>{
+  const name = document.getElementById('accName').value.trim();
+  const grade = document.getElementById('accGrade').value.trim();
+  const user = document.getElementById('accUser').value.trim();
+  const pass = document.getElementById('accPass').value;
+  const msg = document.getElementById('accountMsg');
+  const sections = Array.from(document.querySelectorAll('#accSections input:checked')).map(i=>i.value);
+  if(!name || !user || !pass){ msg.innerHTML='<div class="msg error">Completa nombre, usuario y contraseña.</div>'; return; }
+  if(accounts.some(a=>a.user===user) || user===ADMIN.user){ msg.innerHTML='<div class="msg error">Ese usuario ya existe.</div>'; return; }
+  if(sections.length===0){ msg.innerHTML='<div class="msg error">Elige al menos una sección para este estudiante.</div>'; return; }
+  accounts.push({name,grade,user,pass,sections});
+  await saveAccounts();
+  closeModal('accountModal');
+  renderAdmin();
+};
+
+/* =====================  INICIO  ===================== */
+(async function init(){
+  await loadData();
+  renderWho();
+  renderDrawer();
+  goTo('home');
+})();
+</script>
+</body>
+</html>
