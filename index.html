@@ -240,6 +240,23 @@
   .check-grid{max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:4px;padding:.6em;}
   .check-grid label{display:flex;align-items:center;gap:.5em;font-weight:400;margin-bottom:.35em;}
   .check-grid input{width:auto;}
+
+  /* ---------- temas sugeridos ---------- */
+  .temas-panel{
+    background:var(--parchment-2);border:1px solid var(--line);border-radius:var(--radius);
+    padding:1em 1.1em 1.1em;margin-bottom:1.4em;
+  }
+  .temas-panel h4{font-size:.95rem;margin-bottom:.2em;}
+  .temas-panel .hint{margin:0 0 .8em;}
+  .temas-grid{display:flex;flex-wrap:wrap;gap:.5em;}
+  .tema-chip{
+    display:flex;align-items:center;gap:.4em;
+    background:var(--white);border:1.5px solid var(--line);border-radius:20px;
+    padding:.4em .9em;font-size:.82rem;font-weight:700;color:var(--forest-dark);
+  }
+  .tema-chip.tema-listo{opacity:.65;border-color:transparent;background:var(--parchment);}
+  .tema-chip.tema-pendiente{border-color:var(--gold);cursor:pointer;}
+  .tema-chip.tema-pendiente:hover{background:var(--gold);color:var(--forest-dark);}
 </style>
 </head>
 <body>
@@ -374,14 +391,14 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 /* =====================  DATOS BASE  ===================== */
 const SECTIONS = [
   {id:'lugares', name:'Lugares bonitos', icon:'🌳', desc:'Los rincones más lindos de Buena Vista: miradores, ríos, senderos y paisajes que vale la pena conocer.'},
-  {id:'autoridades', name:'Autoridades', icon:'🏛️', desc:'Representante, corregidores y líderes comunitarios de Buena Vista.'},
-  {id:'instituciones', name:'Instituciones públicas', icon:'🏢', desc:'Oficinas y entidades del gobierno presentes en el corregimiento.'},
-  {id:'escuelas', name:'Escuelas y centros educativos', icon:'🏫', desc:'Centros educativos donde estudian los niños y jóvenes de la comunidad.'},
-  {id:'iglesias', name:'Iglesias', icon:'⛪', desc:'Templos y congregaciones que forman parte de la vida espiritual de Buena Vista.'},
-  {id:'deportes', name:'Deportes y clubes', icon:'⚽', desc:'Equipos, canchas y actividades deportivas de la comunidad.'},
+  {id:'autoridades', name:'Autoridades', icon:'🏛️', desc:'Conoce a quienes representan y toman decisiones en Buena Vista: representante de corregimiento, corregidor(a), integrantes de la Junta Comunal, delegados de instituciones y líderes comunitarios.'},
+  {id:'instituciones', name:'Instituciones públicas', icon:'🏢', desc:'Las oficinas y entidades del Estado presentes en el corregimiento: corregiduría, oficinas de instituciones nacionales, puestos de policía y demás dependencias que prestan servicio a la comunidad.'},
+  {id:'escuelas', name:'Escuelas y centros educativos', icon:'🏫', desc:'Todos los centros educativos de Buena Vista: escuelas primarias, la sede de premedia y media, centros de educación inicial, y los programas, docentes y logros que forman parte de la vida escolar.'},
+  {id:'iglesias', name:'Iglesias', icon:'⛪', desc:'Los templos y congregaciones que acompañan la vida espiritual de la comunidad, junto con sus actividades, grupos juveniles y fiestas patronales.'},
+  {id:'deportes', name:'Deportes y clubes', icon:'⚽', desc:'Equipos, canchas, ligas y clubes deportivos de Buena Vista, además de los torneos, actividades recreativas y atletas que representan al corregimiento.'},
   {id:'negocios', name:'Directorio de negocios', icon:'🏪', desc:'Tiendas, ventas y emprendimientos locales.'},
   {id:'salud', name:'Salud', icon:'🏥', desc:'Centros de salud y servicios médicos disponibles.'},
-  {id:'transporte', name:'Transporte', icon:'🚌', desc:'Rutas, horarios y formas de moverse dentro y fuera del corregimiento.'},
+  {id:'transporte', name:'Transporte', icon:'🚌', desc:'Cómo se mueve la gente dentro y fuera de Buena Vista: rutas de buses y chivas, horarios, cooperativas de transporte, estado de las calles y transporte escolar.'},
   {id:'historia', name:'Historia de Buena Vista', icon:'📜', desc:'Cómo se formó la comunidad y los hechos que marcaron su historia.'},
   {id:'cultura', name:'Cultura y tradiciones', icon:'🎭', desc:'Fiestas, costumbres y tradiciones que identifican a Buena Vista.'},
   {id:'galeria', name:'Galería comunitaria', icon:'📸', desc:'Fotografías de la vida diaria y los eventos de la comunidad.'},
@@ -391,6 +408,105 @@ const SECTIONS = [
 const SALONES = ['9A','9B','9C','8A','8B'];
 const SALON_LABEL = {'9A':'9° A','9B':'9° B','9C':'9° C','8A':'8° A','8B':'8° B'};
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=600&q=60';
+
+/* Temas sugeridos: una lista de tareas concretas dentro de cada sección grande,
+   para que varios estudiantes asignados a la misma sección puedan repartirse
+   temas distintos en vez de investigar todos lo mismo. */
+const TEMAS_SUGERIDOS = {
+  autoridades: [
+    'Representante de Corregimiento',
+    'Corregidor(a) de Buena Vista',
+    'Junta Comunal: qué es y para qué sirve',
+    'Presidente(a) de la Junta Comunal',
+    'Delegado(a) del MIDES en el sector',
+    'Jefatura de la Policía Nacional del sector',
+    'Presidente(a) de una junta de vecinos o comité local',
+    'Delegado(a) electoral del corregimiento',
+    'Cómo se elige al representante de corregimiento',
+    'Autoridades tradicionales o históricas de la comunidad'
+  ],
+  instituciones: [
+    'Corregiduría de Buena Vista',
+    'Oficina de MEDUCA en la zona',
+    'Oficina de MIDA (agricultura y ganadería)',
+    'IDAAN o el sistema de acueducto comunitario',
+    'ANATI (tierras y catastro)',
+    'Registro Civil / Tribunal Electoral',
+    'Subestación o puesto de la Policía Nacional',
+    'SINAPROC: gestión de riesgos en la comunidad',
+    'Oficina de correos o telecomunicaciones',
+    'Otra institución pública presente en el corregimiento'
+  ],
+  escuelas: [
+    'C.E.B.G. El Jiral: historia y datos generales',
+    'Escuela primaria del sector (nombre y matrícula)',
+    'Centro de educación inicial o preescolar',
+    'Biblioteca escolar o comunitaria',
+    'Programas de educación media a distancia o para jóvenes y adultos',
+    'Docentes destacados de la comunidad',
+    'Logros y actividades de los estudiantes',
+    'Cómo y cuándo se fundó una escuela del corregimiento',
+    'Transporte o comedor escolar',
+    'Otra escuela o centro educativo de Buena Vista'
+  ],
+  iglesias: [
+    'Iglesia católica de Buena Vista',
+    'Una iglesia evangélica o cristiana de la comunidad',
+    'Otra congregación religiosa presente en el sector',
+    'Fiesta patronal: historia y tradición',
+    'Grupo juvenil o coro de una iglesia',
+    'Historia de cómo llegó una iglesia a la comunidad',
+    'Actividades comunitarias organizadas por una iglesia'
+  ],
+  deportes: [
+    'Equipo de fútbol de Buena Vista',
+    'Equipo de béisbol o sóftbol',
+    'Cancha o polideportivo del corregimiento',
+    'Liga o torneo deportivo local',
+    'Club cívico o deportivo (si existe)',
+    'Atleta destacado de la comunidad',
+    'Actividad recreativa para niños y jóvenes',
+    'Historia de un equipo o club del sector'
+  ],
+  transporte: [
+    'Ruta de buses o chivas hacia la cabecera',
+    'Horarios de transporte público',
+    'Cooperativa o sindicato de transporte',
+    'Estado de las calles y carreteras',
+    'Transporte escolar',
+    'Taxis o transporte informal',
+    'Punto de parada principal del corregimiento',
+    'Cómo era el transporte en Buena Vista hace años'
+  ]
+};
+
+function normalizarTexto(str){
+  return String(str||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+}
+function temaEstaCubierto(tema, publicados){
+  const t = normalizarTexto(tema);
+  return (publicados||[]).some(p=>{
+    const tit = normalizarTexto(p.titulo);
+    return tit.includes(t) || t.includes(tit);
+  });
+}
+function temasPanelHTML(id, publicados){
+  const temas = TEMAS_SUGERIDOS[id];
+  if(!temas || !temas.length) return '';
+  return `
+    <div class="temas-panel">
+      <h4>📋 Temas sugeridos para investigar</h4>
+      <p class="hint">Para que no todos escriban de lo mismo: cada estudiante asignado a esta sección puede elegir uno de estos temas (o proponer otro parecido).</p>
+      <div class="temas-grid">
+        ${temas.map(t=>{
+          const cubierto = temaEstaCubierto(t, publicados);
+          return `<div class="tema-chip ${cubierto?'tema-listo':'tema-pendiente'}"${cubierto?'':` data-tema="${escapeHtml(t)}"`}>
+            <span>${cubierto?'✅':'📝'}</span> ${escapeHtml(t)}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
 
 function escapeHtml(str){
   return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -615,6 +731,7 @@ async function renderSection(id){
   main.innerHTML = `
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>${s.name}</h2><div class="rule"></div></div>
     <p class="section-desc">${s.desc}</p>
+    <div id="temasPanel"></div>
     ${canEdit ? `<div class="row-actions" style="margin-bottom:1.4em;"><button class="btn gold" id="addContentBtn">+ Agregar publicación</button></div>` : ''}
     <div id="sectionList">Cargando…</div>
   `;
@@ -628,20 +745,24 @@ async function renderSection(id){
     visibles = [...propiosNoPublicados, ...visibles];
   }
 
+  document.getElementById('temasPanel').innerHTML = temasPanelHTML(id, publicados);
   document.getElementById('sectionList').innerHTML = visibles.length ? visibles.map(cardHTML).join('') :
     `<div class="empty">${canEdit ? 'Todavía no has agregado nada aquí. ¡Empieza con la primera publicación!' : 'Todavía no hay publicaciones en esta sección.'}</div>`;
 
   if(canEdit){
     document.getElementById('addContentBtn').onclick = ()=> openContentModal(id);
+    document.querySelectorAll('#temasPanel .tema-pendiente[data-tema]').forEach(el=>{
+      el.onclick = ()=> openContentModal(id, el.dataset.tema);
+    });
   }
 }
 
 /* =====================  AGREGAR CONTENIDO  ===================== */
 let contentTargetSection = null;
-function openContentModal(sectionId){
+function openContentModal(sectionId, tituloSugerido){
   contentTargetSection = sectionId;
   document.getElementById('contentModalTitle').textContent = 'Nueva publicación — ' + SECTIONS.find(s=>s.id===sectionId).name;
-  document.getElementById('cTitle').value='';
+  document.getElementById('cTitle').value = tituloSugerido || '';
   document.getElementById('cBody').value='';
   document.getElementById('cImg').value='';
   document.getElementById('contentMsg').innerHTML='';
