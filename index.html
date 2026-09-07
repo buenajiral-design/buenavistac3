@@ -322,7 +322,11 @@
 
 <main id="main"></main>
 
-<footer>Buena Vista — construido por los estudiantes del C.E.B.G. El Jiral, 2026.</footer>
+<footer>
+  Buena Vista — construido por los estudiantes del C.E.B.G. El Jiral, 2026.
+  <div style="margin-top:.6em;"><a href="#" id="footerContactoLink">✉️ Contáctanos</a></div>
+  <div id="contadorVisitas" style="margin-top:.5em;font-size:.78rem;color:#a89c86;">Contando visitas…</div>
+</footer>
 
 <!-- Login modal -->
 <div class="modal-overlay" id="loginModal">
@@ -605,6 +609,13 @@ function renderDrawer(){
     item.onclick = ()=>{ goTo(s.id); closeDrawer(); };
     list.appendChild(item);
   });
+  const contactoItem = document.createElement('div');
+  contactoItem.className = 'drawer-item' + (currentSection==='contacto' ? ' active':'');
+  contactoItem.style.borderTop = '1px solid var(--line)';
+  contactoItem.style.marginTop = '.5em';
+  contactoItem.innerHTML = '<span class="drawer-icon">✉️</span> Contacto';
+  contactoItem.onclick = ()=>{ goTo('contacto'); closeDrawer(); };
+  list.appendChild(contactoItem);
   if(session && session.role==='admin'){
     const item = document.createElement('div');
     item.className = 'drawer-item' + (currentSection==='admin' ? ' active':'');
@@ -736,6 +747,7 @@ function goTo(sectionId){
   if(sectionId==='mitarea') renderMiTarea();
   else if(sectionId==='home') renderHome();
   else if(sectionId==='admin') renderAdmin();
+  else if(sectionId==='contacto') renderContacto();
   else renderSection(sectionId);
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -747,7 +759,7 @@ async function renderHome(){
     <div class="hero">
       <div class="kicker">C.E.B.G. El Jiral · Proyecto comunitario</div>
       <h1>Conoce Buena Vista</h1>
-      <p class="lead">Un espacio hecho por los propios estudiantes para mostrar los lugares, la gente y la vida de nuestro corregimiento.</p>
+      <p class="lead">Un espacio hecho por los propios estudiantes del C.E.B.G. El Jiral para mostrar los lugares, la gente y la vida de nuestro corregimiento.</p>
     </div>
     <div class="mosaic" id="mosaic">Cargando…</div>
     <div class="section-divider"><div class="icon">🌳</div><h2>Lugares bonitos</h2><div class="rule"></div></div>
@@ -769,20 +781,79 @@ async function renderHome(){
     `<div class="empty">Aún no hay publicaciones aquí.</div>`;
 }
 
-/* =====================  BLOQUES: texto / fotos / video / mapa / redes  ===================== */
+/* =====================  VISTA: CONTACTO  ===================== */
+function renderContacto(){
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="section-divider"><div class="icon">✉️</div><h2>Contacto</h2><div class="rule"></div></div>
+    <p class="section-desc">¿Tienes una sugerencia, un dato para la página o quieres contarnos algo sobre Buena Vista? Escríbenos.</p>
+    <div id="contactoMsg"></div>
+    <div class="field"><label>Nombre</label><input id="ctNombre" placeholder="Tu nombre"></div>
+    <div class="field"><label>Teléfono (opcional)</label><input id="ctTelefono" placeholder="Ej. 6000-0000"></div>
+    <div class="field"><label>Correo (opcional)</label><input id="ctCorreo" type="email" placeholder="tucorreo@ejemplo.com"></div>
+    <div class="field"><label>Comentario</label><textarea id="ctMensaje" rows="4" placeholder="Escribe tu mensaje..."></textarea></div>
+    <button class="btn gold" id="ctEnviarBtn">Enviar</button>
+  `;
+  document.getElementById('ctEnviarBtn').onclick = async ()=>{
+    const msg = document.getElementById('contactoMsg');
+    const nombre = document.getElementById('ctNombre').value.trim();
+    const telefono = document.getElementById('ctTelefono').value.trim();
+    const correo = document.getElementById('ctCorreo').value.trim();
+    const mensaje = document.getElementById('ctMensaje').value.trim();
+    if(!nombre || !mensaje){ msg.innerHTML = '<div class="msg error">Escribe tu nombre y tu comentario.</div>'; return; }
+    msg.innerHTML = '<div class="msg">Enviando…</div>';
+    const {error} = await db.rpc('bv_enviar_contacto', {p_nombre:nombre, p_telefono:telefono, p_correo:correo, p_mensaje:mensaje});
+    if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+    document.getElementById('ctNombre').value='';
+    document.getElementById('ctTelefono').value='';
+    document.getElementById('ctCorreo').value='';
+    document.getElementById('ctMensaje').value='';
+    msg.innerHTML = '<div class="msg ok">✅ ¡Gracias! Tu mensaje fue enviado.</div>';
+  };
+}
+
+/* =====================  CONTADOR DE VISITAS  ===================== */
+function detectarDispositivo(){
+  const ua = navigator.userAgent || '';
+  const esTablet = /iPad/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua)) || (/Tablet/i.test(ua));
+  if(esTablet) return 'tablet';
+  if(/Mobi|Android|iPhone|iPod/i.test(ua)) return 'celular';
+  return 'computadora';
+}
+async function registrarYMostrarVisitas(){
+  try{ await db.rpc('bv_registrar_visita', {p_dispositivo: detectarDispositivo()}); }catch(e){}
+  const cont = document.getElementById('contadorVisitas');
+  try{
+    const {data, error} = await db.rpc('bv_contador_visitas');
+    if(error || !data){ cont.textContent = ''; return; }
+    const por = {computadora:0, celular:0, tablet:0};
+    let total = 0;
+    data.forEach(r=>{ por[r.dispositivo] = Number(r.total); total += Number(r.total); });
+    cont.textContent = `👀 ${total.toLocaleString('es-PA')} visitas — 💻 ${por.computadora} computadora · 📱 ${por.celular} celular · 📲 ${por.tablet} tablet`;
+  }catch(e){ cont.textContent = ''; }
+}
+document.getElementById('footerContactoLink').onclick = (e)=>{ e.preventDefault(); goTo('contacto'); window.scrollTo({top:0,behavior:'smooth'}); };
+
+
 function detectarYoutubeId(url){
   const m = String(url||'').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{6,})/);
   return m ? m[1] : null;
 }
+const TAMANOS_TEXTO = {pequeno:'.85rem', normal:'1rem', grande:'1.3rem', enorme:'1.7rem'};
 function bloqueHTML(b){
   if(b.tipo==='texto'){
-    return b.texto ? `<p style="white-space:pre-wrap;">${escapeHtml(b.texto)}</p>` : '';
+    if(!b.texto) return '';
+    const fs = TAMANOS_TEXTO[b.tamano] || TAMANOS_TEXTO.normal;
+    const color = b.color || 'inherit';
+    return `<p style="white-space:pre-wrap;font-size:${fs};color:${escapeHtml(color)};">${escapeHtml(b.texto)}</p>`;
   }
   if(b.tipo==='foto'){
     if(!b.url) return '';
-    return `<figure style="margin:0 0 1em;">
-      <img src="${escapeHtml(b.url)}" alt="${escapeHtml(b.caption||'')}" style="width:100%;border-radius:4px;display:block;">
-      ${b.caption ? `<figcaption style="font-size:.8rem;color:#8a7f6e;margin-top:.3em;">${escapeHtml(b.caption)}</figcaption>` : ''}
+    const media = b.ancho==='media';
+    const contain = b.ajuste==='completa';
+    return `<figure style="margin:0 0 1em;${media?'width:48%;display:inline-block;vertical-align:top;':'width:100%;'}${media?'margin-right:2%;':''}">
+      ${b.caption ? `<figcaption style="font-weight:700;color:var(--forest-dark);margin-bottom:.3em;">${escapeHtml(b.caption)}</figcaption>` : ''}
+      <img src="${escapeHtml(b.url)}" alt="${escapeHtml(b.caption||'')}" style="width:100%;${contain?'height:260px;object-fit:contain;background:var(--parchment-2);':'object-fit:cover;'}border-radius:4px;display:block;">
     </figure>`;
   }
   if(b.tipo==='video'){
@@ -943,8 +1014,8 @@ function pintarMiTarea(){
     btn.onclick = ()=>{
       const tipo = btn.dataset.add;
       const base = {id:nuevoBloqueId(), tipo};
-      if(tipo==='texto') base.texto = '';
-      if(tipo==='foto'){ base.url=''; base.caption=''; }
+      if(tipo==='texto'){ base.texto=''; base.tamano='normal'; base.color=''; }
+      if(tipo==='foto'){ base.url=''; base.caption=''; base.ancho='completa'; base.ajuste='recortada'; }
       if(tipo==='video') base.url='';
       if(tipo==='mapa') base.url='';
       if(tipo==='redes'){ base.tiktok=''; base.instagram=''; base.facebook=''; }
@@ -979,9 +1050,22 @@ function pintarBloquesList(){
   cont.querySelectorAll('[data-borrar]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.borrar; if(confirm('¿Eliminar este bloque?')){ miTareaBloques.splice(i,1); pintarBloquesList(); } });
 
   cont.querySelectorAll('[data-campo]').forEach(input=>{
-    input.oninput = ()=>{
+    const actualizar = ()=>{
       const i = +input.closest('.bloque-editor').dataset.i;
       miTareaBloques[i][input.dataset.campo] = input.value;
+    };
+    input.oninput = actualizar;
+    if(input.tagName==='SELECT' || input.type==='color'){
+      input.onchange = ()=>{ actualizar(); pintarBloquesList(); };
+    }else{
+      input.onchange = actualizar;
+    }
+  });
+  cont.querySelectorAll('[data-quitarcolor]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const i = +btn.dataset.quitarcolor;
+      miTareaBloques[i].color = '';
+      pintarBloquesList();
     };
   });
   cont.querySelectorAll('[data-subirfoto]').forEach(input=>{
@@ -1004,7 +1088,25 @@ function pintarBloquesList(){
 
 function bloqueCamposHTML(b,i){
   if(b.tipo==='texto'){
-    return `<textarea data-campo="texto" rows="4" placeholder="Escribe aquí la información...">${escapeHtml(b.texto||'')}</textarea>`;
+    return `
+      <div class="upload-row">
+        <div class="field" style="flex:1;min-width:140px;margin-bottom:0;">
+          <label>Tamaño de letra</label>
+          <select data-campo="tamano">
+            <option value="pequeno" ${b.tamano==='pequeno'?'selected':''}>Pequeño</option>
+            <option value="normal" ${!b.tamano||b.tamano==='normal'?'selected':''}>Normal</option>
+            <option value="grande" ${b.tamano==='grande'?'selected':''}>Grande</option>
+            <option value="enorme" ${b.tamano==='enorme'?'selected':''}>Enorme</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Color de letra</label>
+          <input type="color" data-campo="color" value="${b.color||'#2b2620'}" style="padding:.2em;height:2.4em;">
+        </div>
+        ${b.color ? `<button class="btn small outline" data-quitarcolor="${i}" type="button">✕ Quitar color</button>` : ''}
+      </div>
+      <textarea data-campo="texto" rows="4" placeholder="Escribe aquí la información...">${escapeHtml(b.texto||'')}</textarea>
+    `;
   }
   if(b.tipo==='foto'){
     return `
@@ -1014,7 +1116,23 @@ function bloqueCamposHTML(b,i){
         <span class="foto-status hint" style="margin:0;"></span>
       </div>
       <div class="field"><label>O pega el enlace de una foto</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="https://..."></div>
-      <div class="field" style="margin-bottom:0;"><label>Descripción de la foto (opcional)</label><input data-campo="caption" value="${escapeHtml(b.caption||'')}" placeholder="Ej. Entrada de la escuela"></div>
+      <div class="field"><label>Título de la foto (opcional)</label><input data-campo="caption" value="${escapeHtml(b.caption||'')}" placeholder="Ej. Entrada de la escuela"></div>
+      <div class="upload-row">
+        <div class="field" style="flex:1;min-width:160px;margin-bottom:0;">
+          <label>Ancho</label>
+          <select data-campo="ancho">
+            <option value="completa" ${!b.ancho||b.ancho==='completa'?'selected':''}>Una columna (foto completa)</option>
+            <option value="media" ${b.ancho==='media'?'selected':''}>Dos columnas (media foto)</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;min-width:160px;margin-bottom:0;">
+          <label>Cómo se ve</label>
+          <select data-campo="ajuste">
+            <option value="recortada" ${!b.ajuste||b.ajuste==='recortada'?'selected':''}>Recortada (rellena el espacio)</option>
+            <option value="completa" ${b.ajuste==='completa'?'selected':''}>Completa (se ve toda la foto)</option>
+          </select>
+        </div>
+      </div>
     `;
   }
   if(b.tipo==='video'){
@@ -1088,6 +1206,7 @@ function renderAdmin(){
       <button data-tab="pendientes" class="${adminTab==='pendientes'?'active':''}">📝 Pendientes de revisión</button>
       <button data-tab="salones" class="${adminTab==='salones'?'active':''}">🏫 Salones y estudiantes</button>
       <button data-tab="tareas" class="${adminTab==='tareas'?'active':''}">🎯 Tareas individuales</button>
+      <button data-tab="mensajes" class="${adminTab==='mensajes'?'active':''}">✉️ Mensajes</button>
       <button data-tab="respaldos" class="${adminTab==='respaldos'?'active':''}">🗄️ Respaldos y papelera</button>
     </div>
     <div id="adminBody">Cargando…</div>
@@ -1098,7 +1217,25 @@ function renderAdmin(){
   if(adminTab==='pendientes') renderAdminPendientes();
   else if(adminTab==='salones') renderAdminSalones();
   else if(adminTab==='tareas') renderAdminTareas();
+  else if(adminTab==='mensajes') renderAdminMensajes();
   else renderAdminRespaldos();
+}
+
+/* ---- tab: mensajes de contacto ---- */
+async function renderAdminMensajes(){
+  const body = document.getElementById('adminBody');
+  const {data, error} = await db.rpc('bv_admin_listar_contactos', adminCreds());
+  if(error){ body.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  if(!data || data.length===0){ body.innerHTML = '<div class="empty">Todavía no han llegado mensajes de contacto.</div>'; return; }
+  body.innerHTML = data.map(m=>`
+    <div class="card">
+      <h3>${escapeHtml(m.nombre)}</h3>
+      <p>${escapeHtml(m.mensaje)}</p>
+      <div class="byline">
+        ${m.telefono ? '📞 '+escapeHtml(m.telefono)+' ' : ''}${m.correo ? '· ✉️ '+escapeHtml(m.correo)+' ' : ''}· ${new Date(m.creado_en).toLocaleString('es-PA')}
+      </div>
+    </div>
+  `).join('');
 }
 
 /* ---- tab: tareas individuales ---- */
@@ -1453,6 +1590,7 @@ async function cargarPapelera(){
   renderWho();
   renderDrawer();
   goTo(estaBloqueado() ? 'mitarea' : (session ? (session.role==='admin' ? 'admin' : 'home') : 'home'));
+  registrarYMostrarVisitas();
 })();
 </script>
 </body>
