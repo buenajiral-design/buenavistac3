@@ -261,11 +261,17 @@
   /* ---------- bloques: video/mapa embebidos y redes ---------- */
   .video-wrap{position:relative;width:100%;padding-top:56.25%;border-radius:4px;overflow:hidden;margin-bottom:1em;background:#000;}
   .video-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
-  .redes-row{display:flex;gap:.6em;flex-wrap:wrap;margin-bottom:1em;}
-  .redes-row a{
-    background:var(--parchment-2);border-radius:20px;padding:.4em 1em;font-weight:700;font-size:.85rem;
-    text-decoration:none;color:var(--forest-dark);
+  .redes-panel{
+    background:var(--forest);border-radius:var(--radius);
+    padding:1em 1.2em;margin:0 0 1em;
   }
+  .redes-panel-title{color:var(--parchment-2);font-weight:700;font-size:.85rem;letter-spacing:.03em;margin-bottom:.7em;}
+  .redes-row{display:flex;gap:.7em;flex-wrap:wrap;}
+  .red-icono{
+    width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:1.3rem;text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .12s ease;
+  }
+  .red-icono:hover{transform:scale(1.08);}
   .bloques-vista figure{margin:0 0 1em;}
 
   /* ---------- editor de "Mi tarea" ---------- */
@@ -839,13 +845,29 @@ function detectarYoutubeId(url){
   const m = String(url||'').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{6,})/);
   return m ? m[1] : null;
 }
+function armarLinkWhatsapp(v){
+  if(!v) return null;
+  v = v.trim();
+  if(/^https?:\/\//i.test(v)) return v;
+  const digits = v.replace(/[^\d]/g,'');
+  return digits ? `https://wa.me/${digits}` : null;
+}
+const REDES_CONFIG = [
+  {campo:'whatsapp', label:'WhatsApp', color:'#25D366', emoji:'💬', link: armarLinkWhatsapp},
+  {campo:'instagram', label:'Instagram', color:'#C1266B', emoji:'📷', link: v=>v},
+  {campo:'tiktok', label:'TikTok', color:'#000000', emoji:'🎵', link: v=>v},
+  {campo:'facebook', label:'Facebook', color:'#1877F2', emoji:'📘', link: v=>v},
+  {campo:'telegram', label:'Telegram', color:'#29A9EB', emoji:'✈️', link: v=>v},
+  {campo:'youtube', label:'YouTube', color:'#FF0000', emoji:'▶️', link: v=>v}
+];
 const TAMANOS_TEXTO = {pequeno:'.85rem', normal:'1rem', grande:'1.3rem', enorme:'1.7rem'};
 function bloqueHTML(b){
   if(b.tipo==='texto'){
     if(!b.texto) return '';
     const fs = TAMANOS_TEXTO[b.tamano] || TAMANOS_TEXTO.normal;
     const color = b.color || 'inherit';
-    return `<p style="white-space:pre-wrap;font-size:${fs};color:${escapeHtml(color)};">${escapeHtml(b.texto)}</p>`;
+    const peso = b.negrita ? '700' : '400';
+    return `<p style="white-space:pre-wrap;font-size:${fs};color:${escapeHtml(color)};font-weight:${peso};">${escapeHtml(b.texto)}</p>`;
   }
   if(b.tipo==='foto'){
     if(!b.url) return '';
@@ -875,12 +897,16 @@ function bloqueHTML(b){
     return `<a class="btn outline small" href="${escapeHtml(b.url)}" target="_blank" rel="noopener">📍 Ver ubicación en Google Maps</a>`;
   }
   if(b.tipo==='redes'){
-    const items = [];
-    if(b.tiktok) items.push(`<a href="${escapeHtml(b.tiktok)}" target="_blank" rel="noopener">🎵 TikTok</a>`);
-    if(b.instagram) items.push(`<a href="${escapeHtml(b.instagram)}" target="_blank" rel="noopener">📷 Instagram</a>`);
-    if(b.facebook) items.push(`<a href="${escapeHtml(b.facebook)}" target="_blank" rel="noopener">👍 Facebook</a>`);
-    if(!items.length) return '';
-    return `<div class="redes-row">${items.join('')}</div>`;
+    const items = REDES_CONFIG.map(r=>{
+      const link = b[r.campo] ? r.link(b[r.campo]) : null;
+      if(!link) return '';
+      return `<a class="red-icono" style="background:${r.color};" href="${escapeHtml(link)}" target="_blank" rel="noopener" title="${r.label}">${r.emoji}</a>`;
+    }).join('');
+    if(!items) return '';
+    return `<div class="redes-panel">
+      <div class="redes-panel-title">📡 Síguenos / contáctanos</div>
+      <div class="redes-row">${items}</div>
+    </div>`;
   }
   return '';
 }
@@ -890,7 +916,7 @@ function renderBloquesHTML(bloques){
 }
 
 /* =====================  VISTA: SECCIÓN  ===================== */
-function cardHTML(item){
+function cardHTML(item, permitirEditar){
   let pill = '';
   if(item.estado==='pendiente') pill = '<span class="status-pill status-pending">En revisión</span>';
   if(item.estado==='devuelto') pill = '<span class="status-pill status-rejected">Devuelto</span>';
@@ -900,7 +926,9 @@ function cardHTML(item){
       ${!tieneBloques && item.img_url ? `<img src="${item.img_url}" alt="${escapeHtml(item.titulo)}">` : ''}
       <h3>${escapeHtml(item.titulo)} ${pill}</h3>
       ${tieneBloques ? renderBloquesHTML(item.bloques) : `<p>${escapeHtml(item.cuerpo)}</p>`}
+      ${item.observacion ? `<div class="msg" style="background:#f4dfa8;color:#6b4c0a;">📝 Observación del profesor(a): ${escapeHtml(item.observacion)}</div>` : ''}
       <div class="byline">Investigado por: ${escapeHtml(item.autor_nombre||'')}${item.autor_salon? ' · '+SALON_LABEL[item.autor_salon] || item.autor_salon : ''}</div>
+      ${permitirEditar ? `<div class="row-actions" style="margin-top:.6em;"><button class="btn small outline" data-editarpub="${item.id}">✏️ Editar</button></div>` : ''}
     </div>
   `;
 }
@@ -918,21 +946,33 @@ async function renderSection(id){
 
   const {data: publicados} = await db.from('bv_contenido').select('*').eq('seccion_id',id).eq('estado','publicado').order('creado_en',{ascending:false});
   let visibles = publicados || [];
+  let misPublicaciones = [];
 
   if(canEdit){
-    const {data: mios} = await db.rpc('bv_mi_contenido', {p_nombre:session.nombre, p_cedula:session.cedula});
-    const propiosNoPublicados = (mios||[]).filter(i=>i.seccion_id===id && i.estado!=='publicado');
-    visibles = [...propiosNoPublicados, ...visibles];
+    const {data: mios} = await db.rpc('bv_mis_publicaciones', {p_nombre:session.nombre, p_cedula:session.cedula});
+    misPublicaciones = (mios||[]).filter(i=>i.seccion_id===id);
+    const misIds = new Set(misPublicaciones.map(i=>i.id));
+    const otrosPublicados = visibles.filter(p=>!misIds.has(p.id));
+    visibles = [...misPublicaciones, ...otrosPublicados];
   }
 
   document.getElementById('temasPanel').innerHTML = temasPanelHTML(id, publicados);
-  document.getElementById('sectionList').innerHTML = visibles.length ? visibles.map(cardHTML).join('') :
+  document.getElementById('sectionList').innerHTML = visibles.length ? visibles.map(item=>{
+    const esMio = canEdit && misPublicaciones.some(m=>m.id===item.id);
+    return cardHTML(item, esMio);
+  }).join('') :
     `<div class="empty">${canEdit ? 'Todavía no has agregado nada aquí. ¡Empieza con la primera publicación!' : 'Todavía no hay publicaciones en esta sección.'}</div>`;
 
   if(canEdit){
     document.getElementById('addContentBtn').onclick = ()=> openContentModal(id);
     document.querySelectorAll('#temasPanel .tema-pendiente[data-tema]').forEach(el=>{
       el.onclick = ()=> openContentModal(id, el.dataset.tema);
+    });
+    document.querySelectorAll('#sectionList [data-editarpub]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const item = misPublicaciones.find(m=>m.id===btn.dataset.editarpub);
+        if(item) openContentModal(id, null, item);
+      };
     });
   }
 }
@@ -974,6 +1014,7 @@ async function renderMiTarea(){
       <h3 style="margin:0;">${escapeHtml(tarea.tema)} ${pill}</h3>
     </div>
     <p class="section-desc">Sección: ${escapeHtml(s.name)}. Agrega texto, fotos, un video, la ubicación en el mapa y tus redes sociales si hiciste una entrevista.</p>
+    ${tarea.observacion ? `<div class="msg" style="background:#f4dfa8;color:#6b4c0a;">📝 Observación del profesor(a): ${escapeHtml(tarea.observacion)}</div>` : ''}
     <div class="tarea-modo">
       <button id="modoEditarBtn" class="active">✏️ Editar</button>
       <button id="modoVistaBtn">👁️ Vista previa</button>
@@ -1014,11 +1055,11 @@ function pintarMiTarea(){
     btn.onclick = ()=>{
       const tipo = btn.dataset.add;
       const base = {id:nuevoBloqueId(), tipo};
-      if(tipo==='texto'){ base.texto=''; base.tamano='normal'; base.color=''; }
+      if(tipo==='texto'){ base.texto=''; base.tamano='normal'; base.color=''; base.negrita=false; }
       if(tipo==='foto'){ base.url=''; base.caption=''; base.ancho='completa'; base.ajuste='recortada'; }
       if(tipo==='video') base.url='';
       if(tipo==='mapa') base.url='';
-      if(tipo==='redes'){ base.tiktok=''; base.instagram=''; base.facebook=''; }
+      if(tipo==='redes'){ base.whatsapp=''; base.instagram=''; base.tiktok=''; base.facebook=''; base.telegram=''; base.youtube=''; }
       miTareaBloques.push(base);
       pintarBloquesList();
     };
@@ -1052,10 +1093,10 @@ function pintarBloquesList(){
   cont.querySelectorAll('[data-campo]').forEach(input=>{
     const actualizar = ()=>{
       const i = +input.closest('.bloque-editor').dataset.i;
-      miTareaBloques[i][input.dataset.campo] = input.value;
+      miTareaBloques[i][input.dataset.campo] = input.type==='checkbox' ? input.checked : input.value;
     };
     input.oninput = actualizar;
-    if(input.tagName==='SELECT' || input.type==='color'){
+    if(input.tagName==='SELECT' || input.type==='color' || input.type==='checkbox'){
       input.onchange = ()=>{ actualizar(); pintarBloquesList(); };
     }else{
       input.onchange = actualizar;
@@ -1089,14 +1130,15 @@ function pintarBloquesList(){
 function bloqueCamposHTML(b,i){
   if(b.tipo==='texto'){
     return `
+      <p class="hint" style="margin-top:0;">Tip: para un título, usa tamaño "Grande" o "Enorme" + negrita. Para texto normal, deja "Normal" sin negrita.</p>
       <div class="upload-row">
         <div class="field" style="flex:1;min-width:140px;margin-bottom:0;">
           <label>Tamaño de letra</label>
           <select data-campo="tamano">
             <option value="pequeno" ${b.tamano==='pequeno'?'selected':''}>Pequeño</option>
             <option value="normal" ${!b.tamano||b.tamano==='normal'?'selected':''}>Normal</option>
-            <option value="grande" ${b.tamano==='grande'?'selected':''}>Grande</option>
-            <option value="enorme" ${b.tamano==='enorme'?'selected':''}>Enorme</option>
+            <option value="grande" ${b.tamano==='grande'?'selected':''}>Grande (título)</option>
+            <option value="enorme" ${b.tamano==='enorme'?'selected':''}>Enorme (título)</option>
           </select>
         </div>
         <div class="field" style="margin-bottom:0;">
@@ -1104,8 +1146,11 @@ function bloqueCamposHTML(b,i){
           <input type="color" data-campo="color" value="${b.color||'#2b2620'}" style="padding:.2em;height:2.4em;">
         </div>
         ${b.color ? `<button class="btn small outline" data-quitarcolor="${i}" type="button">✕ Quitar color</button>` : ''}
+        <label style="display:flex;align-items:center;gap:.4em;font-weight:700;white-space:nowrap;">
+          <input type="checkbox" data-campo="negrita" style="width:auto;" ${b.negrita?'checked':''}> Negrita
+        </label>
       </div>
-      <textarea data-campo="texto" rows="4" placeholder="Escribe aquí la información...">${escapeHtml(b.texto||'')}</textarea>
+      <textarea data-campo="texto" rows="4" placeholder="Escribe aquí, o pega texto copiado de Word o de un chat de IA...">${escapeHtml(b.texto||'')}</textarea>
     `;
   }
   if(b.tipo==='foto'){
@@ -1144,9 +1189,13 @@ function bloqueCamposHTML(b,i){
   }
   if(b.tipo==='redes'){
     return `
-      <div class="field"><label>🎵 TikTok (enlace, opcional)</label><input data-campo="tiktok" value="${escapeHtml(b.tiktok||'')}" placeholder="https://tiktok.com/@..."></div>
+      <p class="hint" style="margin-top:0;">Solo aparecerá el ícono de las redes que llenes. Al tocarlo, lleva directo a esa red.</p>
+      <div class="field"><label>💬 WhatsApp (número de teléfono, ej. 66001234)</label><input data-campo="whatsapp" value="${escapeHtml(b.whatsapp||'')}" placeholder="66001234"></div>
       <div class="field"><label>📷 Instagram (enlace, opcional)</label><input data-campo="instagram" value="${escapeHtml(b.instagram||'')}" placeholder="https://instagram.com/..."></div>
-      <div class="field" style="margin-bottom:0;"><label>👍 Facebook (enlace, opcional)</label><input data-campo="facebook" value="${escapeHtml(b.facebook||'')}" placeholder="https://facebook.com/..."></div>
+      <div class="field"><label>🎵 TikTok (enlace, opcional)</label><input data-campo="tiktok" value="${escapeHtml(b.tiktok||'')}" placeholder="https://tiktok.com/@..."></div>
+      <div class="field"><label>📘 Facebook (enlace, opcional)</label><input data-campo="facebook" value="${escapeHtml(b.facebook||'')}" placeholder="https://facebook.com/..."></div>
+      <div class="field"><label>✈️ Telegram (enlace, opcional)</label><input data-campo="telegram" value="${escapeHtml(b.telegram||'')}" placeholder="https://t.me/..."></div>
+      <div class="field" style="margin-bottom:0;"><label>▶️ YouTube (enlace, opcional)</label><input data-campo="youtube" value="${escapeHtml(b.youtube||'')}" placeholder="https://youtube.com/..."></div>
     `;
   }
   return '';
@@ -1170,13 +1219,18 @@ async function guardarMiTarea(enviar){
 }
 
 
-function openContentModal(sectionId, tituloSugerido){
+/* =====================  AGREGAR / EDITAR CONTENIDO  ===================== */
+let contentTargetSection = null;
+let contentEditId = null;
+function openContentModal(sectionId, tituloSugerido, itemExistente){
   contentTargetSection = sectionId;
-  document.getElementById('contentModalTitle').textContent = 'Nueva publicación — ' + SECTIONS.find(s=>s.id===sectionId).name;
-  document.getElementById('cTitle').value = tituloSugerido || '';
-  document.getElementById('cBody').value='';
-  document.getElementById('cImg').value='';
+  contentEditId = itemExistente ? itemExistente.id : null;
+  document.getElementById('contentModalTitle').textContent = (itemExistente ? 'Editar publicación — ' : 'Nueva publicación — ') + SECTIONS.find(s=>s.id===sectionId).name;
+  document.getElementById('cTitle').value = itemExistente ? itemExistente.titulo : (tituloSugerido || '');
+  document.getElementById('cBody').value = itemExistente ? itemExistente.cuerpo : '';
+  document.getElementById('cImg').value = itemExistente ? (itemExistente.img_url||'') : '';
   document.getElementById('contentMsg').innerHTML='';
+  document.getElementById('doSaveContent').textContent = itemExistente ? 'Guardar cambios y reenviar' : 'Enviar para revisión';
   openModal('contentModal');
 }
 document.getElementById('doSaveContent').onclick = async ()=>{
@@ -1185,14 +1239,20 @@ document.getElementById('doSaveContent').onclick = async ()=>{
   const img = document.getElementById('cImg').value.trim();
   const msg = document.getElementById('contentMsg');
   if(!title || !body){ msg.innerHTML = '<div class="msg error">Escribe un título y una descripción.</div>'; return; }
-  const {error} = await db.rpc('bv_agregar_contenido', {
-    p_nombre: session.nombre, p_cedula: session.cedula, p_seccion_id: contentTargetSection,
-    p_titulo: title, p_cuerpo: body, p_img_url: img
-  });
+  const {error} = contentEditId
+    ? await db.rpc('bv_editar_mi_contenido', {
+        p_nombre: session.nombre, p_cedula: session.cedula, p_id: contentEditId,
+        p_titulo: title, p_cuerpo: body, p_img_url: img
+      })
+    : await db.rpc('bv_agregar_contenido', {
+        p_nombre: session.nombre, p_cedula: session.cedula, p_seccion_id: contentTargetSection,
+        p_titulo: title, p_cuerpo: body, p_img_url: img
+      });
   if(error){ msg.innerHTML = '<div class="msg error">No se pudo guardar: '+escapeHtml(error.message)+'</div>'; return; }
   closeModal('contentModal');
   renderSection(contentTargetSection);
 };
+
 
 /* =====================  PANEL ADMIN  ===================== */
 function adminCreds(){ return {p_usuario: session.usuario, p_contrasena: session.contrasena}; }
@@ -1365,11 +1425,15 @@ async function renderAdminPendientes(){
       </div>`;
   }).join('');
   body.querySelectorAll('[data-approve]').forEach(b=> b.onclick = async ()=>{
-    await db.rpc('bv_admin_moderar', {...adminCreds(), p_id:b.dataset.approve, p_estado:'publicado'});
+    const nota = prompt('¿Quieres dejarle una observación al estudiante? (déjalo vacío si no)', '');
+    if(nota===null) return;
+    await db.rpc('bv_admin_moderar_con_nota', {...adminCreds(), p_id:b.dataset.approve, p_estado:'publicado', p_observacion:nota});
     renderAdminPendientes();
   });
   body.querySelectorAll('[data-reject]').forEach(b=> b.onclick = async ()=>{
-    await db.rpc('bv_admin_moderar', {...adminCreds(), p_id:b.dataset.reject, p_estado:'devuelto'});
+    const nota = prompt('Escribe qué debe corregir el estudiante (esto lo verá al entrar):', '');
+    if(nota===null) return;
+    await db.rpc('bv_admin_moderar_con_nota', {...adminCreds(), p_id:b.dataset.reject, p_estado:'devuelto', p_observacion:nota});
     renderAdminPendientes();
   });
   body.querySelectorAll('[data-del]').forEach(b=> b.onclick = async ()=>{
