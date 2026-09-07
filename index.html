@@ -415,7 +415,10 @@
     <div class="field"><label>Título</label><input id="cTitle" placeholder="Título"></div>
     <div class="field"><label>Descripción</label><textarea id="cBody" rows="4" placeholder="Escribe la información aquí..."></textarea></div>
     <div class="field"><label>Foto (URL de una imagen, opcional)</label><input id="cImg" placeholder="https://..."></div>
-    <button class="btn" id="doSaveContent">Enviar para revisión</button>
+    <div class="row-actions">
+      <button class="btn" id="doSaveContent">Enviar para revisión</button>
+      <button class="btn outline" id="verHistorialContentBtn" style="display:none;">🕓 Historial de versiones</button>
+    </div>
   </div>
 </div>
 
@@ -1048,6 +1051,7 @@ function pintarMiTarea(){
     <div class="row-actions">
       <button class="btn outline" id="guardarBorradorBtn">💾 Guardar borrador</button>
       <button class="btn gold" id="enviarRevisionBtn">📩 Enviar para revisión</button>
+      ${session.tarea && session.tarea.id ? `<button class="btn outline" id="verHistorialBtn">🕓 Historial de versiones</button>` : ''}
     </div>
   `;
   pintarBloquesList();
@@ -1066,6 +1070,8 @@ function pintarMiTarea(){
   });
   document.getElementById('guardarBorradorBtn').onclick = ()=> guardarMiTarea(false);
   document.getElementById('enviarRevisionBtn').onclick = ()=> guardarMiTarea(true);
+  const histBtn = document.getElementById('verHistorialBtn');
+  if(histBtn) histBtn.onclick = ()=> abrirHistorial(session.tarea.id, renderMiTarea);
 }
 
 function pintarBloquesList(){
@@ -1219,7 +1225,40 @@ async function guardarMiTarea(enviar){
 }
 
 
-/* =====================  AGREGAR / EDITAR CONTENIDO  ===================== */
+/* =====================  HISTORIAL DE VERSIONES (reutilizable)  ===================== */
+async function abrirHistorial(contenidoId, alRestaurar){
+  const html = `<div class="modal-overlay open" id="historialModal">
+    <div class="modal" style="max-width:520px;">
+      <button class="modal-close" id="historialModalClose">×</button>
+      <h3>🕓 Historial de versiones</h3>
+      <p class="hint">Puedes volver a una versión anterior si algo se dañó o se borró por error.</p>
+      <div id="historialLista">Cargando…</div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  document.getElementById('historialModalClose').onclick = ()=> document.getElementById('historialModal').remove();
+  const cont = document.getElementById('historialLista');
+  const {data, error} = await db.rpc('bv_mi_historial', {p_nombre:session.nombre, p_cedula:session.cedula, p_contenido_id:contenidoId});
+  if(error){ cont.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  if(!data || !data.length){ cont.innerHTML = '<div class="empty">Todavía no hay versiones anteriores guardadas. Cada vez que guardes cambios, la versión anterior queda aquí.</div>'; return; }
+  cont.innerHTML = data.map(v=>`
+    <div class="card">
+      <div class="byline" style="margin:0 0 .6em;">🕓 ${new Date(v.guardado_en).toLocaleString('es-PA')}</div>
+      <button class="btn small outline" data-restaurar="${v.id}">↩️ Restaurar esta versión</button>
+    </div>
+  `).join('');
+  cont.querySelectorAll('[data-restaurar]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      if(!confirm('¿Restaurar esta versión? Lo que tengas guardado ahora también quedará en el historial, por si acaso.')) return;
+      const {error} = await db.rpc('bv_restaurar_version', {p_nombre:session.nombre, p_cedula:session.cedula, p_contenido_id:contenidoId, p_historial_id:btn.dataset.restaurar});
+      if(error){ alert('No se pudo restaurar: '+error.message); return; }
+      document.getElementById('historialModal').remove();
+      alRestaurar();
+    };
+  });
+}
+
+
 let contentTargetSection = null;
 let contentEditId = null;
 function openContentModal(sectionId, tituloSugerido, itemExistente){
@@ -1231,6 +1270,9 @@ function openContentModal(sectionId, tituloSugerido, itemExistente){
   document.getElementById('cImg').value = itemExistente ? (itemExistente.img_url||'') : '';
   document.getElementById('contentMsg').innerHTML='';
   document.getElementById('doSaveContent').textContent = itemExistente ? 'Guardar cambios y reenviar' : 'Enviar para revisión';
+  const histBtn = document.getElementById('verHistorialContentBtn');
+  histBtn.style.display = itemExistente ? '' : 'none';
+  histBtn.onclick = ()=> abrirHistorial(contentEditId, ()=>{ closeModal('contentModal'); renderSection(contentTargetSection); });
   openModal('contentModal');
 }
 document.getElementById('doSaveContent').onclick = async ()=>{
