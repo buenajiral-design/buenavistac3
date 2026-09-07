@@ -385,20 +385,6 @@
   .colmgr-actions button:hover:not(:disabled){background:var(--parchment);}
   .colmgr-actions button:disabled{opacity:.3;}
 
-  /* ---------- cuadro simbólico (esquema en vivo del orden/columnas) ---------- */
-  .esquema-box{background:var(--parchment-2);border:1px solid var(--line);border-radius:8px;padding:.9em 1em 1em;margin-bottom:1.2em;}
-  .esquema-title{font-size:.78rem;font-weight:700;color:#6b6152;margin-bottom:.6em;letter-spacing:.02em;}
-  .esquema-fila{display:grid;gap:6px;margin-bottom:6px;}
-  .esquema-col{display:flex;flex-direction:column;gap:6px;}
-  .esquema-caja{
-    border-radius:6px;padding:8px 6px;color:#fff;font-weight:700;font-size:.72rem;
-    text-align:center;cursor:pointer;opacity:.92;transition:opacity .12s ease, transform .12s ease;
-  }
-  .esquema-caja:hover{opacity:1;transform:translateY(-1px);}
-  .esquema-caja .esq-icon{display:block;font-size:1.05rem;margin-bottom:1px;line-height:1;}
-  .esquema-vacia{background:var(--white)!important;border:1.5px dashed var(--line);color:#a89c86!important;cursor:default;}
-  .esquema-vacia:hover{transform:none;}
-
   /* ---------- panel lateral: elegir qué agregar ---------- */
   .bloque-picker-overlay{position:fixed;inset:0;background:rgba(20,16,10,.45);z-index:70;display:none;}
   .bloque-picker-overlay.open{display:block;}
@@ -433,6 +419,16 @@
   .mapa-tipo-switch button.active{background:var(--forest);color:var(--white);}
   .mapa-lienzo{height:260px;border-radius:4px;overflow:hidden;margin:.5em 0;border:1.5px solid var(--line);background:var(--parchment-2);}
   .mapa-coords{margin:0 0 .8em;}
+  .mapa-fullscreen-overlay{
+    position:fixed;inset:0;background:var(--white);z-index:90;
+    display:none;flex-direction:column;
+  }
+  .mapa-fullscreen-overlay.open{display:flex;}
+  .mapa-fullscreen-bar{
+    display:flex;gap:.6em;align-items:center;flex-wrap:wrap;
+    padding:.7em 1em;border-bottom:1px solid var(--line);background:var(--parchment-2);
+  }
+  #mapaFullscreenLienzo{flex:1;min-height:0;}
 
   /* ---------- íconos de redes (svg) ---------- */
   .red-icono svg{display:block;}
@@ -662,6 +658,23 @@
   </div>
 </div>
 
+<!-- Ver el mapa en pantalla completa mientras se edita -->
+<div class="mapa-fullscreen-overlay" id="mapaFullscreenOverlay">
+  <div class="mapa-fullscreen-bar">
+    <div class="upload-row" style="flex:1;margin:0;min-width:180px;">
+      <input type="text" id="mapaFullscreenBuscar" placeholder="Busca un lugar o dirección...">
+      <button type="button" class="btn small outline" id="mapaFullscreenBuscarBtn">🔎 Buscar</button>
+    </div>
+    <div class="mapa-tipo-switch" id="mapaFullscreenTipoSwitch">
+      <button type="button" class="active" data-fstipo="calle">🗺️ Mapa</button>
+      <button type="button" data-fstipo="satelite">🛰️ Satélite</button>
+    </div>
+    <button class="btn gold small" id="mapaFullscreenCerrar" type="button">✕ Cerrar pantalla completa</button>
+  </div>
+  <div id="mapaFullscreenLienzo"></div>
+  <p class="hint mapa-coords" id="mapaFullscreenCoords" style="padding:.6em 1em;margin:0;background:var(--white);"></p>
+</div>
+
 <!-- Editor visual de páginas: elegir columnas al agregar sección -->
 <div class="modal-overlay" id="pgColModal">
   <div class="modal">
@@ -717,10 +730,12 @@ const SECTIONS = [
   {id:'escuelas', name:'Escuelas y centros educativos', icon:'🏫', desc:'Todos los centros educativos de Buena Vista: escuelas primarias, la sede de premedia y media, centros de educación inicial, y los programas, docentes y logros que forman parte de la vida escolar.'},
   {id:'iglesias', name:'Iglesias', icon:'⛪', desc:'Los templos y congregaciones que acompañan la vida espiritual de la comunidad, junto con sus actividades, grupos juveniles y fiestas patronales.'},
   {id:'deportes', name:'Deportes y clubes', icon:'⚽', desc:'Equipos, canchas, ligas y clubes deportivos de Buena Vista, además de los torneos, actividades recreativas y atletas que representan al corregimiento.'},
-  {id:'negocios', name:'Directorio de negocios', icon:'🏪', desc:'Tiendas, ventas y emprendimientos locales.'},
+  {id:'negocios', name:'Directorio de negocios', icon:'🏪', desc:'Tiendas, ventas y emprendimientos locales. Como mínimo se menciona el nombre del negocio, la dirección y un teléfono de contacto; si el dueño lo desea, se le puede armar una página más completa, igual que en las demás secciones.'},
+  {id:'donantes', name:'Donantes y padrinos', icon:'🎁', desc:'Personas, negocios o instituciones que han apoyado con donaciones de dinero, materiales, alimentos o tiempo a la escuela y a la comunidad.'},
   {id:'salud', name:'Salud', icon:'🏥', desc:'Centros de salud y servicios médicos disponibles.'},
   {id:'transporte', name:'Transporte', icon:'🚌', desc:'Cómo se mueve la gente dentro y fuera de Buena Vista: rutas de buses y chivas, horarios, cooperativas de transporte, estado de las calles y transporte escolar.'},
   {id:'historia', name:'Historia de Buena Vista', icon:'📜', desc:'Cómo se formó la comunidad y los hechos que marcaron su historia.'},
+  {id:'personajes', name:'Gente interesante del corregimiento', icon:'🧓', desc:'Los moradores más antiguos, personas con historias de vida interesantes, y vecinos que se destacan o que han marcado la vida de Buena Vista.'},
   {id:'cultura', name:'Cultura y tradiciones', icon:'🎭', desc:'Fiestas, costumbres y tradiciones que identifican a Buena Vista.'},
   {id:'galeria', name:'Galería comunitaria', icon:'📸', desc:'Fotografías de la vida diaria y los eventos de la comunidad.'},
   {id:'noticias', name:'Noticias y actividades', icon:'📰', desc:'Lo que está pasando ahora mismo en la comunidad.'},
@@ -734,6 +749,16 @@ const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1500534623283-312aade
    para que varios estudiantes asignados a la misma sección puedan repartirse
    temas distintos en vez de investigar todos lo mismo. */
 const TEMAS_SUGERIDOS = {
+  lugares: [
+    'Río o quebrada de Buena Vista',
+    'Mirador o cerro con buena vista panorámica',
+    'Sendero o camino natural para caminar',
+    'Cascada o poza del sector',
+    'Parque, plaza o cancha central',
+    'Paisaje agrícola o finca destacada',
+    'Árbol histórico o emblemático de la comunidad',
+    'Lugar donde se reúne la comunidad para eventos'
+  ],
   autoridades: [
     'Representante de Corregimiento',
     'Corregidor(a) de Buena Vista',
@@ -789,6 +814,37 @@ const TEMAS_SUGERIDOS = {
     'Actividad recreativa para niños y jóvenes',
     'Historia de un equipo o club del sector'
   ],
+  negocios: [
+    'Tienda de abarrotes o minisuper',
+    'Restaurante, fonda o cafetería',
+    'Peluquería o barbería',
+    'Ferretería o materiales de construcción',
+    'Taller mecánico o de motos',
+    'Farmacia o botica',
+    'Panadería o repostería',
+    'Venta de ropa, zapatos o accesorios',
+    'Salón de belleza o spa',
+    'Otro negocio o emprendimiento local'
+  ],
+  donantes: [
+    'Donante de materiales o equipo para la escuela',
+    'Donante de alimentos o víveres',
+    'Donante de dinero para actividades comunitarias',
+    'Padrino o madrina de un proyecto escolar',
+    'Empresa o negocio que ha donado a la comunidad',
+    'Institución que ha donado mobiliario o tecnología',
+    'Donante de medicinas o insumos de salud',
+    'Persona que dona su tiempo como voluntario(a)'
+  ],
+  salud: [
+    'Centro de salud o puesto médico de Buena Vista',
+    'Farmacia comunitaria',
+    'Promotor(a) de salud del sector',
+    'Partera o curandero(a) tradicional',
+    'Campañas de vacunación o salud pública',
+    'Botiquín comunitario',
+    'Cómo se atienden las emergencias médicas en la zona'
+  ],
   transporte: [
     'Ruta de buses o chivas hacia la cabecera',
     'Horarios de transporte público',
@@ -798,7 +854,60 @@ const TEMAS_SUGERIDOS = {
     'Taxis o transporte informal',
     'Punto de parada principal del corregimiento',
     'Cómo era el transporte en Buena Vista hace años'
+  ],
+  historia: [
+    'Cómo se fundó Buena Vista',
+    'Origen del nombre del corregimiento',
+    'Hechos importantes que marcaron a la comunidad',
+    'Cómo era la vida hace 30 o 50 años',
+    'Antiguos oficios o formas de trabajo',
+    'Los cambios más grandes que ha vivido la comunidad',
+    'Historia de una familia fundadora'
+  ],
+  personajes: [
+    'El morador o la moradora más antigua de la comunidad',
+    'Una persona con una historia de vida interesante',
+    'Un artesano, artista o músico local',
+    'Alguien que ha ayudado mucho a la comunidad',
+    'Un profesional destacado originario de Buena Vista',
+    'Una persona mayor que recuerde cómo era antes el corregimiento',
+    'Un joven que se destaca en deporte, estudio o arte',
+    'Una familia con una historia particular'
+  ],
+  cultura: [
+    'Fiesta patronal o festival del corregimiento',
+    'Comida típica de la zona',
+    'Bailes o música tradicional',
+    'Artesanías locales',
+    'Leyendas o cuentos de la comunidad',
+    'Costumbres que se están perdiendo',
+    'Grupo cultural o folclórico'
+  ],
+  galeria: [
+    'Un evento comunitario reciente',
+    'Paisajes de Buena Vista en distintas épocas del año',
+    'La vida diaria en la comunidad',
+    'Un día de escuela',
+    'Una celebración o fiesta local'
+  ],
+  noticias: [
+    'Una actividad o evento reciente',
+    'Un logro de la comunidad o de un vecino',
+    'Un proyecto en construcción',
+    'Una campaña o iniciativa comunitaria',
+    'Algo que cambió recientemente en el corregimiento'
+  ],
+  investigaciones: [
+    'Un problema que afecta a la comunidad y posibles soluciones',
+    'Cómo era Buena Vista antes, comparado con ahora',
+    'Entrevista a un vecino sobre su experiencia en la comunidad',
+    'Un tema libre relacionado con Buena Vista'
   ]
+};
+
+/* Instrucciones especiales para ciertas secciones (aparecen arriba de los temas sugeridos) */
+const SECCION_NOTA = {
+  negocios: 'Como mínimo, menciona el nombre del negocio, la dirección y un teléfono de contacto. Si el dueño quiere, se le puede agregar más: fotos, una descripción, redes sociales o hasta un video — igual que en las demás secciones.'
 };
 
 function normalizarTexto(str){
@@ -813,9 +922,12 @@ function temaEstaCubierto(tema, publicados){
 }
 function temasPanelHTML(id, publicados){
   const temas = TEMAS_SUGERIDOS[id];
-  if(!temas || !temas.length) return '';
+  const nota = SECCION_NOTA[id];
+  if((!temas || !temas.length) && !nota) return '';
   return `
     <div class="temas-panel">
+      ${nota ? `<p class="hint" style="margin:0 0 .8em;font-weight:700;color:var(--forest-dark);">ℹ️ ${escapeHtml(nota)}</p>` : ''}
+      ${temas && temas.length ? `
       <h4>📋 Temas sugeridos para investigar</h4>
       <p class="hint">Para que no todos escriban de lo mismo: cada estudiante asignado a esta sección puede elegir uno de estos temas (o proponer otro parecido).</p>
       <div class="temas-grid">
@@ -825,7 +937,7 @@ function temasPanelHTML(id, publicados){
             <span>${cubierto?'✅':'📝'}</span> ${escapeHtml(t)}
           </div>`;
         }).join('')}
-      </div>
+      </div>` : ''}
     </div>`;
 }
 
@@ -1325,15 +1437,6 @@ const TIPOS_BLOQUE = [
   {tipo:'redes', icon:'📱', label:'Redes sociales', desc:'WhatsApp, Instagram, TikTok, Facebook, correo…'}
 ];
 const NOMBRES_TIPO_BLOQUE = {texto:'Texto', foto:'Foto', galeria:'Galería', video:'Video', mapa:'Ubicación', enlace:'Enlace', redes:'Redes sociales'};
-const ESQUEMA_TIPO_INFO = {
-  texto:{icon:'📝', color:'#4C7A93'},
-  foto:{icon:'🖼️', color:'#C98A2C'},
-  galeria:{icon:'🖼️', color:'#a86f1e'},
-  video:{icon:'🎬', color:'#A6533A'},
-  mapa:{icon:'📍', color:'#2F4A3C'},
-  enlace:{icon:'🔗', color:'#5c4a33'},
-  redes:{icon:'📱', color:'#203329'}
-};
 function crearBloqueBase(tipo){
   const base = {id:nuevoBloqueId(), tipo};
   if(tipo==='texto'){ base.texto=''; base.tamano='normal'; base.color=''; base.negrita=false; base.cursiva=false; base.alineacion='izquierda'; }
@@ -1494,7 +1597,6 @@ function pintarMiTarea(){
     return;
   }
   body.innerHTML = `
-    <div id="bloquesEsquema"></div>
     <div id="bloquesList"></div>
     <div class="row-actions" style="margin:1em 0 1.6em;">
       <button class="btn gold" id="agregarFilaBtn" type="button">＋ Agregar columnas</button>
@@ -1730,6 +1832,12 @@ function pintarBloquesList(){
       cont.querySelectorAll(`[data-maptipo-blk="${id}"]`).forEach(b2=> b2.classList.toggle('active', b2===btn));
     };
   });
+  cont.querySelectorAll('[data-mapa-fullscreen]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const u = ubicarBloque(btn.dataset.mapaFullscreen);
+      if(u) abrirMapaFullscreen(u.bloque);
+    };
+  });
   cont.querySelectorAll('[data-buscarmapa-btn]').forEach(btn=>{
     const buscar = async ()=>{
       const id = btn.dataset.buscarmapaBtn;
@@ -1765,54 +1873,17 @@ function pintarBloquesList(){
       }
     };
   });
-
-  pintarEsquemaBloques();
-}
-
-/* ---- cuadro simbólico: muestra de un vistazo cómo van quedando el orden y las columnas ---- */
-function pintarEsquemaBloques(){
-  const cont = document.getElementById('bloquesEsquema');
-  if(!cont) return;
-  if(!miTareaBloques.length){ cont.innerHTML = ''; return; }
-  cont.innerHTML = `
-    <div class="esquema-box">
-      <div class="esquema-title">👁️ Así va quedando el orden y las columnas:</div>
-      <div class="esquema-tira">
-        ${miTareaBloques.map(fila=>`
-          <div class="esquema-fila" style="grid-template-columns:repeat(${fila.columnas.length},1fr);">
-            ${fila.columnas.map(c=>`
-              <div class="esquema-col">
-                ${c.bloques.length ? c.bloques.map(b=>{
-                  const info = ESQUEMA_TIPO_INFO[b.tipo] || {icon:'▫️', color:'#8a7f6e'};
-                  return `<div class="esquema-caja" data-esquema-blockid="${b.id}" style="background:${info.color};" title="${NOMBRES_TIPO_BLOQUE[b.tipo]||b.tipo}">
-                    <span class="esq-icon">${info.icon}</span>${NOMBRES_TIPO_BLOQUE[b.tipo]||b.tipo}
-                  </div>`;
-                }).join('') : `<div class="esquema-caja esquema-vacia" title="Columna vacía"><span class="esq-icon">➕</span>vacía</div>`}
-              </div>
-            `).join('')}
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
-  cont.querySelectorAll('[data-esquema-blockid]').forEach(el=>{
-    el.onclick = ()=>{
-      const target = document.querySelector(`.bloque-editor[data-blockid="${el.dataset.esquemaBlockid}"]`);
-      if(target) target.scrollIntoView({behavior:'smooth', block:'center'});
-    };
-  });
 }
 
 /* ---- selector interactivo de ubicación (Leaflet + OpenStreetMap, sin llave de API) ---- */
 let mapaLeaflets = {};
-function initMapaPicker(b){
-  const el = document.getElementById('mapaLienzo-'+b.id);
-  if(!el || typeof L==='undefined') return;
-  if(mapaLeaflets[b.id]){ try{ mapaLeaflets[b.id].map.remove(); }catch(e){} }
+/* crea un mapa Leaflet reutilizable (lo usan tanto el mapa chico del editor como la pantalla completa) */
+function crearMapaLeaflet(el, b, opciones){
+  opciones = opciones || {};
   const tieneUbicacion = b.lat!=null && b.lng!=null;
   const startLat = tieneUbicacion ? b.lat : 8.4;   // centro aproximado de Panamá
   const startLng = tieneUbicacion ? b.lng : -80.6;
-  const map = L.map(el, {scrollWheelZoom:false}).setView([startLat, startLng], tieneUbicacion ? 16 : 8);
+  const map = L.map(el, {scrollWheelZoom: !!opciones.scrollWheelZoom}).setView([startLat, startLng], tieneUbicacion ? 16 : 8);
   const capaCalle = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution:'&copy; colaboradores de OpenStreetMap', maxZoom:19
   });
@@ -1821,27 +1892,62 @@ function initMapaPicker(b){
   });
   capaCalle.addTo(map);
   let capaActual = 'calle';
-  function cambiarCapaMapa(tipo){
+  function cambiarCapa(tipo){
     if(tipo===capaActual) return;
     if(tipo==='satelite'){ map.removeLayer(capaCalle); capaSatelite.addTo(map); }
     else{ map.removeLayer(capaSatelite); capaCalle.addTo(map); }
     capaActual = tipo;
   }
+  function avisar(lat, lng){
+    guardarUbicacionBloque(b, lat, lng);
+    if(opciones.onPos) opciones.onPos(lat, lng);
+  }
   let marker = tieneUbicacion ? L.marker([b.lat, b.lng], {draggable:true}).addTo(map) : null;
-  if(marker) marker.on('dragend', ()=>{ const p = marker.getLatLng(); guardarUbicacionBloque(b, p.lat, p.lng); });
+  if(marker) marker.on('dragend', ()=>{ const p = marker.getLatLng(); avisar(p.lat, p.lng); });
 
   function setPos(lat, lng){
     if(!marker){
       marker = L.marker([lat,lng], {draggable:true}).addTo(map);
-      marker.on('dragend', ()=>{ const p = marker.getLatLng(); guardarUbicacionBloque(b, p.lat, p.lng); });
+      marker.on('dragend', ()=>{ const p = marker.getLatLng(); avisar(p.lat, p.lng); });
     }else{
       marker.setLatLng([lat,lng]);
     }
-    guardarUbicacionBloque(b, lat, lng);
+    avisar(lat, lng);
   }
   map.on('click', e=> setPos(e.latlng.lat, e.latlng.lng));
-  mapaLeaflets[b.id] = {map, setPos, cambiarCapa: cambiarCapaMapa};
   setTimeout(()=> map.invalidateSize(), 100);
+  return {map, setPos, cambiarCapa};
+}
+function initMapaPicker(b){
+  const el = document.getElementById('mapaLienzo-'+b.id);
+  if(!el || typeof L==='undefined') return;
+  if(mapaLeaflets[b.id]){ try{ mapaLeaflets[b.id].map.remove(); }catch(e){} }
+  mapaLeaflets[b.id] = crearMapaLeaflet(el, b);
+}
+
+/* ---- ver el mapa en pantalla completa, para marcar el lugar con más espacio ---- */
+let mapaFullscreenBlockId = null;
+let mapaFullscreenInst = null;
+function abrirMapaFullscreen(b){
+  if(typeof L==='undefined') return;
+  mapaFullscreenBlockId = b.id;
+  document.getElementById('mapaFullscreenOverlay').classList.add('open');
+  if(mapaFullscreenInst){ try{ mapaFullscreenInst.map.remove(); }catch(e){} mapaFullscreenInst = null; }
+  const el = document.getElementById('mapaFullscreenLienzo');
+  const coordsEl = document.getElementById('mapaFullscreenCoords');
+  coordsEl.textContent = b.lat!=null ? `📍 Ubicación seleccionada (${(+b.lat).toFixed(5)}, ${(+b.lng).toFixed(5)})` : 'Todavía no has marcado un lugar.';
+  mapaFullscreenInst = crearMapaLeaflet(el, b, {
+    scrollWheelZoom: true,
+    onPos: (lat,lng)=>{ coordsEl.textContent = `📍 Ubicación seleccionada (${lat.toFixed(5)}, ${lng.toFixed(5)})`; }
+  });
+  document.getElementById('mapaFullscreenBuscar').value = '';
+  document.querySelectorAll('#mapaFullscreenTipoSwitch [data-fstipo]').forEach(b2=> b2.classList.toggle('active', b2.dataset.fstipo==='calle'));
+}
+function cerrarMapaFullscreen(){
+  document.getElementById('mapaFullscreenOverlay').classList.remove('open');
+  if(mapaFullscreenInst){ try{ mapaFullscreenInst.map.remove(); }catch(e){} mapaFullscreenInst = null; }
+  mapaFullscreenBlockId = null;
+  pintarBloquesList(); // refresca el mapa chico y las coordenadas del editor normal
 }
 function guardarUbicacionBloque(b, lat, lng){
   b.lat = lat; b.lng = lng;
@@ -1933,6 +2039,7 @@ function bloqueCamposHTML(b,i){
       <div class="mapa-tipo-switch">
         <button type="button" class="active" data-maptipo="calle" data-maptipo-blk="${i}">🗺️ Mapa</button>
         <button type="button" data-maptipo="satelite" data-maptipo-blk="${i}">🛰️ Satélite</button>
+        <button type="button" data-mapa-fullscreen="${i}">⛶ Pantalla completa</button>
       </div>
       <div class="mapa-lienzo" id="mapaLienzo-${b.id}"></div>
       <p class="hint mapa-coords" id="mapaCoords-${b.id}">${b.lat!=null ? `📍 Ubicación seleccionada (${(+b.lat).toFixed(5)}, ${(+b.lng).toFixed(5)})` : 'Todavía no has marcado un lugar.'}</p>
@@ -3107,12 +3214,50 @@ function initColManagerEstatico(){
     pintarBloquesList();
   };
 }
+function initMapaFullscreenEstatico(){
+  document.getElementById('mapaFullscreenCerrar').onclick = cerrarMapaFullscreen;
+  document.querySelectorAll('#mapaFullscreenTipoSwitch [data-fstipo]').forEach(btn=>{
+    btn.onclick = ()=>{
+      if(!mapaFullscreenInst) return;
+      mapaFullscreenInst.cambiarCapa(btn.dataset.fstipo);
+      document.querySelectorAll('#mapaFullscreenTipoSwitch [data-fstipo]').forEach(b2=> b2.classList.toggle('active', b2===btn));
+    };
+  });
+  const buscarEnFullscreen = async ()=>{
+    if(!mapaFullscreenInst) return;
+    const input = document.getElementById('mapaFullscreenBuscar');
+    const q = input.value.trim();
+    if(!q) return;
+    const btn = document.getElementById('mapaFullscreenBuscarBtn');
+    const original = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Buscando…';
+    try{
+      const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=pa&q=${encodeURIComponent(q)}`);
+      const data = await resp.json();
+      if(data && data[0]){
+        const lat = +data[0].lat, lng = +data[0].lon;
+        mapaFullscreenInst.map.setView([lat,lng],16);
+        mapaFullscreenInst.setPos(lat,lng);
+      }else{
+        alert('No se encontró ese lugar. Intenta con otra búsqueda (por ejemplo, agrega "Panamá").');
+      }
+    }catch(e){
+      alert('No se pudo buscar. Revisa tu conexión a internet.');
+    }
+    btn.disabled = false; btn.textContent = original;
+  };
+  document.getElementById('mapaFullscreenBuscarBtn').onclick = buscarEnFullscreen;
+  document.getElementById('mapaFullscreenBuscar').onkeydown = (e)=>{
+    if(e.key==='Enter'){ e.preventDefault(); buscarEnFullscreen(); }
+  };
+}
 (function init(){
   renderWho();
   renderDrawer();
   renderFooterLinks();
   initEditorPaginasEstatico();
   initColManagerEstatico();
+  initMapaFullscreenEstatico();
   goTo(estaBloqueado() ? 'mitarea' : (session ? (session.role==='admin' ? 'admin' : 'home') : 'home'));
   registrarYMostrarVisitas();
 })();
