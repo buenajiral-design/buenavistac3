@@ -6,6 +6,8 @@
 <title>Buena Vista — Nuestro Corregimiento</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,600;0,700;1,500&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root{
     --forest:#2F4A3C;
@@ -75,7 +77,7 @@
   label{font-size:.82rem;font-weight:700;display:block;margin-bottom:.25em;color:var(--forest-dark);}
   .field{margin-bottom:1em;}
 
-  /* ---------- top bar ---------- */
+  /* ---------- top bar (cabecera) ---------- */
   header.topbar{
     position:sticky;top:0;z-index:40;
     background:var(--forest);
@@ -83,6 +85,7 @@
     display:flex;align-items:center;justify-content:space-between;
     padding:.8em 1.3em;
     box-shadow:0 1px 0 rgba(0,0,0,.15);
+    border-bottom:3px solid var(--gold);
   }
   .brand{display:flex;align-items:center;gap:.6em;cursor:pointer;}
   .brand .mark{
@@ -127,6 +130,19 @@
   .drawer-close{position:absolute;top:.8em;right:1em;background:none;border:none;font-size:1.4rem;color:var(--ink);}
 
   main{max-width:960px;margin:0 auto;padding:2em 1.3em 4em;}
+
+  /* ---------- cuerpo: marco tipo "página" para verse más profesional ---------- */
+  body{background:var(--parchment-2);}
+  .page-frame{
+    max-width:1040px;margin:1.4em auto 0;background:var(--parchment);
+    border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 6px 24px rgba(43,38,32,.1);
+    overflow:hidden;
+    min-height:60vh;
+  }
+  @media(max-width:640px){
+    .page-frame{margin-top:0;border-radius:0;border-left:none;border-right:none;box-shadow:none;}
+  }
 
   /* ---------- hero / home ---------- */
   .hero{margin-bottom:2.2em;}
@@ -215,9 +231,40 @@
   th,td{text-align:left;padding:.5em .5em;border-bottom:1px solid var(--line);}
   th{color:var(--clay);font-size:.75rem;letter-spacing:.03em;}
 
+  /* ---------- pie de página (footer) ---------- */
   footer{
-    text-align:center;color:#8a7f6e;font-size:.82rem;
-    padding:2em 1em 3em;
+    background:var(--forest-dark);color:var(--parchment-2);
+    border-top:3px solid var(--gold);
+  }
+  .footer-cols{
+    max-width:1040px;margin:0 auto;
+    display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:2em;
+    padding:2.4em 1.3em 1.6em;
+  }
+  .footer-col h5{
+    color:var(--white);font-family:'Bitter',serif;font-size:.95rem;
+    letter-spacing:.02em;margin:0 0 .8em;
+  }
+  .footer-col p{margin:0 0 .6em;font-size:.85rem;line-height:1.6;color:var(--parchment-2);}
+  .footer-links{list-style:none;margin:0;padding:0;}
+  .footer-links li{margin-bottom:.5em;}
+  .footer-links a{color:var(--parchment-2);text-decoration:none;font-size:.85rem;}
+  .footer-links a:hover{color:var(--gold);text-decoration:underline;}
+  .footer-brand{display:flex;align-items:center;gap:.6em;margin-bottom:.8em;}
+  .footer-brand .mark{
+    width:32px;height:32px;border-radius:50%;background:var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Bitter',serif;font-weight:700;color:var(--forest-dark);flex-shrink:0;
+  }
+  .footer-brand strong{color:var(--white);font-family:'Bitter',serif;font-size:1.05rem;}
+  .footer-bottom{
+    border-top:1px solid rgba(255,255,255,.12);
+    padding:1em 1.3em;text-align:center;font-size:.78rem;color:#a89c86;
+  }
+  .footer-bottom a{color:var(--parchment-2);}
+  #contadorVisitas{margin-top:.3em;font-size:.76rem;color:#8a7f6e;}
+  @media(max-width:720px){
+    .footer-cols{grid-template-columns:1fr;gap:1.6em;padding:2em 1.3em 1.2em;}
   }
 
   /* ---------- extras: tabs admin, chips, login toggle ---------- */
@@ -302,6 +349,100 @@
   .foto-preview{width:100%;max-height:220px;object-fit:cover;border-radius:4px;margin-bottom:.6em;display:block;}
   .upload-row{display:flex;gap:.6em;align-items:center;flex-wrap:wrap;margin-bottom:.6em;}
   .upload-row input[type="file"]{width:auto;flex:1;min-width:160px;}
+
+  /* ---------- panel lateral: elegir qué agregar ---------- */
+  .bloque-picker-overlay{position:fixed;inset:0;background:rgba(20,16,10,.45);z-index:70;display:none;}
+  .bloque-picker-overlay.open{display:block;}
+  .bloque-picker{
+    position:fixed;top:0;right:0;bottom:0;width:min(340px,88vw);
+    background:var(--white);z-index:71;
+    transform:translateX(100%);transition:transform .22s ease;
+    overflow-y:auto;padding:1.2em 0 2em;box-shadow:-3px 0 14px rgba(0,0,0,.2);
+  }
+  .bloque-picker.open{transform:translateX(0);}
+  .bloque-picker-head{display:flex;align-items:center;justify-content:space-between;padding:0 1.2em 1em;border-bottom:1px solid var(--line);margin-bottom:.8em;}
+  .bloque-picker-head h4{margin:0;font-size:1.05rem;}
+  .bloque-picker-close{background:none;border:none;font-size:1.5rem;color:var(--ink);line-height:1;padding:0 .2em;}
+  .bloque-picker-list{display:flex;flex-direction:column;gap:.35em;padding:0 .8em;}
+  .bloque-picker-item{
+    display:flex;align-items:center;gap:.8em;width:100%;text-align:left;
+    background:var(--white);border:1.5px solid var(--line);border-radius:var(--radius);
+    padding:.7em .7em;font-family:'Karla',sans-serif;
+  }
+  .bloque-picker-item:hover{background:var(--parchment);border-color:var(--gold);}
+  .bloque-picker-icon{font-size:1.5rem;width:1.6em;text-align:center;flex-shrink:0;}
+  .bloque-picker-text{display:flex;flex-direction:column;}
+  .bloque-picker-text strong{color:var(--forest-dark);font-size:.95rem;}
+  .bloque-picker-text small{color:#8a7f6e;font-size:.78rem;}
+
+  /* ---------- insertar en un punto exacto ---------- */
+  .bloque-insert{display:flex;align-items:center;gap:.6em;margin:.15em 0;}
+  .bloque-insert::before,.bloque-insert::after{content:"";flex:1;height:1px;background:var(--line);}
+  .bloque-insert button{
+    background:var(--parchment-2);border:1px dashed var(--gold-dark);color:var(--gold-dark);
+    border-radius:20px;padding:.25em .8em;font-size:.74rem;font-weight:700;white-space:nowrap;
+  }
+  .bloque-insert button:hover{background:var(--gold);color:var(--white);border-style:solid;}
+
+  /* ---------- selector de ubicación en mapa ---------- */
+  .mapa-lienzo{height:260px;border-radius:4px;overflow:hidden;margin:.5em 0;border:1.5px solid var(--line);background:var(--parchment-2);}
+  .mapa-coords{margin:0 0 .8em;}
+
+  /* ---------- íconos de redes (svg) ---------- */
+  .red-icono svg{display:block;}
+
+  /* ================= EDITOR VISUAL DE PÁGINAS ================= */
+  .pg-toolbar{display:flex;gap:.8em;flex-wrap:wrap;align-items:center;margin-bottom:1.2em;}
+  .pg-titulo-input{font-family:'Bitter',serif;font-size:1.3rem;font-weight:700;border:none;border-bottom:2px solid var(--line);border-radius:0;padding:.2em .1em;background:transparent;flex:1;min-width:220px;color:var(--forest-dark);}
+  .pg-titulo-input:focus{outline:none;border-bottom-color:var(--gold);}
+  .pg-seccion{border:1.5px solid var(--line);border-radius:8px;background:var(--white);margin-bottom:1.4em;overflow:hidden;}
+  .pg-seccion-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4em;background:var(--parchment-2);padding:.6em 1em;}
+  .pg-seccion-label{font-weight:700;font-size:.85rem;color:var(--forest-dark);}
+  .pg-seccion-tools{display:flex;gap:.3em;flex-wrap:wrap;}
+  .pg-seccion-tools button{background:var(--white);border:1px solid var(--line);border-radius:4px;padding:0 .5em;height:1.9em;font-size:.78rem;font-weight:700;}
+  .pg-seccion-tools button:hover:not(:disabled){background:var(--parchment);}
+  .pg-seccion-tools button:disabled{opacity:.35;}
+  .pg-columnas{display:grid;gap:1px;background:var(--line);}
+  .pg-columna{background:var(--white);padding:1em;min-width:0;}
+  .pg-columna-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.7em;}
+  .pg-columna-label{font-size:.72rem;font-weight:700;color:#8a7f6e;letter-spacing:.03em;text-transform:uppercase;}
+  .pg-columna-del{background:none;border:none;color:var(--clay);font-size:.9rem;}
+  .pg-bloque{border:1.5px solid var(--line);border-radius:6px;padding:.7em .8em;margin-bottom:.6em;background:var(--parchment);}
+  .pg-bloque[draggable="true"]{cursor:grab;}
+  .pg-bloque[draggable="true"]:active{cursor:grabbing;}
+  .pg-bloque-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5em;}
+  .pg-bloque-tipo{font-size:.72rem;font-weight:700;color:var(--clay);letter-spacing:.02em;}
+  .pg-bloque-tipo::before{content:"⠿ ";opacity:.5;}
+  .pg-bloque-tools{display:flex;gap:.25em;}
+  .pg-bloque-tools button{background:var(--white);border:none;border-radius:4px;width:1.7em;height:1.7em;font-size:.78rem;}
+  .pg-bloque-tools button:hover:not(:disabled){background:var(--parchment-2);}
+  .pg-bloque-tools button:disabled{opacity:.3;}
+  .pg-add-contenido{width:100%;background:var(--white);border:1.5px dashed var(--gold);color:var(--gold-dark);border-radius:6px;padding:.6em;font-weight:700;font-size:.82rem;}
+  .pg-add-contenido:hover{background:var(--gold);color:var(--white);border-style:solid;}
+  .pg-add-seccion{width:100%;background:var(--white);border:2px dashed var(--gold-dark);color:var(--gold-dark);border-radius:8px;padding:1em;font-weight:700;font-size:.95rem;margin:0 0 2em;}
+  .pg-add-seccion:hover{background:var(--gold);color:var(--white);border-style:solid;}
+  .pg-empty-col{color:#a89c86;font-size:.8rem;text-align:center;padding:1em 0;}
+  .pg-lista-item{display:flex;align-items:center;justify-content:space-between;gap:1em;flex-wrap:wrap;border:1px solid var(--line);border-radius:6px;padding:.9em 1.1em;margin-bottom:.7em;background:var(--white);}
+  .pg-lista-info strong{font-family:'Bitter',serif;font-size:1.02rem;color:var(--forest-dark);display:block;}
+  .pg-lista-meta{font-size:.78rem;color:#8a7f6e;margin-top:.2em;}
+  .pg-lista-tools{display:flex;gap:.4em;flex-wrap:wrap;}
+  .pg-galeria-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:.5em;}
+  .pg-galeria-grid img{width:100%;height:90px;object-fit:cover;border-radius:4px;display:block;}
+  .pg-galeria-item{position:relative;}
+  .pg-galeria-item button{position:absolute;top:2px;right:2px;background:rgba(43,38,32,.75);color:#fff;border:none;border-radius:50%;width:1.4em;height:1.4em;font-size:.7rem;line-height:1;}
+  .pg-col-opciones{display:grid;grid-template-columns:repeat(4,1fr);gap:.6em;margin:1em 0;}
+  .pg-col-opciones button{background:var(--white);border:1.5px solid var(--line);border-radius:6px;padding:1em .4em;font-weight:700;font-size:.85rem;color:var(--forest-dark);}
+  .pg-col-opciones button:hover{background:var(--parchment);border-color:var(--gold);}
+  .pg-preview-bar{display:flex;gap:.5em;align-items:center;margin-bottom:1em;}
+  .pg-preview-bar button{background:var(--white);border:1.5px solid var(--forest);color:var(--forest);border-radius:20px;padding:.4em 1em;font-weight:700;font-size:.85rem;}
+  .pg-preview-bar button.active{background:var(--forest);color:var(--white);}
+  .pg-preview-frame-wrap{display:flex;justify-content:center;}
+  #pgPreviewFrame{border:0;transition:width .2s ease;width:100%;height:65vh;background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);}
+  #pgPreviewFrame.movil{width:380px;height:70vh;border:10px solid #2b2620;border-radius:26px;}
+  @media(max-width:720px){
+    .pg-columnas{grid-template-columns:1fr !important;}
+    .pg-col-opciones{grid-template-columns:repeat(2,1fr);}
+  }
 </style>
 </head>
 <body>
@@ -326,12 +467,29 @@
   </nav>
 </div>
 
-<main id="main"></main>
+<main id="main" class="page-frame"></main>
 
 <footer>
-  Buena Vista — construido por los estudiantes del C.E.B.G. El Jiral, 2026.
-  <div style="margin-top:.6em;"><a href="#" id="footerContactoLink">✉️ Contáctanos</a></div>
-  <div id="contadorVisitas" style="margin-top:.5em;font-size:.78rem;color:#a89c86;">Contando visitas…</div>
+  <div class="footer-cols">
+    <div class="footer-col">
+      <div class="footer-brand"><div class="mark">BV</div><strong>Buena Vista</strong></div>
+      <p>Nuestro corregimiento — C.E.B.G. El Jiral. Un espacio construido por los estudiantes para contar quiénes somos, dónde vivimos y qué nos hace especiales.</p>
+    </div>
+    <div class="footer-col">
+      <h5>Secciones</h5>
+      <ul class="footer-links" id="footerSecciones"></ul>
+    </div>
+    <div class="footer-col">
+      <h5>Contacto</h5>
+      <ul class="footer-links">
+        <li><a href="#" id="footerContactoLink">✉️ Contáctanos</a></li>
+      </ul>
+      <div id="contadorVisitas">Contando visitas…</div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    Buena Vista — construido por los estudiantes del C.E.B.G. El Jiral, 2026.
+  </div>
 </footer>
 
 <!-- Login modal -->
@@ -428,6 +586,44 @@
     <button class="modal-close" data-close="respaldoModal">×</button>
     <h3>Contenido del respaldo</h3>
     <pre id="respaldoContenido" style="max-height:50vh;overflow:auto;background:var(--parchment);padding:1em;border-radius:4px;font-size:.75rem;white-space:pre-wrap;"></pre>
+  </div>
+</div>
+
+<!-- Editor visual de páginas: elegir columnas al agregar sección -->
+<div class="modal-overlay" id="pgColModal">
+  <div class="modal">
+    <button class="modal-close" data-close="pgColModal">×</button>
+    <h3>¿Cuántas columnas quieres?</h3>
+    <p class="hint">Podrás agregar o quitar columnas después.</p>
+    <div class="pg-col-opciones">
+      <button data-cols="1" type="button">1<br><small style="font-weight:400;">columna</small></button>
+      <button data-cols="2" type="button">2<br><small style="font-weight:400;">columnas</small></button>
+      <button data-cols="3" type="button">3<br><small style="font-weight:400;">columnas</small></button>
+      <button data-cols="4" type="button">4<br><small style="font-weight:400;">columnas</small></button>
+    </div>
+  </div>
+</div>
+
+<!-- Editor visual de páginas: panel "¿qué deseas agregar?" para una columna -->
+<div class="bloque-picker-overlay" id="pgPickerOverlay"></div>
+<div class="bloque-picker" id="pgPicker">
+  <div class="bloque-picker-head">
+    <h4>¿Qué deseas agregar?</h4>
+    <button class="bloque-picker-close" id="pgPickerClose" type="button">×</button>
+  </div>
+  <div class="bloque-picker-list" id="pgPickerList"></div>
+</div>
+
+<!-- Editor visual de páginas: vista previa -->
+<div class="modal-overlay" id="pgPreviewModal">
+  <div class="modal" style="max-width:1000px;">
+    <button class="modal-close" data-close="pgPreviewModal">×</button>
+    <h3>👁️ Vista previa</h3>
+    <div class="pg-preview-bar">
+      <button id="pgPreviewDesktop" class="active" type="button">🖥️ Computadora</button>
+      <button id="pgPreviewMovil" type="button">📱 Celular</button>
+    </div>
+    <div class="pg-preview-frame-wrap"><iframe id="pgPreviewFrame"></iframe></div>
   </div>
 </div>
 
@@ -593,6 +789,17 @@ function renderWho(){
     loginBtn.textContent = 'Entrar';
   }
   drawerBtn.style.display = estaBloqueado() ? 'none' : '';
+}
+function renderFooterLinks(){
+  const cont = document.getElementById('footerSecciones');
+  if(!cont) return;
+  const destacadas = SECTIONS.slice(0,6);
+  cont.innerHTML = destacadas.map(s=>`<li><a href="#" data-foot-sec="${s.id}">${s.icon} ${s.name}</a></li>`).join('')
+    + `<li><a href="#" id="footerVerTodas">☰ Ver todas las secciones</a></li>`;
+  cont.querySelectorAll('[data-foot-sec]').forEach(a=>{
+    a.onclick = (e)=>{ e.preventDefault(); goTo(a.dataset.footSec); window.scrollTo({top:0,behavior:'smooth'}); };
+  });
+  document.getElementById('footerVerTodas').onclick = (e)=>{ e.preventDefault(); openDrawer(); };
 }
 function renderDrawer(){
   const list = document.getElementById('drawerList');
@@ -855,14 +1062,40 @@ function armarLinkWhatsapp(v){
   const digits = v.replace(/[^\d]/g,'');
   return digits ? `https://wa.me/${digits}` : null;
 }
+function armarLinkCorreo(v){
+  if(!v) return null;
+  v = v.trim();
+  if(/^mailto:/i.test(v)) return v;
+  return `mailto:${v}`;
+}
+/* Íconos en SVG (en vez de emojis) para que se vean como los de las redes reales */
+const REDES_ICONOS = {
+  whatsapp:`<svg viewBox="0 0 32 32" width="22" height="22" fill="#fff"><path d="M16 3C9 3 3.3 8.6 3.3 15.5c0 2.4.7 4.7 1.9 6.7L3 29l7-2.1c1.9 1 4 1.6 6 1.6 7 0 12.7-5.6 12.7-12.5C28.7 8.6 23 3 16 3zm0 22.7c-1.9 0-3.7-.5-5.3-1.4l-.4-.2-4.2 1.2 1.2-4-.3-.4a10 10 0 0 1-1.6-5.4C5.4 9.7 10.1 5 16 5s10.6 4.7 10.6 10.5S21.9 25.7 16 25.7zm5.8-7.9c-.3-.2-1.9-1-2.2-1.1-.3-.1-.5-.2-.7.2-.2.3-.8 1.1-1 1.3-.2.2-.4.3-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-2-1.8-2.3-.2-.3 0-.5.1-.7.1-.1.3-.4.5-.5.2-.2.2-.3.3-.5.1-.2 0-.4 0-.6-.1-.2-.7-1.7-1-2.3-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.9-.8 2.1-1.5.3-.7.3-1.3.2-1.5-.1-.1-.3-.2-.6-.4z"/></svg>`,
+  instagram:`<svg viewBox="0 0 32 32" width="22" height="22" fill="#fff"><path d="M16 3.5c-3.4 0-3.8 0-5.1.1-1.3.1-2.2.3-3 .6-.8.3-1.5.7-2.2 1.4C5 6.3 4.6 7 4.3 7.8c-.3.8-.5 1.7-.6 3-.1 1.3-.1 1.7-.1 5.2s0 3.9.1 5.2c.1 1.3.3 2.2.6 3 .3.8.7 1.5 1.4 2.2.7.7 1.4 1.1 2.2 1.4.8.3 1.7.5 3 .6 1.3.1 1.7.1 5.1.1s3.8 0 5.1-.1c1.3-.1 2.2-.3 3-.6.8-.3 1.5-.7 2.2-1.4.7-.7 1.1-1.4 1.4-2.2.3-.8.5-1.7.6-3 .1-1.3.1-1.7.1-5.2s0-3.9-.1-5.2c-.1-1.3-.3-2.2-.6-3-.3-.8-.7-1.5-1.4-2.2-.7-.7-1.4-1.1-2.2-1.4-.8-.3-1.7-.5-3-.6-1.3-.1-1.7-.1-5.1-.1zm0 2.3c3.3 0 3.7 0 5 .1 1.2.1 1.9.3 2.3.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1.1.4 2.3.1 1.3.1 1.6.1 5s0 3.7-.1 5c-.1 1.2-.3 1.9-.4 2.3-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1.1.4-2.3.4-1.3.1-1.6.1-5 .1s-3.7 0-5-.1c-1.2-.1-1.9-.3-2.3-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1.1-.4-2.3-.1-1.3-.1-1.6-.1-5s0-3.7.1-5c.1-1.2.3-1.9.4-2.3.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1.1-.4 2.3-.4 1.3-.1 1.6-.1 5-.1zM16 10a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm0 9.9a3.9 3.9 0 1 1 0-7.8 3.9 3.9 0 0 1 0 7.8zm6.3-10.1a1.4 1.4 0 1 1-2.8 0 1.4 1.4 0 0 1 2.8 0z"/></svg>`,
+  tiktok:`<svg viewBox="0 0 32 32" width="22" height="22" fill="#fff"><path d="M21.6 4h-4v17.3a3.2 3.2 0 1 1-2.3-3.1v-4.1a7.3 7.3 0 1 0 6.3 7.2V13a8.7 8.7 0 0 0 5 1.6v-4a4.6 4.6 0 0 1-5-4.4z"/></svg>`,
+  facebook:`<svg viewBox="0 0 32 32" width="22" height="22" fill="#fff"><path d="M18.9 29V17.6h3.8l.6-4.5h-4.4v-2.9c0-1.3.4-2.2 2.2-2.2h2.4V3.9c-.4 0-1.8-.2-3.4-.2-3.4 0-5.7 2.1-5.7 5.9v3.5h-3.8v4.5h3.8V29h4.5z"/></svg>`,
+  telegram:`<svg viewBox="0 0 32 32" width="22" height="22" fill="#fff"><path d="M28.9 5.6 4.5 15c-1.6.7-1.6 1.6-.3 2l6.2 1.9 2.4 7.3c.3.7.5 1 1 1 .4 0 .6-.2 1-.5l2.7-2.6 5.6 4.1c1 .6 1.7.3 2-.9l3.6-17.4c.4-1.5-.3-2.1-1.8-1.3zM11 18.7l11.3-7c.6-.3 1.1-.2.7.4l-9.6 8.7-.4 3.9-1.7-6z"/></svg>`,
+  youtube:`<svg viewBox="0 0 32 32" width="22" height="22" fill="#fff"><path d="M29 10.5s-.3-2-1.2-2.9c-1.1-1.2-2.4-1.2-3-1.3C20.5 6 16 6 16 6s-4.5 0-8.8.3c-.6.1-1.9.1-3 1.3C3.3 8.5 3 10.5 3 10.5S2.7 12.8 2.7 15v2c0 2.2.3 4.5.3 4.5s.3 2 1.2 2.9c1.1 1.2 2.6 1.1 3.3 1.3C10 26 16 26 16 26s4.5 0 8.8-.4c.6-.1 1.9-.1 3-1.3.9-.9 1.2-2.9 1.2-2.9s.3-2.2.3-4.5v-2c0-2.2-.3-4.5-.3-4.5zM13.2 19.5v-7l6.5 3.5-6.5 3.5z"/></svg>`,
+  correo:`<svg viewBox="0 0 32 32" width="22" height="22" fill="#fff"><path d="M4 8h24a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zm1.6 2 10.4 8 10.4-8H5.6zM27 11.9l-10.4 8a1 1 0 0 1-1.2 0L5 11.9V21h22v-9.1z"/></svg>`
+};
 const REDES_CONFIG = [
-  {campo:'whatsapp', label:'WhatsApp', color:'#25D366', emoji:'💬', link: armarLinkWhatsapp},
-  {campo:'instagram', label:'Instagram', color:'#C1266B', emoji:'📷', link: v=>v},
-  {campo:'tiktok', label:'TikTok', color:'#000000', emoji:'🎵', link: v=>v},
-  {campo:'facebook', label:'Facebook', color:'#1877F2', emoji:'📘', link: v=>v},
-  {campo:'telegram', label:'Telegram', color:'#29A9EB', emoji:'✈️', link: v=>v},
-  {campo:'youtube', label:'YouTube', color:'#FF0000', emoji:'▶️', link: v=>v}
+  {campo:'whatsapp', label:'WhatsApp', color:'#25D366', link: armarLinkWhatsapp},
+  {campo:'instagram', label:'Instagram', color:'#C1266B', link: v=>v},
+  {campo:'tiktok', label:'TikTok', color:'#000000', link: v=>v},
+  {campo:'facebook', label:'Facebook', color:'#1877F2', link: v=>v},
+  {campo:'telegram', label:'Telegram', color:'#29A9EB', link: v=>v},
+  {campo:'youtube', label:'YouTube', color:'#FF0000', link: v=>v},
+  {campo:'correo', label:'Correo', color:'#4C7A93', link: armarLinkCorreo}
 ];
+/* íconos por defecto de Leaflet (mapa) apuntando al CDN, para que se vean bien */
+if(typeof L!=='undefined'){
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+  });
+}
 const TAMANOS_TEXTO = {pequeno:'.85rem', normal:'1rem', grande:'1.3rem', enorme:'1.7rem'};
 function bloqueHTML(b){
   if(b.tipo==='texto'){
@@ -870,7 +1103,9 @@ function bloqueHTML(b){
     const fs = TAMANOS_TEXTO[b.tamano] || TAMANOS_TEXTO.normal;
     const color = b.color || 'inherit';
     const peso = b.negrita ? '700' : '400';
-    return `<p style="white-space:pre-wrap;font-size:${fs};color:${escapeHtml(color)};font-weight:${peso};">${escapeHtml(b.texto)}</p>`;
+    const estilo = b.cursiva ? 'italic' : 'normal';
+    const align = {izquierda:'left', centro:'center', derecha:'right'}[b.alineacion] || 'left';
+    return `<p style="white-space:pre-wrap;font-size:${fs};color:${escapeHtml(color)};font-weight:${peso};font-style:${estilo};text-align:${align};">${escapeHtml(b.texto)}</p>`;
   }
   if(b.tipo==='foto'){
     if(!b.url) return '';
@@ -894,7 +1129,7 @@ function bloqueHTML(b){
   }
   if(b.tipo==='mapa'){
     if(!b.url) return '';
-    if(b.url.includes('google.com/maps/embed')){
+    if(b.url.includes('google.com/maps/embed') || b.url.includes('output=embed')){
       return `<div class="video-wrap"><iframe src="${escapeHtml(b.url)}" loading="lazy"></iframe></div>`;
     }
     return `<a class="btn outline small" href="${escapeHtml(b.url)}" target="_blank" rel="noopener">📍 Ver ubicación en Google Maps</a>`;
@@ -903,7 +1138,7 @@ function bloqueHTML(b){
     const items = REDES_CONFIG.map(r=>{
       const link = b[r.campo] ? r.link(b[r.campo]) : null;
       if(!link) return '';
-      return `<a class="red-icono" style="background:${r.color};" href="${escapeHtml(link)}" target="_blank" rel="noopener" title="${r.label}">${r.emoji}</a>`;
+      return `<a class="red-icono" style="background:${r.color};" href="${escapeHtml(link)}" target="_blank" rel="noopener" title="${r.label}">${REDES_ICONOS[r.campo]||''}</a>`;
     }).join('');
     if(!items) return '';
     return `<div class="redes-panel">
@@ -986,6 +1221,38 @@ let miTareaModo = 'editar'; // 'editar' | 'vista'
 
 function nuevoBloqueId(){ return 'b'+Math.random().toString(36).slice(2,10); }
 
+const TIPOS_BLOQUE = [
+  {tipo:'texto', icon:'📝', label:'Texto', desc:'Un párrafo o un título'},
+  {tipo:'foto', icon:'🖼️', label:'Foto', desc:'Sube una imagen o pega un enlace'},
+  {tipo:'video', icon:'🎬', label:'Video', desc:'YouTube o archivo de video'},
+  {tipo:'mapa', icon:'📍', label:'Ubicación', desc:'Selecciona el lugar en el mapa'},
+  {tipo:'redes', icon:'🔗', label:'Redes sociales', desc:'WhatsApp, Instagram, TikTok, correo…'}
+];
+function crearBloqueBase(tipo){
+  const base = {id:nuevoBloqueId(), tipo};
+  if(tipo==='texto'){ base.texto=''; base.tamano='normal'; base.color=''; base.negrita=false; base.cursiva=false; base.alineacion='izquierda'; }
+  if(tipo==='foto'){ base.url=''; base.caption=''; base.ancho='completa'; base.ajuste='recortada'; }
+  if(tipo==='video') base.url='';
+  if(tipo==='mapa'){ base.url=''; base.lat=null; base.lng=null; }
+  if(tipo==='redes'){ base.whatsapp=''; base.instagram=''; base.tiktok=''; base.facebook=''; base.telegram=''; base.youtube=''; base.correo=''; }
+  return base;
+}
+/* índice donde se insertará el próximo bloque (null = al final) */
+let bloqueInsertIndex = null;
+function abrirPickerBloque(indice){
+  bloqueInsertIndex = (indice===undefined) ? null : indice;
+  const overlay = document.getElementById('bloquePickerOverlay');
+  const panel = document.getElementById('bloquePicker');
+  if(overlay) overlay.classList.add('open');
+  if(panel) panel.classList.add('open');
+}
+function cerrarPickerBloque(){
+  const overlay = document.getElementById('bloquePickerOverlay');
+  const panel = document.getElementById('bloquePicker');
+  if(overlay) overlay.classList.remove('open');
+  if(panel) panel.classList.remove('open');
+}
+
 async function renderMiTarea(){
   const main = document.getElementById('main');
   main.innerHTML = `<div class="empty">Cargando tu tarea…</div>`;
@@ -1041,30 +1308,39 @@ function pintarMiTarea(){
   }
   body.innerHTML = `
     <div id="bloquesList"></div>
-    <div class="add-bloque-bar">
-      <button data-add="texto">📝 + Texto</button>
-      <button data-add="foto">🖼️ + Foto</button>
-      <button data-add="video">🎬 + Video</button>
-      <button data-add="mapa">📍 + Ubicación</button>
-      <button data-add="redes">🔗 + Redes sociales</button>
+    <div class="row-actions" style="margin:1em 0 1.6em;">
+      <button class="btn gold" id="abrirPickerFinal" type="button">＋ Agregar contenido</button>
     </div>
     <div class="row-actions">
       <button class="btn outline" id="guardarBorradorBtn">💾 Guardar borrador</button>
       <button class="btn gold" id="enviarRevisionBtn">📩 Enviar para revisión</button>
       ${session.tarea && session.tarea.id ? `<button class="btn outline" id="verHistorialBtn">🕓 Historial de versiones</button>` : ''}
     </div>
+    <div class="bloque-picker-overlay" id="bloquePickerOverlay"></div>
+    <div class="bloque-picker" id="bloquePicker">
+      <div class="bloque-picker-head">
+        <h4>¿Qué deseas agregar?</h4>
+        <button class="bloque-picker-close" id="bloquePickerClose" type="button">×</button>
+      </div>
+      <div class="bloque-picker-list" id="bloquePickerList">
+        ${TIPOS_BLOQUE.map(t=>`
+          <button class="bloque-picker-item" data-tipo="${t.tipo}" type="button">
+            <span class="bloque-picker-icon">${t.icon}</span>
+            <span class="bloque-picker-text"><strong>${t.label}</strong><small>${t.desc}</small></span>
+          </button>`).join('')}
+      </div>
+    </div>
   `;
   pintarBloquesList();
-  body.querySelectorAll('[data-add]').forEach(btn=>{
+  document.getElementById('abrirPickerFinal').onclick = ()=> abrirPickerBloque(null);
+  document.getElementById('bloquePickerClose').onclick = cerrarPickerBloque;
+  document.getElementById('bloquePickerOverlay').onclick = cerrarPickerBloque;
+  document.querySelectorAll('#bloquePickerList [data-tipo]').forEach(btn=>{
     btn.onclick = ()=>{
-      const tipo = btn.dataset.add;
-      const base = {id:nuevoBloqueId(), tipo};
-      if(tipo==='texto'){ base.texto=''; base.tamano='normal'; base.color=''; base.negrita=false; }
-      if(tipo==='foto'){ base.url=''; base.caption=''; base.ancho='completa'; base.ajuste='recortada'; }
-      if(tipo==='video') base.url='';
-      if(tipo==='mapa') base.url='';
-      if(tipo==='redes'){ base.whatsapp=''; base.instagram=''; base.tiktok=''; base.facebook=''; base.telegram=''; base.youtube=''; }
-      miTareaBloques.push(base);
+      const base = crearBloqueBase(btn.dataset.tipo);
+      if(bloqueInsertIndex===null || bloqueInsertIndex===undefined) miTareaBloques.push(base);
+      else miTareaBloques.splice(bloqueInsertIndex, 0, base);
+      cerrarPickerBloque();
       pintarBloquesList();
     };
   });
@@ -1078,20 +1354,25 @@ function pintarBloquesList(){
   const cont = document.getElementById('bloquesList');
   if(!cont) return;
   const nombresTipo = {texto:'Texto', foto:'Foto', video:'Video', mapa:'Ubicación', redes:'Redes sociales'};
-  cont.innerHTML = miTareaBloques.map((b,i)=>`
-    <div class="bloque-editor" data-i="${i}">
-      <div class="bloque-top">
-        <span class="bloque-tipo">${nombresTipo[b.tipo]||b.tipo}</span>
-        <div class="bloque-tools">
-          <button data-subir="${i}" title="Mover arriba" ${i===0?'disabled':''}>▲</button>
-          <button data-bajar="${i}" title="Mover abajo" ${i===miTareaBloques.length-1?'disabled':''}>▼</button>
-          <button data-borrar="${i}" title="Eliminar">🗑️</button>
+  const insertBtnHTML = idx => `<div class="bloque-insert"><button type="button" data-insert="${idx}">＋ Insertar aquí</button></div>`;
+  cont.innerHTML = miTareaBloques.length ? (
+    insertBtnHTML(0) + miTareaBloques.map((b,i)=>`
+      <div class="bloque-editor" data-i="${i}">
+        <div class="bloque-top">
+          <span class="bloque-tipo">${nombresTipo[b.tipo]||b.tipo}</span>
+          <div class="bloque-tools">
+            <button data-subir="${i}" title="Mover arriba" ${i===0?'disabled':''}>▲</button>
+            <button data-bajar="${i}" title="Mover abajo" ${i===miTareaBloques.length-1?'disabled':''}>▼</button>
+            <button data-borrar="${i}" title="Eliminar">🗑️</button>
+          </div>
         </div>
+        ${bloqueCamposHTML(b,i)}
       </div>
-      ${bloqueCamposHTML(b,i)}
-    </div>
-  `).join('') || `<div class="empty">Usa los botones de abajo para agregar tu primer bloque.</div>`;
+      ${insertBtnHTML(i+1)}
+    `).join('')
+  ) : `<div class="empty">Usa el botón "＋ Agregar contenido" de abajo para agregar tu primer bloque.</div>`;
 
+  cont.querySelectorAll('[data-insert]').forEach(b=> b.onclick = ()=> abrirPickerBloque(+b.dataset.insert));
   cont.querySelectorAll('[data-subir]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.subir; [miTareaBloques[i-1],miTareaBloques[i]]=[miTareaBloques[i],miTareaBloques[i-1]]; pintarBloquesList(); });
   cont.querySelectorAll('[data-bajar]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.bajar; [miTareaBloques[i+1],miTareaBloques[i]]=[miTareaBloques[i],miTareaBloques[i+1]]; pintarBloquesList(); });
   cont.querySelectorAll('[data-borrar]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.borrar; if(confirm('¿Eliminar este bloque?')){ miTareaBloques.splice(i,1); pintarBloquesList(); } });
@@ -1131,6 +1412,81 @@ function pintarBloquesList(){
       pintarBloquesList();
     };
   });
+
+  /* selector de ubicación en el mapa (por cada bloque de tipo "mapa") */
+  miTareaBloques.forEach((b,i)=>{ if(b.tipo==='mapa') initMapaPicker(b,i); });
+  cont.querySelectorAll('[data-buscarmapa-btn]').forEach(btn=>{
+    const buscar = async ()=>{
+      const i = +btn.dataset.buscarmapaBtn;
+      const b = miTareaBloques[i];
+      const input = cont.querySelector(`[data-buscarmapa="${i}"]`);
+      const q = input.value.trim();
+      if(!q) return;
+      const textoOriginal = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Buscando…';
+      try{
+        const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=pa&q=${encodeURIComponent(q)}`);
+        const data = await resp.json();
+        if(data && data[0]){
+          const lat = +data[0].lat, lng = +data[0].lon;
+          const inst = mapaLeaflets[b.id];
+          if(inst){ inst.map.setView([lat,lng],16); inst.setPos(lat,lng,i); }
+        }else{
+          alert('No se encontró ese lugar. Intenta con otra búsqueda (por ejemplo, agrega "Panamá").');
+        }
+      }catch(e){
+        alert('No se pudo buscar. Revisa tu conexión a internet.');
+      }
+      btn.disabled = false; btn.textContent = textoOriginal;
+    };
+    btn.onclick = buscar;
+  });
+  cont.querySelectorAll('[data-buscarmapa]').forEach(input=>{
+    input.onkeydown = (e)=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        cont.querySelector(`[data-buscarmapa-btn="${input.dataset.buscarmapa}"]`)?.click();
+      }
+    };
+  });
+}
+
+/* ---- selector interactivo de ubicación (Leaflet + OpenStreetMap, sin llave de API) ---- */
+let mapaLeaflets = {};
+function initMapaPicker(b, i){
+  const el = document.getElementById('mapaLienzo-'+b.id);
+  if(!el || typeof L==='undefined') return;
+  if(mapaLeaflets[b.id]){ try{ mapaLeaflets[b.id].map.remove(); }catch(e){} }
+  const tieneUbicacion = b.lat!=null && b.lng!=null;
+  const startLat = tieneUbicacion ? b.lat : 8.4;   // centro aproximado de Panamá
+  const startLng = tieneUbicacion ? b.lng : -80.6;
+  const map = L.map(el, {scrollWheelZoom:false}).setView([startLat, startLng], tieneUbicacion ? 16 : 8);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'&copy; colaboradores de OpenStreetMap', maxZoom:19
+  }).addTo(map);
+  let marker = tieneUbicacion ? L.marker([b.lat, b.lng], {draggable:true}).addTo(map) : null;
+  if(marker) marker.on('dragend', ()=>{ const p = marker.getLatLng(); guardarUbicacionBloque(b, i, p.lat, p.lng); });
+
+  function setPos(lat, lng, idx){
+    if(!marker){
+      marker = L.marker([lat,lng], {draggable:true}).addTo(map);
+      marker.on('dragend', ()=>{ const p = marker.getLatLng(); guardarUbicacionBloque(b, idx!=null?idx:i, p.lat, p.lng); });
+    }else{
+      marker.setLatLng([lat,lng]);
+    }
+    guardarUbicacionBloque(b, idx!=null?idx:i, lat, lng);
+  }
+  map.on('click', e=> setPos(e.latlng.lat, e.latlng.lng, i));
+  mapaLeaflets[b.id] = {map, setPos};
+  setTimeout(()=> map.invalidateSize(), 100);
+}
+function guardarUbicacionBloque(b, i, lat, lng){
+  b.lat = lat; b.lng = lng;
+  b.url = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+  const coordsEl = document.getElementById('mapaCoords-'+b.id);
+  if(coordsEl) coordsEl.textContent = `📍 Ubicación seleccionada (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+  const editorEl = document.querySelector(`.bloque-editor[data-i="${i}"] input[data-campo="url"]`);
+  if(editorEl) editorEl.value = b.url;
 }
 
 function bloqueCamposHTML(b,i){
@@ -1152,8 +1508,21 @@ function bloqueCamposHTML(b,i){
           <input type="color" data-campo="color" value="${b.color||'#2b2620'}" style="padding:.2em;height:2.4em;">
         </div>
         ${b.color ? `<button class="btn small outline" data-quitarcolor="${i}" type="button">✕ Quitar color</button>` : ''}
+      </div>
+      <div class="upload-row">
+        <div class="field" style="flex:1;min-width:140px;margin-bottom:0;">
+          <label>Alineación</label>
+          <select data-campo="alineacion">
+            <option value="izquierda" ${!b.alineacion||b.alineacion==='izquierda'?'selected':''}>⬅️ Izquierda</option>
+            <option value="centro" ${b.alineacion==='centro'?'selected':''}>↔️ Centro</option>
+            <option value="derecha" ${b.alineacion==='derecha'?'selected':''}>➡️ Derecha</option>
+          </select>
+        </div>
         <label style="display:flex;align-items:center;gap:.4em;font-weight:700;white-space:nowrap;">
           <input type="checkbox" data-campo="negrita" style="width:auto;" ${b.negrita?'checked':''}> Negrita
+        </label>
+        <label style="display:flex;align-items:center;gap:.4em;font-weight:700;white-space:nowrap;">
+          <input type="checkbox" data-campo="cursiva" style="width:auto;" ${b.cursiva?'checked':''}> Cursiva
         </label>
       </div>
       <textarea data-campo="texto" rows="4" placeholder="Escribe aquí, o pega texto copiado de Word o de un chat de IA...">${escapeHtml(b.texto||'')}</textarea>
@@ -1190,8 +1559,16 @@ function bloqueCamposHTML(b,i){
     return `<div class="field" style="margin-bottom:0;"><label>Enlace del video (YouTube, o el archivo de video)</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="https://youtube.com/... o https://..."></div>`;
   }
   if(b.tipo==='mapa'){
-    return `<div class="field" style="margin-bottom:0;"><label>Enlace de Google Maps</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="Pega aquí el enlace de Google Maps"></div>
-    <p class="hint">En Google Maps: busca el lugar → Compartir → Copiar enlace, y pégalo aquí.</p>`;
+    return `
+      <p class="hint" style="margin-top:0;">Busca el lugar o toca el mapa para marcarlo. También puedes arrastrar el marcador.</p>
+      <div class="upload-row">
+        <input type="text" data-buscarmapa="${i}" placeholder="Busca un lugar o dirección...">
+        <button type="button" class="btn small outline" data-buscarmapa-btn="${i}">🔎 Buscar</button>
+      </div>
+      <div class="mapa-lienzo" id="mapaLienzo-${b.id}"></div>
+      <p class="hint mapa-coords" id="mapaCoords-${b.id}">${b.lat!=null ? `📍 Ubicación seleccionada (${(+b.lat).toFixed(5)}, ${(+b.lng).toFixed(5)})` : 'Todavía no has marcado un lugar.'}</p>
+      <div class="field" style="margin-bottom:0;"><label>O pega el enlace de Google Maps (opcional)</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="Pega aquí el enlace de Google Maps"></div>
+    `;
   }
   if(b.tipo==='redes'){
     return `
@@ -1201,7 +1578,8 @@ function bloqueCamposHTML(b,i){
       <div class="field"><label>🎵 TikTok (enlace, opcional)</label><input data-campo="tiktok" value="${escapeHtml(b.tiktok||'')}" placeholder="https://tiktok.com/@..."></div>
       <div class="field"><label>📘 Facebook (enlace, opcional)</label><input data-campo="facebook" value="${escapeHtml(b.facebook||'')}" placeholder="https://facebook.com/..."></div>
       <div class="field"><label>✈️ Telegram (enlace, opcional)</label><input data-campo="telegram" value="${escapeHtml(b.telegram||'')}" placeholder="https://t.me/..."></div>
-      <div class="field" style="margin-bottom:0;"><label>▶️ YouTube (enlace, opcional)</label><input data-campo="youtube" value="${escapeHtml(b.youtube||'')}" placeholder="https://youtube.com/..."></div>
+      <div class="field"><label>▶️ YouTube (enlace, opcional)</label><input data-campo="youtube" value="${escapeHtml(b.youtube||'')}" placeholder="https://youtube.com/..."></div>
+      <div class="field" style="margin-bottom:0;"><label>✉️ Correo (opcional)</label><input data-campo="correo" value="${escapeHtml(b.correo||'')}" placeholder="ejemplo@correo.com"></div>
     `;
   }
   return '';
@@ -1308,6 +1686,7 @@ function renderAdmin(){
       <button data-tab="pendientes" class="${adminTab==='pendientes'?'active':''}">📝 Pendientes de revisión</button>
       <button data-tab="salones" class="${adminTab==='salones'?'active':''}">🏫 Salones y estudiantes</button>
       <button data-tab="tareas" class="${adminTab==='tareas'?'active':''}">🎯 Tareas individuales</button>
+      <button data-tab="paginas" class="${adminTab==='paginas'?'active':''}">🎨 Páginas</button>
       <button data-tab="mensajes" class="${adminTab==='mensajes'?'active':''}">✉️ Mensajes</button>
       <button data-tab="respaldos" class="${adminTab==='respaldos'?'active':''}">🗄️ Respaldos y papelera</button>
     </div>
@@ -1319,8 +1698,561 @@ function renderAdmin(){
   if(adminTab==='pendientes') renderAdminPendientes();
   else if(adminTab==='salones') renderAdminSalones();
   else if(adminTab==='tareas') renderAdminTareas();
+  else if(adminTab==='paginas') renderAdminPaginas();
   else if(adminTab==='mensajes') renderAdminMensajes();
   else renderAdminRespaldos();
+}
+
+/* =====================  EDITOR VISUAL DE PÁGINAS  ===================== */
+let paginasCache = [];
+let paginaAdminVista = 'lista';   // 'lista' | 'editor'
+let paginaEditando = null;
+let pgPickerTarget = null;        // {seccionId, columnaId}
+
+function nuevoBloquePaginaId(){ return 'pb'+Math.random().toString(36).slice(2,10); }
+function nuevaSeccionId(){ return 'ps'+Math.random().toString(36).slice(2,10); }
+function nuevaColumnaId(){ return 'pc'+Math.random().toString(36).slice(2,10); }
+
+const PG_TIPOS_BLOQUE = [
+  {tipo:'texto', icon:'📝', label:'Texto', desc:'Un párrafo, título o subtítulo'},
+  {tipo:'foto', icon:'🖼️', label:'Foto', desc:'Sube una imagen o pega un enlace'},
+  {tipo:'video', icon:'🎥', label:'Video', desc:'YouTube o un archivo de video'},
+  {tipo:'enlace', icon:'🔗', label:'Enlace', desc:'Un texto que lleva a otra página'},
+  {tipo:'boton', icon:'🔘', label:'Botón', desc:'Un botón grande para una acción'},
+  {tipo:'separador', icon:'➖', label:'Separador', desc:'Una línea para dividir el contenido'},
+  {tipo:'galeria', icon:'🖼️', label:'Galería', desc:'Varias fotos en cuadrícula'}
+];
+const PG_NOMBRES_TIPO = {texto:'Texto', foto:'Foto', video:'Video', enlace:'Enlace', boton:'Botón', separador:'Separador', galeria:'Galería'};
+
+function pgCrearBloqueBase(tipo){
+  const base = {id:nuevoBloquePaginaId(), tipo};
+  if(tipo==='texto'){ base.texto=''; base.tamano='normal'; base.color=''; base.negrita=false; base.cursiva=false; base.alineacion='izquierda'; }
+  if(tipo==='foto'){ base.url=''; base.caption=''; base.descripcion=''; base.ancho='completa'; base.alineacion='centro'; }
+  if(tipo==='video'){ base.url=''; base.caption=''; }
+  if(tipo==='enlace'){ base.texto=''; base.url=''; }
+  if(tipo==='boton'){ base.texto=''; base.url=''; }
+  if(tipo==='separador'){ /* sin campos */ }
+  if(tipo==='galeria'){ base.fotos = []; }
+  return base;
+}
+function pgCrearColumna(){ return {id:nuevaColumnaId(), bloques:[]}; }
+function pgCrearSeccion(numColumnas){
+  return {id:nuevaSeccionId(), columnas: Array.from({length:numColumnas}, ()=>pgCrearColumna())};
+}
+function pgBuscarColumna(seccionId, columnaId){
+  const s = paginaEditando.secciones.find(x=>x.id===seccionId);
+  return s ? s.columnas.find(c=>c.id===columnaId) : null;
+}
+function abrirPgPicker(seccionId, columnaId){
+  pgPickerTarget = {seccionId, columnaId};
+  document.getElementById('pgPickerOverlay').classList.add('open');
+  document.getElementById('pgPicker').classList.add('open');
+}
+function cerrarPgPicker(){
+  document.getElementById('pgPickerOverlay').classList.remove('open');
+  document.getElementById('pgPicker').classList.remove('open');
+}
+/* elementos estáticos del editor de páginas: se preparan una sola vez */
+function initEditorPaginasEstatico(){
+  document.getElementById('pgPickerList').innerHTML = PG_TIPOS_BLOQUE.map(t=>`
+    <button class="bloque-picker-item" data-tipo="${t.tipo}" type="button">
+      <span class="bloque-picker-icon">${t.icon}</span>
+      <span class="bloque-picker-text"><strong>${t.label}</strong><small>${t.desc}</small></span>
+    </button>`).join('');
+  document.querySelectorAll('#pgPickerList [data-tipo]').forEach(btn=>{
+    btn.onclick = ()=>{
+      if(!pgPickerTarget || !paginaEditando) return;
+      const col = pgBuscarColumna(pgPickerTarget.seccionId, pgPickerTarget.columnaId);
+      if(!col) return;
+      col.bloques.push(pgCrearBloqueBase(btn.dataset.tipo));
+      cerrarPgPicker();
+      pintarPgSecciones();
+    };
+  });
+  document.getElementById('pgPickerClose').onclick = cerrarPgPicker;
+  document.getElementById('pgPickerOverlay').onclick = cerrarPgPicker;
+  document.querySelectorAll('#pgColModal [data-cols]').forEach(btn=>{
+    btn.onclick = ()=>{
+      if(!paginaEditando) return;
+      paginaEditando.secciones.push(pgCrearSeccion(+btn.dataset.cols));
+      closeModal('pgColModal');
+      pintarPgSecciones();
+    };
+  });
+  document.getElementById('pgPreviewDesktop').onclick = ()=>{
+    document.getElementById('pgPreviewFrame').classList.remove('movil');
+    document.getElementById('pgPreviewDesktop').classList.add('active');
+    document.getElementById('pgPreviewMovil').classList.remove('active');
+  };
+  document.getElementById('pgPreviewMovil').onclick = ()=>{
+    document.getElementById('pgPreviewFrame').classList.add('movil');
+    document.getElementById('pgPreviewMovil').classList.add('active');
+    document.getElementById('pgPreviewDesktop').classList.remove('active');
+  };
+}
+
+/* ---- lista "Mis páginas" ---- */
+async function renderAdminPaginas(){
+  if(paginaAdminVista==='editor' && paginaEditando){ pintarPaginaEditor(); return; }
+  const body = document.getElementById('adminBody');
+  body.innerHTML = `
+    <p class="section-desc" style="margin-top:0;">Crea páginas por secciones y columnas, sin escribir código. Arma el contenido, revisa la vista previa y publica cuando esté lista.</p>
+    <div class="row-actions" style="margin-bottom:1.2em;">
+      <button class="btn gold" id="pgNuevaBtn">＋ Crear página nueva</button>
+    </div>
+    <div id="pgLista">Cargando…</div>
+  `;
+  document.getElementById('pgNuevaBtn').onclick = ()=>{
+    paginaEditando = {id:null, titulo:'Página sin título', slug:'', estado:'borrador', secciones:[]};
+    paginaAdminVista = 'editor';
+    renderAdminPaginas();
+  };
+  const {data, error} = await db.rpc('bv_admin_listar_paginas', adminCreds());
+  const cont = document.getElementById('pgLista');
+  if(error){ cont.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  paginasCache = data || [];
+  if(!paginasCache.length){ cont.innerHTML = '<div class="empty">Todavía no has creado ninguna página.</div>'; return; }
+  cont.innerHTML = paginasCache.map(p=>`
+    <div class="pg-lista-item">
+      <div class="pg-lista-info">
+        <strong>${escapeHtml(p.titulo)}</strong>
+        <div class="pg-lista-meta">${p.estado==='publicado'?'🟢 Publicado':'🟡 Borrador'} · ${new Date(p.actualizado_en).toLocaleString('es-PA')}</div>
+      </div>
+      <div class="pg-lista-tools">
+        <button class="btn small outline" data-pg-editar="${p.id}">✏️ Editar</button>
+        <button class="btn small outline" data-pg-ver="${p.id}">👁️ Ver</button>
+        <button class="btn small outline" data-pg-duplicar="${p.id}">📋 Duplicar</button>
+        <button class="btn small danger" data-pg-eliminar="${p.id}">🗑️ Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+  cont.querySelectorAll('[data-pg-editar]').forEach(b=> b.onclick=()=>{
+    paginaEditando = JSON.parse(JSON.stringify(paginasCache.find(p=>p.id===b.dataset.pgEditar)));
+    paginaAdminVista = 'editor';
+    renderAdminPaginas();
+  });
+  cont.querySelectorAll('[data-pg-ver]').forEach(b=> b.onclick=()=>{
+    abrirVistaPreviaPagina(paginasCache.find(p=>p.id===b.dataset.pgVer));
+  });
+  cont.querySelectorAll('[data-pg-duplicar]').forEach(b=> b.onclick= async ()=>{
+    const {error} = await db.rpc('bv_admin_duplicar_pagina', {...adminCreds(), p_id:b.dataset.pgDuplicar});
+    if(error){ alert('No se pudo duplicar: '+error.message); return; }
+    renderAdminPaginas();
+  });
+  cont.querySelectorAll('[data-pg-eliminar]').forEach(b=> b.onclick= async ()=>{
+    const p = paginasCache.find(x=>x.id===b.dataset.pgEliminar);
+    if(!confirm(`¿Eliminar la página "${p.titulo}"? Esta acción no se puede deshacer.`)) return;
+    const {error} = await db.rpc('bv_admin_eliminar_pagina', {...adminCreds(), p_id:b.dataset.pgEliminar});
+    if(error){ alert('No se pudo eliminar: '+error.message); return; }
+    renderAdminPaginas();
+  });
+}
+
+/* ---- editor de una página ---- */
+function pintarPaginaEditor(){
+  const body = document.getElementById('adminBody');
+  const p = paginaEditando;
+  body.innerHTML = `
+    <div class="row-actions" style="margin-bottom:.8em;">
+      <button class="btn small outline" id="pgVolverBtn">← Volver a mis páginas</button>
+    </div>
+    <div class="pg-toolbar">
+      <input class="pg-titulo-input" id="pgTituloInput" value="${escapeHtml(p.titulo||'')}" placeholder="Título de la página">
+    </div>
+    <div id="pgMsg"></div>
+    <div id="pgSecciones"></div>
+    <button class="pg-add-seccion" id="pgAddSeccionBtn" type="button">＋ Agregar sección</button>
+    <div class="row-actions">
+      <button class="btn outline" id="pgGuardarBtn">💾 Guardar borrador</button>
+      <button class="btn outline" id="pgPreviewBtn">👁️ Vista previa</button>
+      <button class="btn gold" id="pgPublicarBtn">🟢 Publicar</button>
+    </div>
+  `;
+  document.getElementById('pgVolverBtn').onclick = ()=>{ paginaAdminVista='lista'; paginaEditando=null; renderAdminPaginas(); };
+  document.getElementById('pgTituloInput').oninput = (e)=>{ p.titulo = e.target.value; };
+  document.getElementById('pgAddSeccionBtn').onclick = ()=> openModal('pgColModal');
+  document.getElementById('pgGuardarBtn').onclick = ()=> guardarPagina(false);
+  document.getElementById('pgPublicarBtn').onclick = ()=>{
+    if(confirm('¿Publicar esta página? Quedará visible para todos.')) guardarPagina(true);
+  };
+  document.getElementById('pgPreviewBtn').onclick = ()=> abrirVistaPreviaPagina(p);
+  pintarPgSecciones();
+}
+
+function pgColumnaHTML(s, c, ci){
+  return `
+    <div class="pg-columna" data-sec-id="${s.id}" data-col-id="${c.id}">
+      <div class="pg-columna-top">
+        <span class="pg-columna-label">Columna ${ci+1}</span>
+        ${s.columnas.length>1 ? `<button class="pg-columna-del" data-col-del="${c.id}" type="button" title="Eliminar columna">🗑️</button>` : ''}
+      </div>
+      ${c.bloques.length ? c.bloques.map((b,bi)=>pgBloqueEditorHTML(s,c,b,bi)).join('') : `<div class="pg-empty-col">Columna vacía</div>`}
+      <button class="pg-add-contenido" data-sec-id="${s.id}" data-col-add-contenido="${c.id}" type="button">➕ Agregar contenido</button>
+    </div>
+  `;
+}
+function pgBloqueEditorHTML(s, c, b, bi){
+  return `
+    <div class="pg-bloque" draggable="true" data-i="${bi}">
+      <div class="pg-bloque-top">
+        <span class="pg-bloque-tipo">${PG_NOMBRES_TIPO[b.tipo]||b.tipo}</span>
+        <div class="pg-bloque-tools">
+          <button data-blq-subir="${bi}" data-sec-id="${s.id}" data-col-id="${c.id}" title="Subir" ${bi===0?'disabled':''}>▲</button>
+          <button data-blq-bajar="${bi}" data-sec-id="${s.id}" data-col-id="${c.id}" title="Bajar" ${bi===c.bloques.length-1?'disabled':''}>▼</button>
+          <button data-blq-del="${bi}" data-sec-id="${s.id}" data-col-id="${c.id}" title="Eliminar">🗑️</button>
+        </div>
+      </div>
+      <div data-sec-id="${s.id}" data-col-id="${c.id}" data-blq-i="${bi}">
+        ${pgCamposBloqueHTML(b)}
+      </div>
+    </div>
+  `;
+}
+function pgCamposBloqueHTML(b){
+  if(b.tipo==='texto'){
+    return `
+      <div class="upload-row">
+        <div class="field" style="flex:1;min-width:130px;margin-bottom:0;">
+          <label>Tamaño</label>
+          <select data-campo="tamano">
+            <option value="pequeno" ${b.tamano==='pequeno'?'selected':''}>Pequeño</option>
+            <option value="normal" ${!b.tamano||b.tamano==='normal'?'selected':''}>Normal</option>
+            <option value="subtitulo" ${b.tamano==='subtitulo'?'selected':''}>Subtítulo</option>
+            <option value="titulo" ${b.tamano==='titulo'?'selected':''}>Título</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Color</label>
+          <input type="color" data-campo="color" value="${b.color||'#2b2620'}" style="padding:.2em;height:2.4em;">
+        </div>
+        <div class="field" style="flex:1;min-width:130px;margin-bottom:0;">
+          <label>Alineación</label>
+          <select data-campo="alineacion">
+            <option value="izquierda" ${!b.alineacion||b.alineacion==='izquierda'?'selected':''}>⬅️ Izquierda</option>
+            <option value="centro" ${b.alineacion==='centro'?'selected':''}>↔️ Centro</option>
+            <option value="derecha" ${b.alineacion==='derecha'?'selected':''}>➡️ Derecha</option>
+          </select>
+        </div>
+      </div>
+      <div class="upload-row">
+        <label style="display:flex;align-items:center;gap:.4em;font-weight:700;white-space:nowrap;"><input type="checkbox" data-campo="negrita" style="width:auto;" ${b.negrita?'checked':''}> Negrita</label>
+        <label style="display:flex;align-items:center;gap:.4em;font-weight:700;white-space:nowrap;"><input type="checkbox" data-campo="cursiva" style="width:auto;" ${b.cursiva?'checked':''}> Cursiva</label>
+      </div>
+      <textarea data-campo="texto" rows="3" placeholder="Escribe aquí...">${escapeHtml(b.texto||'')}</textarea>
+    `;
+  }
+  if(b.tipo==='foto'){
+    return `
+      ${b.url ? `<img class="foto-preview" src="${escapeHtml(b.url)}">` : ''}
+      <div class="upload-row">
+        <input type="file" accept="image/*" data-pg-subirfoto>
+        <span class="foto-status hint" style="margin:0;"></span>
+      </div>
+      <div class="field"><label>O pega el enlace de una foto</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="https://..."></div>
+      <div class="field"><label>Título (opcional)</label><input data-campo="caption" value="${escapeHtml(b.caption||'')}"></div>
+      <div class="field"><label>Descripción (opcional)</label><input data-campo="descripcion" value="${escapeHtml(b.descripcion||'')}"></div>
+      <div class="upload-row">
+        <div class="field" style="flex:1;min-width:140px;margin-bottom:0;">
+          <label>Tamaño</label>
+          <select data-campo="ancho">
+            <option value="completa" ${!b.ancho||b.ancho==='completa'?'selected':''}>Completa</option>
+            <option value="grande" ${b.ancho==='grande'?'selected':''}>Grande (80%)</option>
+            <option value="media" ${b.ancho==='media'?'selected':''}>Media (50%)</option>
+            <option value="pequena" ${b.ancho==='pequena'?'selected':''}>Pequeña (30%)</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;min-width:140px;margin-bottom:0;">
+          <label>Alineación</label>
+          <select data-campo="alineacion">
+            <option value="izquierda" ${b.alineacion==='izquierda'?'selected':''}>⬅️ Izquierda</option>
+            <option value="centro" ${!b.alineacion||b.alineacion==='centro'?'selected':''}>↔️ Centro</option>
+            <option value="derecha" ${b.alineacion==='derecha'?'selected':''}>➡️ Derecha</option>
+          </select>
+        </div>
+      </div>
+    `;
+  }
+  if(b.tipo==='video'){
+    return `
+      <div class="field"><label>Enlace del video (YouTube o archivo)</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="https://youtube.com/... o https://..."></div>
+      <div class="field" style="margin-bottom:0;"><label>Título (opcional)</label><input data-campo="caption" value="${escapeHtml(b.caption||'')}"></div>
+    `;
+  }
+  if(b.tipo==='enlace'){
+    return `
+      <div class="field"><label>Texto del enlace</label><input data-campo="texto" value="${escapeHtml(b.texto||'')}" placeholder="Ej. Ver más información"></div>
+      <div class="field" style="margin-bottom:0;"><label>Enlace (URL)</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="https://..."></div>
+    `;
+  }
+  if(b.tipo==='boton'){
+    return `
+      <div class="field"><label>Texto del botón</label><input data-campo="texto" value="${escapeHtml(b.texto||'')}" placeholder="Ej. Contáctanos"></div>
+      <div class="field" style="margin-bottom:0;"><label>Enlace (a dónde lleva)</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="https://..."></div>
+    `;
+  }
+  if(b.tipo==='separador'){
+    return `<p class="hint" style="margin:0;">➖ Una línea divisoria. No necesita configuración.</p>`;
+  }
+  if(b.tipo==='galeria'){
+    return `
+      <div class="upload-row">
+        <input type="file" accept="image/*" multiple data-pg-subirgaleria>
+        <span class="foto-status hint" style="margin:0;"></span>
+      </div>
+      ${b.fotos && b.fotos.length ? `<div class="pg-galeria-grid">${b.fotos.map((f,fi)=>`
+        <div class="pg-galeria-item"><img src="${escapeHtml(f.url)}"><button type="button" data-pg-galeria-del="${fi}" title="Quitar">✕</button></div>
+      `).join('')}</div>` : `<p class="hint" style="margin:0;">Todavía no has agregado fotos.</p>`}
+    `;
+  }
+  return '';
+}
+
+function pintarPgSecciones(){
+  const cont = document.getElementById('pgSecciones');
+  if(!cont) return;
+  const secciones = paginaEditando.secciones;
+  if(!secciones.length){
+    cont.innerHTML = '<div class="empty">Todavía no hay secciones. Usa "＋ Agregar sección" para empezar.</div>';
+    return;
+  }
+  cont.innerHTML = secciones.map((s,si)=>`
+    <div class="pg-seccion" data-seccion="${s.id}">
+      <div class="pg-seccion-top">
+        <span class="pg-seccion-label">Sección ${si+1} · ${s.columnas.length} columna${s.columnas.length>1?'s':''}</span>
+        <div class="pg-seccion-tools">
+          <button data-sec-subir="${s.id}" title="Mover sección arriba" ${si===0?'disabled':''}>▲</button>
+          <button data-sec-bajar="${s.id}" title="Mover sección abajo" ${si===secciones.length-1?'disabled':''}>▼</button>
+          <button data-sec-col-add="${s.id}" title="Agregar columna" ${s.columnas.length>=4?'disabled':''}>➕ columna</button>
+          <button data-sec-del="${s.id}" title="Eliminar sección">🗑️</button>
+        </div>
+      </div>
+      <div class="pg-columnas" style="grid-template-columns:repeat(${s.columnas.length},1fr);">
+        ${s.columnas.map((c,ci)=>pgColumnaHTML(s,c,ci)).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  cont.querySelectorAll('[data-sec-subir]').forEach(b=> b.onclick=()=>{
+    const i = secciones.findIndex(s=>s.id===b.dataset.secSubir);
+    [secciones[i-1],secciones[i]] = [secciones[i],secciones[i-1]];
+    pintarPgSecciones();
+  });
+  cont.querySelectorAll('[data-sec-bajar]').forEach(b=> b.onclick=()=>{
+    const i = secciones.findIndex(s=>s.id===b.dataset.secBajar);
+    [secciones[i+1],secciones[i]] = [secciones[i],secciones[i+1]];
+    pintarPgSecciones();
+  });
+  cont.querySelectorAll('[data-sec-col-add]').forEach(b=> b.onclick=()=>{
+    const s = secciones.find(x=>x.id===b.dataset.secColAdd);
+    if(s.columnas.length<4){ s.columnas.push(pgCrearColumna()); pintarPgSecciones(); }
+  });
+  cont.querySelectorAll('[data-sec-del]').forEach(b=> b.onclick=()=>{
+    if(!confirm('¿Eliminar esta sección completa, con todo su contenido?')) return;
+    const i = secciones.findIndex(s=>s.id===b.dataset.secDel);
+    secciones.splice(i,1);
+    pintarPgSecciones();
+  });
+  cont.querySelectorAll('[data-col-del]').forEach(b=> b.onclick=()=>{
+    const s = secciones.find(x=>x.columnas.some(c=>c.id===b.dataset.colDel));
+    if(!s || s.columnas.length<=1) return;
+    if(!confirm('¿Eliminar esta columna y su contenido?')) return;
+    s.columnas = s.columnas.filter(c=>c.id!==b.dataset.colDel);
+    pintarPgSecciones();
+  });
+  cont.querySelectorAll('[data-col-add-contenido]').forEach(b=>{
+    b.onclick = ()=> abrirPgPicker(b.dataset.secId, b.dataset.colAddContenido);
+  });
+  cont.querySelectorAll('[data-blq-subir]').forEach(b=> b.onclick=()=>{
+    const col = pgBuscarColumna(b.dataset.secId, b.dataset.colId);
+    const i = +b.dataset.blqSubir;
+    [col.bloques[i-1],col.bloques[i]] = [col.bloques[i],col.bloques[i-1]];
+    pintarPgSecciones();
+  });
+  cont.querySelectorAll('[data-blq-bajar]').forEach(b=> b.onclick=()=>{
+    const col = pgBuscarColumna(b.dataset.secId, b.dataset.colId);
+    const i = +b.dataset.blqBajar;
+    [col.bloques[i+1],col.bloques[i]] = [col.bloques[i],col.bloques[i+1]];
+    pintarPgSecciones();
+  });
+  cont.querySelectorAll('[data-blq-del]').forEach(b=> b.onclick=()=>{
+    if(!confirm('¿Eliminar este elemento?')) return;
+    const col = pgBuscarColumna(b.dataset.secId, b.dataset.colId);
+    col.bloques.splice(+b.dataset.blqDel,1);
+    pintarPgSecciones();
+  });
+
+  /* campos editables */
+  cont.querySelectorAll('[data-campo]').forEach(input=>{
+    const actualizar = ()=>{
+      const wrap = input.closest('[data-sec-id][data-blq-i]');
+      const col = pgBuscarColumna(wrap.dataset.secId, wrap.dataset.colId);
+      col.bloques[+wrap.dataset.blqI][input.dataset.campo] = input.type==='checkbox' ? input.checked : input.value;
+    };
+    input.oninput = actualizar;
+    if(input.tagName==='SELECT' || input.type==='color' || input.type==='checkbox'){
+      input.onchange = ()=>{ actualizar(); pintarPgSecciones(); };
+    }else{
+      input.onchange = actualizar;
+    }
+  });
+
+  /* subir una foto */
+  cont.querySelectorAll('[data-pg-subirfoto]').forEach(input=>{
+    input.onchange = async ()=>{
+      const file = input.files[0];
+      if(!file) return;
+      const wrap = input.closest('[data-sec-id][data-blq-i]');
+      const col = pgBuscarColumna(wrap.dataset.secId, wrap.dataset.colId);
+      const bloque = col.bloques[+wrap.dataset.blqI];
+      const statusEl = wrap.querySelector('.foto-status');
+      if(statusEl) statusEl.textContent = 'Subiendo…';
+      const path = `pagina-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,'')}`;
+      const {error} = await db.storage.from('bv-media').upload(path, file);
+      if(error){ if(statusEl) statusEl.textContent = 'No se pudo subir: '+error.message; return; }
+      const {data: pub} = db.storage.from('bv-media').getPublicUrl(path);
+      bloque.url = pub.publicUrl;
+      pintarPgSecciones();
+    };
+  });
+  /* subir varias fotos (galería) */
+  cont.querySelectorAll('[data-pg-subirgaleria]').forEach(input=>{
+    input.onchange = async ()=>{
+      const files = Array.from(input.files||[]);
+      if(!files.length) return;
+      const wrap = input.closest('[data-sec-id][data-blq-i]');
+      const col = pgBuscarColumna(wrap.dataset.secId, wrap.dataset.colId);
+      const bloque = col.bloques[+wrap.dataset.blqI];
+      const statusEl = wrap.querySelector('.foto-status');
+      for(let idx=0; idx<files.length; idx++){
+        const file = files[idx];
+        if(statusEl) statusEl.textContent = `Subiendo ${idx+1} de ${files.length}…`;
+        const path = `galeria-${Date.now()}-${idx}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,'')}`;
+        const {error} = await db.storage.from('bv-media').upload(path, file);
+        if(error) continue;
+        const {data: pub} = db.storage.from('bv-media').getPublicUrl(path);
+        bloque.fotos.push({url: pub.publicUrl});
+      }
+      if(statusEl) statusEl.textContent = '';
+      pintarPgSecciones();
+    };
+  });
+  cont.querySelectorAll('[data-pg-galeria-del]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const wrap = btn.closest('[data-sec-id][data-blq-i]');
+      const col = pgBuscarColumna(wrap.dataset.secId, wrap.dataset.colId);
+      col.bloques[+wrap.dataset.blqI].fotos.splice(+btn.dataset.pgGaleriaDel,1);
+      pintarPgSecciones();
+    };
+  });
+
+  /* arrastrar y soltar para reordenar dentro de una columna */
+  cont.querySelectorAll('.pg-columna').forEach(colEl=>{
+    let dragI = null;
+    colEl.querySelectorAll('.pg-bloque').forEach(blqEl=>{
+      blqEl.ondragstart = ()=>{ dragI = +blqEl.dataset.i; blqEl.style.opacity='.4'; };
+      blqEl.ondragend = ()=>{ blqEl.style.opacity=''; };
+      blqEl.ondragover = (e)=> e.preventDefault();
+      blqEl.ondrop = (e)=>{
+        e.preventDefault();
+        if(dragI===null) return;
+        const targetI = +blqEl.dataset.i;
+        if(targetI===dragI) return;
+        const col = pgBuscarColumna(colEl.dataset.secId, colEl.dataset.colId);
+        const [moved] = col.bloques.splice(dragI,1);
+        col.bloques.splice(targetI,0,moved);
+        dragI = null;
+        pintarPgSecciones();
+      };
+    });
+  });
+}
+
+async function guardarPagina(publicar){
+  const msg = document.getElementById('pgMsg');
+  const p = paginaEditando;
+  if(!p.titulo || !p.titulo.trim()){ msg.innerHTML = '<div class="msg error">Escribe un título para la página.</div>'; return; }
+  msg.innerHTML = '<div class="msg">Guardando…</div>';
+  const slug = p.slug || normalizarTexto(p.titulo).replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  const {data, error} = await db.rpc('bv_admin_guardar_pagina', {
+    ...adminCreds(), p_id: p.id, p_titulo: p.titulo, p_slug: slug, p_secciones: p.secciones, p_publicar: publicar
+  });
+  if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  if(data){ paginaEditando = data; }
+  msg.innerHTML = `<div class="msg ok">${publicar ? '🟢 Página publicada. Ya está visible para todos.' : '💾 Borrador guardado. Puedes seguir editando cuando quieras.'}</div>`;
+}
+
+/* ---- render de bloques/página para la vista previa ---- */
+function pgBloqueVistaHTML(b){
+  if(b.tipo==='texto'){
+    if(!b.texto) return '';
+    const tamMap = {pequeno:'.9rem', normal:'1rem', subtitulo:'1.25rem', titulo:'1.8rem'};
+    const fs = tamMap[b.tamano] || tamMap.normal;
+    const align = {izquierda:'left', centro:'center', derecha:'right'}[b.alineacion] || 'left';
+    const peso = (b.negrita || b.tamano==='titulo' || b.tamano==='subtitulo') ? '700' : '400';
+    return `<p style="white-space:pre-wrap;font-size:${fs};color:${b.color||'inherit'};font-weight:${peso};font-style:${b.cursiva?'italic':'normal'};text-align:${align};margin:0 0 .6em;">${escapeHtml(b.texto)}</p>`;
+  }
+  if(b.tipo==='foto'){
+    if(!b.url) return '';
+    const anchoMap = {completa:'100%', grande:'80%', media:'50%', pequena:'30%'};
+    const w = anchoMap[b.ancho] || '100%';
+    const alignMap = {izquierda:'margin-right:auto;', centro:'margin-left:auto;margin-right:auto;', derecha:'margin-left:auto;'};
+    return `<figure style="margin:0 0 .8em;width:${w};${alignMap[b.alineacion]||alignMap.centro}">
+      <img src="${escapeHtml(b.url)}" style="width:100%;border-radius:4px;display:block;">
+      ${b.caption?`<figcaption style="font-weight:700;margin-top:.3em;">${escapeHtml(b.caption)}</figcaption>`:''}
+      ${b.descripcion?`<figcaption style="font-size:.85rem;color:#4a4237;">${escapeHtml(b.descripcion)}</figcaption>`:''}
+    </figure>`;
+  }
+  if(b.tipo==='video'){
+    if(!b.url) return '';
+    const yt = detectarYoutubeId(b.url);
+    if(yt) return `<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${yt}" allowfullscreen loading="lazy"></iframe></div>${b.caption?`<p style="font-weight:700;">${escapeHtml(b.caption)}</p>`:''}`;
+    if(/\.(mp4|webm|ogg)$/i.test(b.url)) return `<video controls style="width:100%;border-radius:4px;" src="${escapeHtml(b.url)}"></video>`;
+    return `<a href="${escapeHtml(b.url)}" target="_blank" rel="noopener">▶ Ver video</a>`;
+  }
+  if(b.tipo==='enlace'){
+    if(!b.url) return '';
+    return `<p style="margin:0 0 .6em;"><a href="${escapeHtml(b.url)}" target="_blank" rel="noopener" style="color:#4C7A93;font-weight:700;">🔗 ${escapeHtml(b.texto||b.url)}</a></p>`;
+  }
+  if(b.tipo==='boton'){
+    if(!b.url) return '';
+    return `<a href="${escapeHtml(b.url)}" target="_blank" rel="noopener" style="display:inline-block;background:#2F4A3C;color:#fff;padding:.7em 1.4em;border-radius:4px;font-weight:700;text-decoration:none;margin:0 0 .8em;">${escapeHtml(b.texto||'Ver más')}</a>`;
+  }
+  if(b.tipo==='separador') return `<hr style="border:none;border-top:2px solid #e3d8bd;margin:1em 0;">`;
+  if(b.tipo==='galeria'){
+    if(!b.fotos || !b.fotos.length) return '';
+    return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.5em;margin-bottom:.8em;">
+      ${b.fotos.map(f=>`<img src="${escapeHtml(f.url)}" style="width:100%;height:100px;object-fit:cover;border-radius:4px;">`).join('')}
+    </div>`;
+  }
+  return '';
+}
+function pgRenderPaginaHTML(pagina){
+  return (pagina.secciones||[]).map(s=>`
+    <div style="display:grid;grid-template-columns:repeat(${s.columnas.length},1fr);gap:1.4em;margin-bottom:1.6em;">
+      ${s.columnas.map(c=>`<div>${c.bloques.map(pgBloqueVistaHTML).join('')}</div>`).join('')}
+    </div>
+  `).join('');
+}
+function abrirVistaPreviaPagina(pagina){
+  openModal('pgPreviewModal');
+  const frame = document.getElementById('pgPreviewFrame');
+  frame.classList.remove('movil');
+  document.getElementById('pgPreviewDesktop').classList.add('active');
+  document.getElementById('pgPreviewMovil').classList.remove('active');
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@700&family=Karla:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Karla',sans-serif;background:#F3EAD3;color:#2B2620;margin:0;padding:1.4em;}
+  h1{font-family:'Bitter',serif;font-size:1.6rem;margin:0 0 .8em;}
+  .video-wrap{position:relative;width:100%;padding-top:56.25%;border-radius:4px;overflow:hidden;margin-bottom:1em;background:#000;}
+  .video-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  @media(max-width:520px){ div[style*="grid-template-columns"]{grid-template-columns:1fr !important;} }
+</style></head><body>
+<h1>${escapeHtml(pagina.titulo||'')}</h1>
+${pgRenderPaginaHTML(pagina)}
+</body></html>`;
+  frame.srcdoc = html;
 }
 
 /* ---- tab: mensajes de contacto ---- */
@@ -1695,6 +2627,8 @@ async function cargarPapelera(){
 (function init(){
   renderWho();
   renderDrawer();
+  renderFooterLinks();
+  initEditorPaginasEstatico();
   goTo(estaBloqueado() ? 'mitarea' : (session ? (session.role==='admin' ? 'admin' : 'home') : 'home'));
   registrarYMostrarVisitas();
 })();
