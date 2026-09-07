@@ -257,6 +257,45 @@
   .tema-chip.tema-listo{opacity:.65;border-color:transparent;background:var(--parchment);}
   .tema-chip.tema-pendiente{border-color:var(--gold);cursor:pointer;}
   .tema-chip.tema-pendiente:hover{background:var(--gold);color:var(--forest-dark);}
+
+  /* ---------- bloques: video/mapa embebidos y redes ---------- */
+  .video-wrap{position:relative;width:100%;padding-top:56.25%;border-radius:4px;overflow:hidden;margin-bottom:1em;background:#000;}
+  .video-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  .redes-row{display:flex;gap:.6em;flex-wrap:wrap;margin-bottom:1em;}
+  .redes-row a{
+    background:var(--parchment-2);border-radius:20px;padding:.4em 1em;font-weight:700;font-size:.85rem;
+    text-decoration:none;color:var(--forest-dark);
+  }
+  .bloques-vista figure{margin:0 0 1em;}
+
+  /* ---------- editor de "Mi tarea" ---------- */
+  .tarea-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6em;margin-bottom:.3em;}
+  .tarea-modo{display:flex;gap:.4em;margin:1em 0 1.4em;}
+  .tarea-modo button{
+    background:var(--white);border:1.5px solid var(--forest);color:var(--forest);
+    padding:.5em 1.1em;border-radius:20px;font-weight:700;font-size:.85rem;
+  }
+  .tarea-modo button.active{background:var(--forest);color:var(--white);}
+  .bloque-editor{
+    border:1.5px solid var(--line);border-radius:var(--radius);background:var(--white);
+    padding:1em;margin-bottom:1em;position:relative;
+  }
+  .bloque-editor .bloque-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6em;}
+  .bloque-editor .bloque-tipo{font-size:.75rem;font-weight:700;color:var(--clay);letter-spacing:.03em;}
+  .bloque-editor .bloque-tools{display:flex;gap:.3em;}
+  .bloque-editor .bloque-tools button{
+    background:var(--parchment-2);border:none;border-radius:4px;width:1.8em;height:1.8em;font-size:.85rem;
+  }
+  .bloque-editor .bloque-tools button:hover{background:var(--parchment);}
+  .add-bloque-bar{display:flex;flex-wrap:wrap;gap:.5em;margin:1em 0 1.6em;}
+  .add-bloque-bar button{
+    background:var(--white);border:1.5px dashed var(--gold);color:var(--gold-dark);
+    padding:.5em 1em;border-radius:20px;font-weight:700;font-size:.85rem;
+  }
+  .add-bloque-bar button:hover{background:var(--gold);color:var(--white);border-style:solid;}
+  .foto-preview{width:100%;max-height:220px;object-fit:cover;border-radius:4px;margin-bottom:.6em;display:block;}
+  .upload-row{display:flex;gap:.6em;align-items:center;flex-wrap:wrap;margin-bottom:.6em;}
+  .upload-row input[type="file"]{width:auto;flex:1;min-width:160px;}
 </style>
 </head>
 <body>
@@ -513,7 +552,7 @@ function escapeHtml(str){
 }
 
 /* =====================  ESTADO  ===================== */
-let session = null;      // {role:'admin',usuario,contrasena,name} | {role:'student',id,nombre,cedula,salon,secciones:[]}
+let session = null;      // {role:'admin',...} | {role:'student',...,secciones:[],tarea:{seccion_id,tema,estado,bloques}|null}
 let currentSection = 'home';
 let adminTab = 'pendientes';
 
@@ -522,10 +561,17 @@ try{
   if(saved) session = JSON.parse(saved);
 }catch(e){ session = null; }
 
+/* Un estudiante con una tarea específica asignada queda "bloqueado":
+   solo puede ver y editar esa tarea, nada más del sitio. */
+function estaBloqueado(){
+  return !!(session && session.role==='student' && session.tarea && session.tarea.tema);
+}
+
 /* =====================  UI: TOPBAR / DRAWER  ===================== */
 function renderWho(){
   const who = document.getElementById('whoLabel');
   const loginBtn = document.getElementById('loginBtn');
+  const drawerBtn = document.getElementById('drawerBtn');
   if(session){
     who.textContent = (session.role==='admin' ? '👑 ' : '🧑‍🎓 ') + (session.role==='admin'? session.name : session.nombre);
     loginBtn.textContent = 'Salir';
@@ -533,10 +579,19 @@ function renderWho(){
     who.textContent = '';
     loginBtn.textContent = 'Entrar';
   }
+  drawerBtn.style.display = estaBloqueado() ? 'none' : '';
 }
 function renderDrawer(){
   const list = document.getElementById('drawerList');
   list.innerHTML = '';
+  if(estaBloqueado()){
+    const item = document.createElement('div');
+    item.className = 'drawer-item active';
+    item.innerHTML = '<span class="drawer-icon">🎯</span> Mi tarea';
+    item.onclick = ()=>{ goTo('mitarea'); closeDrawer(); };
+    list.appendChild(item);
+    return;
+  }
   const homeItem = document.createElement('div');
   homeItem.className = 'drawer-item' + (currentSection==='home' ? ' active':'');
   homeItem.innerHTML = '<span class="drawer-icon">🏠</span> Inicio';
@@ -565,7 +620,7 @@ function closeDrawer(){ document.getElementById('drawerOverlay').classList.remov
 document.getElementById('drawerBtn').onclick = openDrawer;
 document.getElementById('drawerClose').onclick = closeDrawer;
 document.getElementById('drawerOverlay').onclick = (e)=>{ if(e.target.id==='drawerOverlay') closeDrawer(); };
-document.getElementById('brandHome').onclick = ()=> goTo('home');
+document.getElementById('brandHome').onclick = ()=> goTo(estaBloqueado() ? 'mitarea' : 'home');
 
 /* =====================  MODALES  ===================== */
 function openModal(id){ document.getElementById(id).classList.add('open'); }
@@ -665,17 +720,21 @@ document.getElementById('doLogin').onclick = async ()=>{
     return;
   }
   const est = data[0];
-  session = {role:'student', id:est.id, nombre:est.nombre, cedula, salon:est.salon, secciones: est.secciones || []};
+  session = {role:'student', id:est.id, nombre:est.nombre, cedula, salon:est.salon, secciones: est.secciones || [], tarea:null};
+  const {data: tareaData} = await db.rpc('bv_mi_tarea', {p_nombre: est.nombre, p_cedula: cedula});
+  if(tareaData && tareaData.length) session.tarea = tareaData[0];
   sessionStorage.setItem('bv_session', JSON.stringify(session));
   closeModal('loginModal'); renderWho(); renderDrawer();
-  goTo(session.secciones[0] || 'home');
+  goTo(estaBloqueado() ? 'mitarea' : (session.secciones[0] || 'home'));
 };
 
 /* =====================  NAVEGACIÓN  ===================== */
 function goTo(sectionId){
+  if(estaBloqueado() && sectionId!=='mitarea') sectionId = 'mitarea';
   currentSection = sectionId;
   renderDrawer();
-  if(sectionId==='home') renderHome();
+  if(sectionId==='mitarea') renderMiTarea();
+  else if(sectionId==='home') renderHome();
   else if(sectionId==='admin') renderAdmin();
   else renderSection(sectionId);
   window.scrollTo({top:0,behavior:'smooth'});
@@ -710,16 +769,66 @@ async function renderHome(){
     `<div class="empty">Aún no hay publicaciones aquí.</div>`;
 }
 
+/* =====================  BLOQUES: texto / fotos / video / mapa / redes  ===================== */
+function detectarYoutubeId(url){
+  const m = String(url||'').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{6,})/);
+  return m ? m[1] : null;
+}
+function bloqueHTML(b){
+  if(b.tipo==='texto'){
+    return b.texto ? `<p style="white-space:pre-wrap;">${escapeHtml(b.texto)}</p>` : '';
+  }
+  if(b.tipo==='foto'){
+    if(!b.url) return '';
+    return `<figure style="margin:0 0 1em;">
+      <img src="${escapeHtml(b.url)}" alt="${escapeHtml(b.caption||'')}" style="width:100%;border-radius:4px;display:block;">
+      ${b.caption ? `<figcaption style="font-size:.8rem;color:#8a7f6e;margin-top:.3em;">${escapeHtml(b.caption)}</figcaption>` : ''}
+    </figure>`;
+  }
+  if(b.tipo==='video'){
+    if(!b.url) return '';
+    const yt = detectarYoutubeId(b.url);
+    if(yt){
+      return `<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${yt}" allowfullscreen loading="lazy"></iframe></div>`;
+    }
+    if(/\.(mp4|webm|ogg)$/i.test(b.url)){
+      return `<video controls style="width:100%;border-radius:4px;" src="${escapeHtml(b.url)}"></video>`;
+    }
+    return `<a class="btn outline small" href="${escapeHtml(b.url)}" target="_blank" rel="noopener">▶ Ver video</a>`;
+  }
+  if(b.tipo==='mapa'){
+    if(!b.url) return '';
+    if(b.url.includes('google.com/maps/embed')){
+      return `<div class="video-wrap"><iframe src="${escapeHtml(b.url)}" loading="lazy"></iframe></div>`;
+    }
+    return `<a class="btn outline small" href="${escapeHtml(b.url)}" target="_blank" rel="noopener">📍 Ver ubicación en Google Maps</a>`;
+  }
+  if(b.tipo==='redes'){
+    const items = [];
+    if(b.tiktok) items.push(`<a href="${escapeHtml(b.tiktok)}" target="_blank" rel="noopener">🎵 TikTok</a>`);
+    if(b.instagram) items.push(`<a href="${escapeHtml(b.instagram)}" target="_blank" rel="noopener">📷 Instagram</a>`);
+    if(b.facebook) items.push(`<a href="${escapeHtml(b.facebook)}" target="_blank" rel="noopener">👍 Facebook</a>`);
+    if(!items.length) return '';
+    return `<div class="redes-row">${items.join('')}</div>`;
+  }
+  return '';
+}
+function renderBloquesHTML(bloques){
+  if(!bloques || !bloques.length) return '';
+  return `<div class="bloques-vista">${bloques.map(bloqueHTML).join('')}</div>`;
+}
+
 /* =====================  VISTA: SECCIÓN  ===================== */
 function cardHTML(item){
   let pill = '';
   if(item.estado==='pendiente') pill = '<span class="status-pill status-pending">En revisión</span>';
   if(item.estado==='devuelto') pill = '<span class="status-pill status-rejected">Devuelto</span>';
+  const tieneBloques = item.bloques && item.bloques.length;
   return `
     <div class="card">
-      ${item.img_url ? `<img src="${item.img_url}" alt="${escapeHtml(item.titulo)}">` : ''}
+      ${!tieneBloques && item.img_url ? `<img src="${item.img_url}" alt="${escapeHtml(item.titulo)}">` : ''}
       <h3>${escapeHtml(item.titulo)} ${pill}</h3>
-      <p>${escapeHtml(item.cuerpo)}</p>
+      ${tieneBloques ? renderBloquesHTML(item.bloques) : `<p>${escapeHtml(item.cuerpo)}</p>`}
       <div class="byline">Investigado por: ${escapeHtml(item.autor_nombre||'')}${item.autor_salon? ' · '+SALON_LABEL[item.autor_salon] || item.autor_salon : ''}</div>
     </div>
   `;
@@ -757,8 +866,192 @@ async function renderSection(id){
   }
 }
 
-/* =====================  AGREGAR CONTENIDO  ===================== */
-let contentTargetSection = null;
+/* =====================  VISTA: MI TAREA (bloqueada por estudiante)  ===================== */
+let miTareaBloques = [];
+let miTareaModo = 'editar'; // 'editar' | 'vista'
+
+function nuevoBloqueId(){ return 'b'+Math.random().toString(36).slice(2,10); }
+
+async function renderMiTarea(){
+  const main = document.getElementById('main');
+  main.innerHTML = `<div class="empty">Cargando tu tarea…</div>`;
+
+  const {data, error} = await db.rpc('bv_mi_tarea', {p_nombre:session.nombre, p_cedula:session.cedula});
+  const tarea = (data && data[0]) || null;
+  session.tarea = tarea || null;
+  sessionStorage.setItem('bv_session', JSON.stringify(session));
+
+  if(error || !tarea){
+    main.innerHTML = `
+      <div class="section-divider"><div class="icon">🎯</div><h2>Mi tarea</h2><div class="rule"></div></div>
+      <div class="empty">Todavía no tienes una tarea asignada. Pídele a tu profesor(a) que te asigne una desde el panel.</div>`;
+    return;
+  }
+
+  const s = SECTIONS.find(x=>x.id===tarea.seccion_id) || {icon:'🎯', name:tarea.seccion_id};
+  miTareaBloques = Array.isArray(tarea.bloques) ? JSON.parse(JSON.stringify(tarea.bloques)) : [];
+  miTareaModo = 'editar';
+
+  let pill = '<span class="status-pill status-pending">Borrador</span>';
+  if(tarea.estado==='pendiente') pill = '<span class="status-pill status-pending">En revisión</span>';
+  if(tarea.estado==='publicado') pill = '<span class="status-pill status-published">Publicado</span>';
+  if(tarea.estado==='devuelto') pill = '<span class="status-pill status-rejected">Devuelto — sigue editando</span>';
+
+  main.innerHTML = `
+    <div class="section-divider"><div class="icon">${s.icon}</div><h2>Mi tarea</h2><div class="rule"></div></div>
+    <div class="tarea-head">
+      <h3 style="margin:0;">${escapeHtml(tarea.tema)} ${pill}</h3>
+    </div>
+    <p class="section-desc">Sección: ${escapeHtml(s.name)}. Agrega texto, fotos, un video, la ubicación en el mapa y tus redes sociales si hiciste una entrevista.</p>
+    <div class="tarea-modo">
+      <button id="modoEditarBtn" class="active">✏️ Editar</button>
+      <button id="modoVistaBtn">👁️ Vista previa</button>
+    </div>
+    <div id="tareaMsg"></div>
+    <div id="tareaBody"></div>
+  `;
+  document.getElementById('modoEditarBtn').onclick = ()=>{ miTareaModo='editar'; pintarMiTarea(); };
+  document.getElementById('modoVistaBtn').onclick = ()=>{ miTareaModo='vista'; pintarMiTarea(); };
+  pintarMiTarea();
+}
+
+function pintarMiTarea(){
+  document.getElementById('modoEditarBtn').classList.toggle('active', miTareaModo==='editar');
+  document.getElementById('modoVistaBtn').classList.toggle('active', miTareaModo==='vista');
+  const body = document.getElementById('tareaBody');
+  if(miTareaModo==='vista'){
+    body.innerHTML = miTareaBloques.length ? renderBloquesHTML(miTareaBloques) :
+      `<div class="empty">Todavía no has agregado nada. Cambia a "Editar" para empezar.</div>`;
+    return;
+  }
+  body.innerHTML = `
+    <div id="bloquesList"></div>
+    <div class="add-bloque-bar">
+      <button data-add="texto">📝 + Texto</button>
+      <button data-add="foto">🖼️ + Foto</button>
+      <button data-add="video">🎬 + Video</button>
+      <button data-add="mapa">📍 + Ubicación</button>
+      <button data-add="redes">🔗 + Redes sociales</button>
+    </div>
+    <div class="row-actions">
+      <button class="btn outline" id="guardarBorradorBtn">💾 Guardar borrador</button>
+      <button class="btn gold" id="enviarRevisionBtn">📩 Enviar para revisión</button>
+    </div>
+  `;
+  pintarBloquesList();
+  body.querySelectorAll('[data-add]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const tipo = btn.dataset.add;
+      const base = {id:nuevoBloqueId(), tipo};
+      if(tipo==='texto') base.texto = '';
+      if(tipo==='foto'){ base.url=''; base.caption=''; }
+      if(tipo==='video') base.url='';
+      if(tipo==='mapa') base.url='';
+      if(tipo==='redes'){ base.tiktok=''; base.instagram=''; base.facebook=''; }
+      miTareaBloques.push(base);
+      pintarBloquesList();
+    };
+  });
+  document.getElementById('guardarBorradorBtn').onclick = ()=> guardarMiTarea(false);
+  document.getElementById('enviarRevisionBtn').onclick = ()=> guardarMiTarea(true);
+}
+
+function pintarBloquesList(){
+  const cont = document.getElementById('bloquesList');
+  if(!cont) return;
+  const nombresTipo = {texto:'Texto', foto:'Foto', video:'Video', mapa:'Ubicación', redes:'Redes sociales'};
+  cont.innerHTML = miTareaBloques.map((b,i)=>`
+    <div class="bloque-editor" data-i="${i}">
+      <div class="bloque-top">
+        <span class="bloque-tipo">${nombresTipo[b.tipo]||b.tipo}</span>
+        <div class="bloque-tools">
+          <button data-subir="${i}" title="Mover arriba" ${i===0?'disabled':''}>▲</button>
+          <button data-bajar="${i}" title="Mover abajo" ${i===miTareaBloques.length-1?'disabled':''}>▼</button>
+          <button data-borrar="${i}" title="Eliminar">🗑️</button>
+        </div>
+      </div>
+      ${bloqueCamposHTML(b,i)}
+    </div>
+  `).join('') || `<div class="empty">Usa los botones de abajo para agregar tu primer bloque.</div>`;
+
+  cont.querySelectorAll('[data-subir]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.subir; [miTareaBloques[i-1],miTareaBloques[i]]=[miTareaBloques[i],miTareaBloques[i-1]]; pintarBloquesList(); });
+  cont.querySelectorAll('[data-bajar]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.bajar; [miTareaBloques[i+1],miTareaBloques[i]]=[miTareaBloques[i],miTareaBloques[i+1]]; pintarBloquesList(); });
+  cont.querySelectorAll('[data-borrar]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.borrar; if(confirm('¿Eliminar este bloque?')){ miTareaBloques.splice(i,1); pintarBloquesList(); } });
+
+  cont.querySelectorAll('[data-campo]').forEach(input=>{
+    input.oninput = ()=>{
+      const i = +input.closest('.bloque-editor').dataset.i;
+      miTareaBloques[i][input.dataset.campo] = input.value;
+    };
+  });
+  cont.querySelectorAll('[data-subirfoto]').forEach(input=>{
+    input.onchange = async ()=>{
+      const i = +input.dataset.subirfoto;
+      const file = input.files[0];
+      if(!file) return;
+      const cardEl = input.closest('.bloque-editor');
+      const statusEl = cardEl.querySelector('.foto-status');
+      if(statusEl) statusEl.textContent = 'Subiendo…';
+      const path = `tarea-${session.id}-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,'')}`;
+      const {error} = await db.storage.from('bv-media').upload(path, file);
+      if(error){ if(statusEl) statusEl.textContent = 'No se pudo subir: '+error.message; return; }
+      const { data: pub } = db.storage.from('bv-media').getPublicUrl(path);
+      miTareaBloques[i].url = pub.publicUrl;
+      pintarBloquesList();
+    };
+  });
+}
+
+function bloqueCamposHTML(b,i){
+  if(b.tipo==='texto'){
+    return `<textarea data-campo="texto" rows="4" placeholder="Escribe aquí la información...">${escapeHtml(b.texto||'')}</textarea>`;
+  }
+  if(b.tipo==='foto'){
+    return `
+      ${b.url ? `<img class="foto-preview" src="${escapeHtml(b.url)}">` : ''}
+      <div class="upload-row">
+        <input type="file" accept="image/*" data-subirfoto="${i}">
+        <span class="foto-status hint" style="margin:0;"></span>
+      </div>
+      <div class="field"><label>O pega el enlace de una foto</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="https://..."></div>
+      <div class="field" style="margin-bottom:0;"><label>Descripción de la foto (opcional)</label><input data-campo="caption" value="${escapeHtml(b.caption||'')}" placeholder="Ej. Entrada de la escuela"></div>
+    `;
+  }
+  if(b.tipo==='video'){
+    return `<div class="field" style="margin-bottom:0;"><label>Enlace del video (YouTube, o el archivo de video)</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="https://youtube.com/... o https://..."></div>`;
+  }
+  if(b.tipo==='mapa'){
+    return `<div class="field" style="margin-bottom:0;"><label>Enlace de Google Maps</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="Pega aquí el enlace de Google Maps"></div>
+    <p class="hint">En Google Maps: busca el lugar → Compartir → Copiar enlace, y pégalo aquí.</p>`;
+  }
+  if(b.tipo==='redes'){
+    return `
+      <div class="field"><label>🎵 TikTok (enlace, opcional)</label><input data-campo="tiktok" value="${escapeHtml(b.tiktok||'')}" placeholder="https://tiktok.com/@..."></div>
+      <div class="field"><label>📷 Instagram (enlace, opcional)</label><input data-campo="instagram" value="${escapeHtml(b.instagram||'')}" placeholder="https://instagram.com/..."></div>
+      <div class="field" style="margin-bottom:0;"><label>👍 Facebook (enlace, opcional)</label><input data-campo="facebook" value="${escapeHtml(b.facebook||'')}" placeholder="https://facebook.com/..."></div>
+    `;
+  }
+  return '';
+}
+
+async function guardarMiTarea(enviar){
+  const msg = document.getElementById('tareaMsg');
+  const tarea = session.tarea;
+  const resumen = miTareaBloques.filter(b=>b.tipo==='texto').map(b=>b.texto).filter(Boolean).join('\n\n');
+  const fotoPortada = (miTareaBloques.find(b=>b.tipo==='foto' && b.url)||{}).url || '';
+  msg.innerHTML = `<div class="msg">Guardando…</div>`;
+  const {error} = await db.rpc('bv_guardar_mi_tarea', {
+    p_nombre: session.nombre, p_cedula: session.cedula,
+    p_seccion_id: tarea.seccion_id, p_tema: tarea.tema,
+    p_bloques: miTareaBloques, p_resumen: resumen, p_foto_portada: fotoPortada,
+    p_enviar: enviar
+  });
+  if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  msg.innerHTML = `<div class="msg ok">${enviar ? '✅ Enviado para revisión.' : '💾 Borrador guardado.'} Puedes seguir editando cuando quieras.</div>`;
+  renderMiTarea();
+}
+
+
 function openContentModal(sectionId, tituloSugerido){
   contentTargetSection = sectionId;
   document.getElementById('contentModalTitle').textContent = 'Nueva publicación — ' + SECTIONS.find(s=>s.id===sectionId).name;
@@ -794,6 +1087,7 @@ function renderAdmin(){
     <div class="tabs">
       <button data-tab="pendientes" class="${adminTab==='pendientes'?'active':''}">📝 Pendientes de revisión</button>
       <button data-tab="salones" class="${adminTab==='salones'?'active':''}">🏫 Salones y estudiantes</button>
+      <button data-tab="tareas" class="${adminTab==='tareas'?'active':''}">🎯 Tareas individuales</button>
       <button data-tab="respaldos" class="${adminTab==='respaldos'?'active':''}">🗄️ Respaldos y papelera</button>
     </div>
     <div id="adminBody">Cargando…</div>
@@ -803,8 +1097,115 @@ function renderAdmin(){
   });
   if(adminTab==='pendientes') renderAdminPendientes();
   else if(adminTab==='salones') renderAdminSalones();
+  else if(adminTab==='tareas') renderAdminTareas();
   else renderAdminRespaldos();
 }
+
+/* ---- tab: tareas individuales ---- */
+async function renderAdminTareas(){
+  const body = document.getElementById('adminBody');
+  body.innerHTML = `
+    <div class="row-actions" style="margin-bottom:1.2em;">
+      <button class="btn gold" id="nuevaTareaBtn">+ Asignar una tarea</button>
+    </div>
+    <p class="hint">Cada tarea le da a un estudiante una página propia y bloqueada: solo él la puede ver y editar (texto, fotos, video, mapa y redes).</p>
+    <div id="listaTareas">Cargando…</div>
+  `;
+  document.getElementById('nuevaTareaBtn').onclick = ()=> openTareaModal();
+  cargarTareas();
+}
+async function cargarTareas(){
+  const cont = document.getElementById('listaTareas');
+  const {data, error} = await db.rpc('bv_admin_listar_tareas', adminCreds());
+  if(error){ cont.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  if(!data || data.length===0){ cont.innerHTML = '<div class="empty">Todavía no has asignado ninguna tarea individual.</div>'; return; }
+  const estadoLabel = {borrador:'Borrador', pendiente:'En revisión', publicado:'Publicado', devuelto:'Devuelto'};
+  const estadoClase = {borrador:'status-pending', pendiente:'status-pending', publicado:'status-published', devuelto:'status-rejected'};
+  cont.innerHTML = `<table><thead><tr><th>Estudiante</th><th>Sección</th><th>Tema</th><th>Estado</th><th></th></tr></thead><tbody>${data.map(t=>{
+    const s = SECTIONS.find(x=>x.id===t.seccion_id);
+    return `<tr>
+      <td>${escapeHtml(t.nombre)}<br><span class="hint" style="margin:0;">${SALON_LABEL[t.salon]||t.salon}</span></td>
+      <td>${s?s.icon+' '+s.name:t.seccion_id}</td>
+      <td>${escapeHtml(t.tema)}</td>
+      <td><span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoLabel[t.estado]||t.estado}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn small outline" data-ver='${escapeHtml(JSON.stringify(t.bloques||[]))}'>Ver</button>
+        <button class="btn small outline" data-editar="${t.estudiante_id}" data-seccion="${t.seccion_id}" data-tema="${escapeHtml(t.tema)}">Cambiar</button>
+        <button class="btn small danger" data-quitar="${t.estudiante_id}" data-seccionq="${t.seccion_id}">Quitar</button>
+      </td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+  cont.querySelectorAll('[data-ver]').forEach(b=> b.onclick = ()=>{
+    const bloques = JSON.parse(b.getAttribute('data-ver'));
+    const html = `
+      <div class="modal-overlay open" id="verTareaModal">
+        <div class="modal" style="max-width:640px;">
+          <button class="modal-close" id="verTareaModalClose">×</button>
+          <h3>Vista previa</h3>
+          ${renderBloquesHTML(bloques) || '<div class="empty">Todavía no ha agregado nada.</div>'}
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    document.getElementById('verTareaModalClose').onclick = ()=> document.getElementById('verTareaModal').remove();
+  });
+  cont.querySelectorAll('[data-editar]').forEach(b=> b.onclick = ()=>{
+    openTareaModal({estudiante_id:b.dataset.editar, seccion_id:b.dataset.seccion, tema:b.dataset.tema});
+  });
+  cont.querySelectorAll('[data-quitar]').forEach(b=> b.onclick = async ()=>{
+    if(!confirm('¿Quitarle esta tarea al estudiante?')) return;
+    await db.rpc('bv_admin_quitar_tarea', {...adminCreds(), p_estudiante_id:b.dataset.quitar, p_seccion_id:b.dataset.seccionq});
+    cargarTareas();
+  });
+}
+async function openTareaModal(actual){
+  if(!estudiantesCache.length){
+    const {data} = await db.rpc('bv_admin_listar_estudiantes', adminCreds());
+    estudiantesCache = data || [];
+  }
+  const estOptions = estudiantesCache.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'))
+    .map(e=>`<option value="${e.id}" ${actual&&actual.estudiante_id===e.id?'selected':''}>${escapeHtml(e.nombre)} — ${SALON_LABEL[e.salon]||e.salon}</option>`).join('');
+  const secOptions = SECTIONS.map(s=>`<option value="${s.id}" ${actual&&actual.seccion_id===s.id?'selected':''}>${s.icon} ${s.name}</option>`).join('');
+  const html = `
+    <div class="modal-overlay open" id="tareaModal">
+      <div class="modal">
+        <button class="modal-close" id="tareaModalClose">×</button>
+        <h3>${actual?'Cambiar tarea':'Asignar una tarea'}</h3>
+        <div id="tareaModalMsg"></div>
+        <div class="field"><label>Estudiante</label><select id="tEstudiante">${estOptions}</select></div>
+        <div class="field"><label>Sección</label><select id="tSeccion">${secOptions}</select></div>
+        <div class="field"><label>Tema específico</label><select id="tTemaSelect"></select></div>
+        <div class="field" id="tTemaCustomWrap" style="display:none;"><label>Escribe el tema</label><input id="tTemaCustom" placeholder="Ej. Corregidor(a) de Buena Vista"></div>
+        <button class="btn" id="guardarTareaBtn">Guardar</button>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  const secSelect = document.getElementById('tSeccion');
+  const temaSelect = document.getElementById('tTemaSelect');
+  function pintarTemas(){
+    const temas = TEMAS_SUGERIDOS[secSelect.value] || [];
+    temaSelect.innerHTML = temas.map(t=>`<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('') + `<option value="__otro__">Otro (escribir)…</option>`;
+    if(actual && actual.seccion_id===secSelect.value && temas.includes(actual.tema)) temaSelect.value = actual.tema;
+    else if(actual && actual.seccion_id===secSelect.value){ temaSelect.value='__otro__'; }
+    document.getElementById('tTemaCustomWrap').style.display = temaSelect.value==='__otro__' ? '' : 'none';
+    if(temaSelect.value==='__otro__' && actual) document.getElementById('tTemaCustom').value = actual.tema;
+  }
+  secSelect.onchange = pintarTemas;
+  temaSelect.onchange = ()=>{ document.getElementById('tTemaCustomWrap').style.display = temaSelect.value==='__otro__' ? '' : 'none'; };
+  pintarTemas();
+  document.getElementById('tareaModalClose').onclick = ()=> document.getElementById('tareaModal').remove();
+  document.getElementById('guardarTareaBtn').onclick = async ()=>{
+    const estudianteId = document.getElementById('tEstudiante').value;
+    const seccionId = secSelect.value;
+    const tema = temaSelect.value==='__otro__' ? document.getElementById('tTemaCustom').value.trim() : temaSelect.value;
+    const msg = document.getElementById('tareaModalMsg');
+    if(!estudianteId || !seccionId || !tema){ msg.innerHTML = '<div class="msg error">Completa estudiante, sección y tema.</div>'; return; }
+    const {error} = await db.rpc('bv_admin_asignar_tarea', {...adminCreds(), p_estudiante_id:estudianteId, p_seccion_id:seccionId, p_tema:tema});
+    if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+    document.getElementById('tareaModal').remove();
+    cargarTareas();
+  };
+}
+
 
 /* ---- tab: pendientes ---- */
 async function renderAdminPendientes(){
@@ -1051,7 +1452,7 @@ async function cargarPapelera(){
 (function init(){
   renderWho();
   renderDrawer();
-  goTo(session ? (session.role==='admin' ? 'admin' : 'home') : 'home');
+  goTo(estaBloqueado() ? 'mitarea' : (session ? (session.role==='admin' ? 'admin' : 'home') : 'home'));
 })();
 </script>
 </body>
