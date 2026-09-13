@@ -1642,7 +1642,7 @@ function extraerUbicacionesPublicadas(publicaciones){
     if(!valor) return;
     if(Array.isArray(valor)){ valor.forEach(v=>recorrer(v,pub)); return; }
     if(typeof valor!=='object') return;
-    if(valor.tipo==='mapa' && valor.lat!=null && valor.lng!=null && Number.isFinite(+valor.lat) && Number.isFinite(+valor.lng)){
+    if(valor.tipo==='mapa' && valor.lat!=null && valor.lng!=null && Number.isFinite(+valor.lat) && Number.isFinite(+valor.lng) && String(valor.lat).trim()!=='' && String(valor.lng).trim()!=='' && Math.abs(+valor.lat)<=90 && Math.abs(+valor.lng)<=180){
       puntos.push({lat:+valor.lat,lng:+valor.lng,titulo:pub.titulo||'Ubicación',autor:pub.autor_nombre||''});
     }
     Object.values(valor).forEach(v=>recorrer(v,pub));
@@ -2613,6 +2613,7 @@ function guardarUbicacionBloque(b, lat, lng){
   if(coordsEl) coordsEl.textContent = `📍 Ubicación seleccionada (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
   const editorEl = document.querySelector(`.bloque-editor[data-blockid="${b.id}"] input[data-campo="url"]`);
   if(editorEl) editorEl.value = b.url;
+  programarAutoguardado();
 }
 
 function bloqueCamposHTML(b,i){
@@ -2957,6 +2958,7 @@ function renderAdmin(){
       <button data-tab="paginas" class="${adminTab==='paginas'?'active':''}">🎨 Páginas</button>
       <button data-tab="donantes" class="${adminTab==='donantes'?'active':''}">🎁 Donantes</button>
       <button data-tab="mensajes" class="${adminTab==='mensajes'?'active':''}">✉️ Mensajes</button>
+      <button data-tab="google" class="${adminTab==='google'?'active':''}">📍 Puntos y Google</button>
       <button data-tab="respaldos" class="${adminTab==='respaldos'?'active':''}">🗄️ Respaldos y papelera</button>
     </div>
     <div id="adminBody">Cargando…</div>
@@ -2970,7 +2972,41 @@ function renderAdmin(){
   else if(adminTab==='paginas') renderAdminPaginas();
   else if(adminTab==='donantes') renderAdminDonantes();
   else if(adminTab==='mensajes') renderAdminMensajes();
+  else if(adminTab==='google') renderAdminGoogle();
   else renderAdminRespaldos();
+}
+
+async function renderAdminGoogle(){
+  if(!session || session.role!=='admin') return;
+  const body=document.getElementById('adminBody');
+  body.innerHTML=`<div class="card"><h3>📍 Puntos de Buena Vista en Google</h3>
+    <p>Las ubicaciones se guardan con las tareas. Cuando el profesor publica la página, sus puntos quedan visibles para los visitantes.</p>
+    <p><b>Primera instalación:</b> abre una hoja nueva en Google Sheets con <b>profesorsamuelortega@gmail.com</b>. En Extensiones → Apps Script pega el archivo GooglePuntos.gs y ejecuta <b>activarBuenaVista</b>. Autoriza tu cuenta una vez.</p>
+    <p>Después se copiarán los puntos publicados cada cinco minutos, incluso con tu computadora apagada. La pestaña <b>Estado</b> de la hoja muestra el resultado real.</p>
+    <p><b>Cambiar destino:</b> en la hoja, menú Buena Vista → Cambiar hoja de destino. Para usar otra cuenta como propietaria y ejecutora, instala el script desde esa cuenta y detén el anterior. Escribir un correo por sí solo no conecta Google.</p>
+    <div class="row-actions"><a class="btn outline" href="google/GooglePuntos.gs" download>Descargar código para Google</a><a class="btn outline" href="google/INSTRUCCIONES.txt" target="_blank" rel="noopener">Ver instrucciones</a><button class="btn gold" id="exportarPuntosBV">Descargar puntos para My Maps</button></div>
+    <p class="hint">Google Sheets se actualiza automáticamente después de activarlo. Google My Maps requiere volver a importar la capa. Los lugares del Google Maps público se envían para revisión de Google.</p>
+    <div id="googleResultado" role="status"></div></div>`;
+  document.getElementById('exportarPuntosBV').onclick=async function(){
+    const resultado=document.getElementById('googleResultado'); this.disabled=true;
+    resultado.textContent='Consultando puntos publicados…';
+    try{
+      const publicaciones=[];
+      for(let offset=0;;){
+        const {data,error}=await db.from('bv_contenido').select('id,titulo,bloques').eq('estado','publicado').order('id').range(offset,offset+499);
+        if(error) throw error;
+        if(!data.length) break;
+        publicaciones.push(...data);offset+=data.length;
+      }
+      const puntos=extraerUbicacionesPublicadas(publicaciones);
+      if(!puntos.length){resultado.textContent='Todavía no hay puntos publicados con coordenadas.';return;}
+      const celda=v=>{let t=String(v??'');if(typeof v==='string' && /^[=+\-@\t\r]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"';};
+      const filas=[['Nombre','Latitud','Longitud','Google Maps'],...puntos.map(p=>[p.titulo,p.lat,p.lng,`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`])];
+      const url=URL.createObjectURL(new Blob(['\ufeff'+filas.map(f=>f.map(celda).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
+      const a=document.createElement('a');a.href=url;a.download='BuenaVista-puntos.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      resultado.textContent=`${puntos.length} puntos exportados. En My Maps selecciona Latitud y Longitud para ubicarlos y Nombre como título.`;
+    }catch(e){resultado.textContent='No se pudo exportar: '+e.message;}finally{this.disabled=false;}
+  };
 }
 
 /* =====================  DONANTES, CERTIFICADOS Y RECIBOS  ===================== */
