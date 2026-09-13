@@ -3378,25 +3378,66 @@ function pintarTablaSemanal(){
         ${[1,2,3,4,5,6,7].map(n=>{
           const t = porEstudianteSemana.get(`${al.id}||${n}`);
           if(t){
-            return `<td><button class="btn small outline" data-celda="${al.id}" data-semana="${n}" title="${escapeHtml(t.tema)}">
-              <span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoAbrev[t.estado]||t.estado}</span>
-            </button></td>`;
+            return `<td><div style="display:flex;align-items:center;gap:.3em;justify-content:center;">
+              <button class="btn small outline" data-editar-celda="${al.id}" data-semana="${n}" title="${escapeHtml(t.tema)} — clic para cambiar">
+                <span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoAbrev[t.estado]||t.estado}</span>
+              </button>
+              <button class="btn small danger" data-borrar-celda="${al.id}" data-semana="${n}" title="Quitar esta tarea" style="padding:.2em .5em;line-height:1;">✕</button>
+            </div></td>`;
           }
           return `<td><button class="btn small" data-celda="${al.id}" data-semana="${n}" style="opacity:.55;">+</button></td>`;
         }).join('')}
       </tr>`).join('')}
     </tbody></table>
     </div>
-    <p class="hint" style="margin-top:.8em;">Haz clic en una celda para asignar, cambiar o ver esa semana. Los botones con "+" están libres.</p>
+    <p class="hint" style="margin-top:.8em;">Clic en el estado para cambiar la tarea de esa semana · clic en <strong>✕</strong> para quitarla (puedes deshacerlo unos segundos después) · "+" para asignar una nueva.</p>
   `;
   cont.querySelectorAll('[data-celda]').forEach(b=>{
     b.onclick = ()=>{
       const estId = b.dataset.celda, semana = Number(b.dataset.semana);
-      const t = porEstudianteSemana.get(`${estId}||${semana}`);
-      if(t) openTareaModal({estudiante_id:estId, seccion_id:seccionId, tema:t.tema, semana});
-      else openTareaModal({estudiante_id:estId, seccion_id:seccionId, semana});
+      openTareaModal({estudiante_id:estId, seccion_id:seccionId, semana});
     };
   });
+  cont.querySelectorAll('[data-editar-celda]').forEach(b=>{
+    b.onclick = ()=>{
+      const estId = b.dataset.editarCelda, semana = Number(b.dataset.semana);
+      const t = porEstudianteSemana.get(`${estId}||${semana}`);
+      openTareaModal({estudiante_id:estId, seccion_id:seccionId, tema:t?t.tema:undefined, semana});
+    };
+  });
+  cont.querySelectorAll('[data-borrar-celda]').forEach(b=>{
+    b.onclick = async ()=>{
+      const estId = b.dataset.borrarCelda, semana = Number(b.dataset.semana);
+      const t = porEstudianteSemana.get(`${estId}||${semana}`);
+      if(!t) return;
+      const {error} = await db.rpc('bv_admin_quitar_tarea', {...adminCreds(), p_estudiante_id:estId, p_seccion_id:seccionId, p_semana:semana});
+      if(error){ alert(error.message); return; }
+      mostrarDeshacerTarea({estudiante_id:estId, seccion_id:seccionId, tema:t.tema, semana, nombre:t.nombre});
+      cargarTareas();
+    };
+  });
+}
+
+/* toast de "tarea quitada · deshacer" reutilizable */
+let deshacerTimeoutId = null;
+function mostrarDeshacerTarea(info){
+  const existente = document.getElementById('deshacerToast');
+  if(existente) existente.remove();
+  if(deshacerTimeoutId) clearTimeout(deshacerTimeoutId);
+  const html = `
+    <div id="deshacerToast" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2B2620;color:#F3EAD3;padding:.7em 1em;border-radius:8px;display:flex;align-items:center;gap:1em;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,.35);max-width:90vw;">
+      <span style="font-size:.92rem;">🗑️ Se quitó ${info.nombre?escapeHtml(info.nombre)+' — ':''}"${escapeHtml(info.tema)}" (Semana ${info.semana})</span>
+      <button class="btn small gold" id="deshacerBtn" type="button" style="white-space:nowrap;">Deshacer</button>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  deshacerTimeoutId = setTimeout(()=>{ const e=document.getElementById('deshacerToast'); if(e) e.remove(); }, 8000);
+  document.getElementById('deshacerBtn').onclick = async ()=>{
+    clearTimeout(deshacerTimeoutId);
+    const e=document.getElementById('deshacerToast'); if(e) e.remove();
+    const {error} = await db.rpc('bv_admin_asignar_tarea', {...adminCreds(), p_estudiante_id:info.estudiante_id, p_seccion_id:info.seccion_id, p_tema:info.tema, p_semana:info.semana});
+    if(error){ alert(error.message); return; }
+    cargarTareas();
+  };
 }
 async function cargarTareas(){
   const cont = document.getElementById('listaTareas');
