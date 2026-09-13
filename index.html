@@ -1943,14 +1943,15 @@ function agregarColumnaManager(){
   pintarBloquesList();
 }
 
-async function renderMiTarea(semanaElegida){
+async function renderMiTarea(claveElegida){
   const main = document.getElementById('main');
   main.innerHTML = `<div class="empty">Cargando tu tarea…</div>`;
 
   const {data, error} = await db.rpc('bv_mis_tareas', {p_nombre:session.nombre, p_cedula:session.cedula});
   const semanas = (data || []).slice().sort((a,b)=>(a.semana||1)-(b.semana||1));
+  const claveDe = s => `${s.seccion_id}||${s.semana}`;
   const tarea = semanas.length
-    ? (semanaElegida ? semanas.find(s=>Number(s.semana)===Number(semanaElegida)) : null) || semanas[semanas.length-1]
+    ? (claveElegida ? semanas.find(s=>claveDe(s)===claveElegida) : null) || semanas[semanas.length-1]
     : null;
   session.tarea = tarea || null;
   sessionStorage.setItem('bv_session', JSON.stringify(session));
@@ -1976,10 +1977,13 @@ async function renderMiTarea(semanaElegida){
 
   const pestañas = semanas.length>1 ? `
     <div class="tarea-modo" style="flex-wrap:wrap;">
-      ${semanas.map(sem=>`<button data-semana-tab="${sem.semana}" class="${Number(sem.semana)===Number(tarea.semana)?'active':''}">
-        Semana ${sem.semana}
-        <span class="status-pill ${estadoPillClase[sem.estado]||'status-pending'}" style="margin-left:.4em;font-size:.7em;">${sem.estado==='publicado'?'✓':sem.estado==='pendiente'?'…':''}</span>
-      </button>`).join('')}
+      ${semanas.map(sem=>{
+        const sIcon = (SECTIONS.find(x=>x.id===sem.seccion_id)||{}).icon || '🎯';
+        return `<button data-tarea-clave="${escapeHtml(claveDe(sem))}" class="${claveDe(sem)===claveDe(tarea)?'active':''}">
+          ${sIcon} Semana ${sem.semana}
+          <span class="status-pill ${estadoPillClase[sem.estado]||'status-pending'}" style="margin-left:.4em;font-size:.7em;">${sem.estado==='publicado'?'✓':sem.estado==='pendiente'?'…':''}</span>
+        </button>`;
+      }).join('')}
     </div>` : '';
 
   main.innerHTML = `
@@ -1989,7 +1993,6 @@ async function renderMiTarea(semanaElegida){
       <h3 style="margin:0;">${escapeHtml(tarea.tema)} ${pill}</h3>
       <span class="hint" style="margin:0;">Semana ${tarea.semana||1}</span>
     </div>
-    <p class="section-desc">Sección: ${escapeHtml(s.name)}. ${tarea.seccion_id==='negocios' ? '<strong>Si te asignaron varios negocios, crea una fila o grupo separado para cada uno</strong> y agrega su nombre, tipo, información, fotos, teléfono y un bloque de ubicación. Cada punto aparecerá automáticamente en el mapa general cuando el profesor publique tu trabajo.' : 'Agrega texto, fotos, un video, la ubicación en el mapa y tus redes sociales si hiciste una entrevista.'}</p>
     ${tarea.seccion_id==='escuelas' ? `<div class="card" style="border-left:5px solid var(--gold);"><h3>🏫 Datos del centro educativo</h3><div class="field"><label>Selecciona el tipo de centro</label><select id="tipoCentroEducativo"><option value="">Selecciona una opción…</option>${TIPOS_CENTRO_EDUCATIVO.map(t=>`<option value="${escapeHtml(t)}" ${t===tipoCentroGuardado?'selected':''}>${escapeHtml(t)}</option>`).join('')}</select></div><p class="hint" style="margin:0;"><strong>Investiga:</strong> nombre oficial; si es público o privado; categoría; comunidad y dirección; historia y fundación; director o propietario; niveles; cantidad aproximada de estudiantes; teléfono y horario; fotografías antiguas y actuales; ubicación en el mapa y fuente.</p></div>` : ''}
     ${tarea.observacion ? `<div class="msg" style="background:#f4dfa8;color:#6b4c0a;">📝 Observación del profesor(a): ${escapeHtml(tarea.observacion)}</div>` : ''}
     <div id="rubricaTarea"></div>
@@ -2000,8 +2003,8 @@ async function renderMiTarea(semanaElegida){
     <div id="tareaMsg"></div>
     <div id="tareaBody"></div>
   `;
-  main.querySelectorAll('[data-semana-tab]').forEach(b=>{
-    b.onclick = ()=> renderMiTarea(Number(b.dataset.semanaTab));
+  main.querySelectorAll('[data-tarea-clave]').forEach(b=>{
+    b.onclick = ()=> renderMiTarea(b.dataset.tareaClave);
   });
   document.getElementById('modoEditarBtn').onclick = ()=>{ miTareaModo='editar'; pintarMiTarea(); };
   document.getElementById('modoVistaBtn').onclick = ()=>{ miTareaModo='vista'; pintarMiTarea(); };
@@ -2173,7 +2176,7 @@ function pintarMiTarea(){
   document.getElementById('enviarRevisionBtn').onclick = ()=> guardarMiTarea(true);
   document.getElementById('mejorarIABtn').onclick = abrirMejorarIA;
   const histBtn = document.getElementById('verHistorialBtn');
-  if(histBtn) histBtn.onclick = ()=> abrirHistorial(session.tarea.id, ()=>renderMiTarea(session.tarea.semana));
+  if(histBtn) histBtn.onclick = ()=> abrirHistorial(session.tarea.id, ()=>renderMiTarea(`${session.tarea.seccion_id}||${session.tarea.semana}`));
 }
 
 /* Cambia a mayúsculas o minúsculas el texto seleccionado (o todo el bloque si no hay
@@ -2309,11 +2312,16 @@ function pintarBloquesList(){
       const u=ubicarBloque(editor.dataset.richtext); if(!u) return;
       u.bloque.html=sanitizarHTML(editor.innerHTML);
       u.bloque.texto=editor.innerText.trim();
-      // Cuando el navegador aplica la alineación directo a la cajita (en vez de
-      // a un párrafo dentro), guardamos ese valor en el bloque para que no se
-      // pierda al redibujar por otro cambio (color, tamaño, etc.)
+      // Cuando el navegador aplica la alineación directo a la cajita, o a un
+      // elemento adentro (como el título), la guardamos igual en el bloque
+      // para que no se pierda al redibujar por otro cambio (color, tamaño, etc.)
       const alineacionMap = {left:'izquierda', center:'centro', right:'derecha'};
-      if(alineacionMap[editor.style.textAlign]) u.bloque.alineacion = alineacionMap[editor.style.textAlign];
+      let alineacionDetectada = alineacionMap[editor.style.textAlign];
+      if(!alineacionDetectada){
+        const elAlineado = editor.querySelector('[style*="text-align"]');
+        if(elAlineado) alineacionDetectada = alineacionMap[elAlineado.style.textAlign];
+      }
+      if(alineacionDetectada) u.bloque.alineacion = alineacionDetectada;
     };
     editor.oninput=guardar; editor.onblur=guardar;
     editor.onpaste=()=>setTimeout(guardar,0);
@@ -2718,7 +2726,7 @@ async function guardarMiTarea(enviar){
   });
   if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
   msg.innerHTML = `<div class="msg ok">${enviar ? '✅ Enviado para revisión.' : '💾 Borrador guardado.'} Puedes seguir editando cuando quieras.</div>`;
-  renderMiTarea(tarea.semana);
+  renderMiTarea(`${tarea.seccion_id}||${tarea.semana}`);
 }
 
 /* ---- ✨ Mejorar con IA ----
