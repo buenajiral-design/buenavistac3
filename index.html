@@ -522,6 +522,7 @@
   .pg-galeria-grid img{width:100%;height:90px;object-fit:cover;border-radius:4px;display:block;}
   .pg-galeria-item{position:relative;}
   .pg-galeria-item button{position:absolute;top:2px;right:2px;background:rgba(43,38,32,.75);color:#fff;border:none;border-radius:50%;width:1.4em;height:1.4em;font-size:.7rem;line-height:1;}
+  .pg-galeria-caption{width:100%;margin-top:.3em;font-size:.78rem;padding:.3em .4em;}
   .pg-col-opciones{display:grid;grid-template-columns:repeat(4,1fr);gap:.6em;margin:1em 0;}
   .pg-col-opciones button{background:var(--white);border:1.5px solid var(--line);border-radius:6px;padding:1em .4em;font-weight:700;font-size:.85rem;color:var(--forest-dark);}
   .pg-col-opciones button:hover{background:var(--parchment);border-color:var(--gold);}
@@ -1564,8 +1565,11 @@ function bloqueHTML(b){
   }
   if(b.tipo==='galeria'){
     if(!b.fotos || !b.fotos.length) return '';
-    return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.5em;margin-bottom:1em;">
-      ${b.fotos.map(f=>`<img src="${escapeHtml(f.url)}" style="width:100%;height:110px;object-fit:cover;border-radius:4px;cursor:zoom-in;" onclick="abrirImagenCompleta(this.src)">`).join('')}
+    return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.8em;margin-bottom:1em;">
+      ${b.fotos.map(f=>`<figure style="margin:0;">
+        <img src="${escapeHtml(f.url)}" style="width:100%;height:110px;object-fit:cover;border-radius:4px;cursor:zoom-in;display:block;" onclick="abrirImagenCompleta(this.src)">
+        ${f.caption ? `<figcaption style="font-size:.75rem;color:var(--forest-dark);margin-top:.2em;">${escapeHtml(f.caption)}</figcaption>` : ''}
+      </figure>`).join('')}
     </div>`;
   }
   if(b.tipo==='enlace'){
@@ -2025,22 +2029,36 @@ async function renderMiTarea(semanaElegida){
   pintarRubrica();
 }
 
+let rubricaVisible = true;
 function pintarRubrica(){
   const cont = document.getElementById('rubricaTarea');
   if(!cont) return;
   const tarea = session.tarea;
   const planos = miTareaBloques.flatMap(f=>f.columnas||[]).flatMap(c=>c.bloques||[]);
+  const textoCompleto = planos.filter(b=>b.tipo==='texto').map(b=>b.texto||'').join(' ');
+  const sinAcentos = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
   const tieneTexto = planos.some(b=>b.tipo==='texto' && (b.texto||'').trim().length>=20);
+  const tieneTitulo = planos.some(b=>b.tipo==='texto' && ((b.tamano==='grande'||b.tamano==='enorme') && (b.texto||'').trim()) || (b.tipo==='texto' && /<h[1-3][ >]/i.test(b.html||'')));
   const tieneFoto = planos.some(b=>(b.tipo==='foto'||b.tipo==='limites') && b.url);
+  const fotosConDescripcion = planos.some(b=>
+    ((b.tipo==='foto'||b.tipo==='limites') && b.url && (b.caption||'').trim()) ||
+    (b.tipo==='galeria' && (b.fotos||[]).some(f=>(f.caption||'').trim()))
+  );
   const tieneMapa = planos.some(b=>b.tipo==='mapa' && b.lat!=null && b.lng!=null);
   const tieneVideoORedes = planos.some(b=>
     (b.tipo==='video' && b.url) ||
     (b.tipo==='redes' && ['whatsapp','instagram','tiktok','facebook','telegram','youtube','correo'].some(k=>(b[k]||'').trim()))
   );
+  const menionaParticipantes = /particip|colabor/.test(sinAcentos(textoCompleto));
+
   const items = [
     {ok:tieneTexto, label:'Texto con información (mínimo un párrafo)', req:true},
+    {ok:tieneTitulo, label:'Tiene un título (usa "Grande" o "Enorme", o el botón Título del editor)', req:true},
     {ok:tieneFoto, label:'Al menos una foto', req:true},
+    {ok:fotosConDescripcion, label:'Las fotos tienen descripción: qué es y quién la tomó o investigó', req:true},
     {ok:tieneMapa, label:'Ubicación marcada en el mapa', req:true},
+    {ok:menionaParticipantes, label:'Menciona quiénes participaron o colaboraron en el trabajo', req:true},
     {ok:tieneVideoORedes, label:'Video o redes sociales (si hiciste una entrevista)', req:false},
   ];
   const completos = items.filter(i=>i.req).every(i=>i.ok);
@@ -2062,13 +2080,20 @@ function pintarRubrica(){
 
   cont.innerHTML = `
     <div class="card rubrica-card" style="border-left:5px solid ${completos?'#5c8a5c':'var(--gold)'};margin:1em 0;">
-      <h3 style="margin:0 0 .5em;">✅ ¿Qué debe llevar para ser válida?</h3>
-      <ul style="list-style:none;padding:0;margin:0 0 .3em;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.5em;">
+        <h3 style="margin:0;">✅ ¿Qué debe llevar para ser válida?</h3>
+        <button class="btn small outline" id="toggleRubricaBtn" type="button">${rubricaVisible?'Ocultar':'Mostrar'}</button>
+      </div>
+      ${rubricaVisible ? `
+      <ul style="list-style:none;padding:0;margin:.5em 0 .3em;">
         ${items.map(i=>`<li style="margin:.2em 0;">${i.ok?'✅':'⬜'} ${escapeHtml(i.label)}${!i.req?' <span class="hint" style="margin:0;">(si aplica)</span>':''}</li>`).join('')}
       </ul>
-      ${entregaHTML}
+      <p class="hint" style="margin:0;">💡 Si el tema tiene varias partes, usa subtítulos (botón "Título" del editor en cada parte) para organizar mejor tu texto.</p>
+      ${entregaHTML}` : ''}
     </div>
   `;
+  const toggleBtn = document.getElementById('toggleRubricaBtn');
+  if(toggleBtn) toggleBtn.onclick = ()=>{ rubricaVisible = !rubricaVisible; pintarRubrica(); };
 }
 function pintarMiTarea(){
   document.getElementById('modoEditarBtn').classList.toggle('active', miTareaModo==='editar');
@@ -2355,6 +2380,15 @@ function pintarBloquesList(){
       pintarBloquesList();
     };
   });
+  cont.querySelectorAll('[data-galeria-caption]').forEach(input=>{
+    input.onchange = ()=>{
+      const u = ubicarBloque(input.dataset.galeriaCaption);
+      if(u && u.bloque.fotos[+input.dataset.galeriaCaptionFi]){
+        u.bloque.fotos[+input.dataset.galeriaCaptionFi].caption = input.value;
+        pintarRubrica();
+      }
+    };
+  });
 
   /* selector de ubicación en el mapa (por cada bloque de tipo "mapa") */
   miTareaBloques.forEach(fila=>fila.columnas.forEach(c=>c.bloques.forEach(b=>{ if(b.tipo==='mapa') initMapaPicker(b); })));
@@ -2576,7 +2610,7 @@ function bloqueCamposHTML(b,i){
           <button type="button" data-cmd="mayusculas" title="Poner en MAYÚSCULAS el texto seleccionado">MAYÚS.</button>
           <button type="button" data-cmd="minusculas" title="Poner en minúsculas el texto seleccionado">minús.</button>
         </div>
-        <div class="word-page" contenteditable="true" data-richtext="${i}" data-placeholder="Escribe aquí o pega texto de Word…">${b.html ? sanitizarHTML(b.html) : escapeHtml(b.texto||'').replace(/\n/g,'<br>')}</div>
+        <div class="word-page" contenteditable="true" data-richtext="${i}" data-placeholder="Escribe aquí o pega texto de Word…" style="font-size:${TAMANOS_TEXTO[b.tamano]||TAMANOS_TEXTO.normal};color:${escapeHtml(b.color||'#2b2620')};font-weight:${b.negrita?'700':'400'};font-style:${b.cursiva?'italic':'normal'};text-align:${({izquierda:'left',centro:'center',derecha:'right'})[b.alineacion]||'left'};">${b.html ? sanitizarHTML(b.html) : escapeHtml(b.texto||'').replace(/\n/g,'<br>')}</div>
       </div>
     `;
   }
@@ -2606,8 +2640,13 @@ function bloqueCamposHTML(b,i){
         <span class="foto-status hint" style="margin:0;"></span>
       </div>
       ${b.fotos && b.fotos.length ? `<div class="pg-galeria-grid">${b.fotos.map((f,fi)=>`
-        <div class="pg-galeria-item"><img src="${escapeHtml(f.url)}" style="cursor:zoom-in;" onclick="abrirImagenCompleta(this.src)"><button type="button" data-galeria-del="${i}" data-galeria-fi="${fi}" title="Quitar">✕</button></div>
+        <div class="pg-galeria-item">
+          <img src="${escapeHtml(f.url)}" style="cursor:zoom-in;" onclick="abrirImagenCompleta(this.src)">
+          <button type="button" data-galeria-del="${i}" data-galeria-fi="${fi}" title="Quitar">✕</button>
+          <input class="pg-galeria-caption" data-galeria-caption="${i}" data-galeria-caption-fi="${fi}" value="${escapeHtml(f.caption||'')}" placeholder="¿Qué es? ¿Quién la tomó?">
+        </div>
       `).join('')}</div>` : `<p class="hint" style="margin:0;">Todavía no has agregado fotos. Puedes elegir varias a la vez.</p>`}
+      <p class="hint" style="margin:.4em 0 0;">Escribe debajo de cada foto qué es y quién la tomó o investigó.</p>
     `;
   }
   if(b.tipo==='video'){
