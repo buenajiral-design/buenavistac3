@@ -1533,6 +1533,15 @@ function sanitizarHTML(html){
   const permitidas=new Set(['B','STRONG','I','EM','U','S','BR','P','DIV','UL','OL','LI','H2','H3','BLOCKQUOTE','SPAN']);
   [...tpl.content.querySelectorAll('*')].forEach(el=>{
     if(!permitidas.has(el.tagName)){ el.replaceWith(...el.childNodes); return; }
+    // Algunos navegadores centran/alinean usando el atributo antiguo "align"
+    // en vez de un estilo. Lo convertimos a text-align ANTES de borrar
+    // atributos, para no perder la alineación que el estudiante ya puso.
+    if(el.hasAttribute('align')){
+      const alinAttr = el.getAttribute('align');
+      if(['left','center','right','justify'].includes(alinAttr) && !el.style.textAlign){
+        el.style.textAlign = alinAttr;
+      }
+    }
     [...el.attributes].forEach(a=>{
       if(a.name!=='style') el.removeAttribute(a.name);
     });
@@ -2112,11 +2121,12 @@ function pintarMiTarea(){
     <div class="row-actions" style="margin:1em 0 1.6em;">
       <button class="btn gold" id="agregarFilaBtn" type="button">＋ Agregar columnas</button>
     </div>
-    <div class="row-actions">
+    <div class="row-actions" style="align-items:center;">
       <button class="btn outline" id="mejorarIABtn" type="button">✨ Mejorar con IA</button>
       <button class="btn outline" id="guardarBorradorBtn">💾 Guardar borrador</button>
       <button class="btn gold" id="enviarRevisionBtn">📩 Enviar para revisión</button>
       ${session.tarea && session.tarea.id ? `<button class="btn outline" id="verHistorialBtn">🕓 Historial de versiones</button>` : ''}
+      <span id="autoguardadoEstado" class="hint" style="margin:0;"></span>
     </div>
 
     <!-- elegir 1 o 2 columnas al crear una fila nueva -->
@@ -2210,6 +2220,7 @@ function pintarBloquesList(){
   const cont = document.getElementById('bloquesList');
   if(!cont) return;
   pintarRubrica();
+  programarAutoguardado();
 
   const bloqueCardHTML = (b, colBloques) => {
     const idx = colBloques.findIndex(x=>x.id===b.id);
@@ -2299,6 +2310,7 @@ function pintarBloquesList(){
       const id = input.closest('.bloque-editor').dataset.blockid;
       const u = ubicarBloque(id);
       if(u) u.bloque[input.dataset.campo] = input.type==='checkbox' ? input.checked : input.value;
+      programarAutoguardado();
     };
     input.oninput = actualizar;
     if(input.tagName==='SELECT' || input.type==='color' || input.type==='checkbox'){
@@ -2312,16 +2324,22 @@ function pintarBloquesList(){
       const u=ubicarBloque(editor.dataset.richtext); if(!u) return;
       u.bloque.html=sanitizarHTML(editor.innerHTML);
       u.bloque.texto=editor.innerText.trim();
-      // Cuando el navegador aplica la alineación directo a la cajita, o a un
-      // elemento adentro (como el título), la guardamos igual en el bloque
-      // para que no se pierda al redibujar por otro cambio (color, tamaño, etc.)
+      // Cuando el navegador aplica la alineación directo a la cajita, a un
+      // elemento adentro (como el título), o usando el atributo antiguo
+      // "align", la guardamos igual en el bloque para que no se pierda al
+      // redibujar por otro cambio (color, tamaño, etc.)
       const alineacionMap = {left:'izquierda', center:'centro', right:'derecha'};
       let alineacionDetectada = alineacionMap[editor.style.textAlign];
       if(!alineacionDetectada){
         const elAlineado = editor.querySelector('[style*="text-align"]');
         if(elAlineado) alineacionDetectada = alineacionMap[elAlineado.style.textAlign];
       }
+      if(!alineacionDetectada){
+        const elAlign = editor.querySelector('[align]') || (editor.hasAttribute('align') ? editor : null);
+        if(elAlign) alineacionDetectada = alineacionMap[elAlign.getAttribute('align')];
+      }
       if(alineacionDetectada) u.bloque.alineacion = alineacionDetectada;
+      programarAutoguardado();
     };
     editor.oninput=guardar; editor.onblur=guardar;
     editor.onpaste=()=>setTimeout(guardar,0);
@@ -2399,6 +2417,7 @@ function pintarBloquesList(){
       if(u && u.bloque.fotos[+input.dataset.galeriaCaptionFi]){
         u.bloque.fotos[+input.dataset.galeriaCaptionFi].caption = input.value;
         pintarRubrica();
+        programarAutoguardado();
       }
     };
   });
@@ -2711,6 +2730,42 @@ function todosLosBloquesPlanos(){
   return out;
 }
 
+/* ---- Autoguardado: guarda solo, sin recargar toda la página, mientras el
+   estudiante trabaja, para que nunca se pierda lo que ha escrito. ---- */
+let autoguardarTimeoutId = null;
+let autoguardarEnCurso = false;
+let autoguardarPendienteDeNuevo = false;
+function programarAutoguardado(){
+  if(!session || session.role!=='student' || !session.tarea) return;
+  const estadoEl = document.getElementById('autoguardadoEstado');
+  if(estadoEl) estadoEl.textContent = '✏️ Escribiendo…';
+  if(autoguardarTimeoutId) clearTimeout(autoguardarTimeoutId);
+  autoguardarTimeoutId = setTimeout(autoguardarMiTarea, 1200);
+}
+async function autoguardarMiTarea(){
+  if(!session || session.role!=='student' || !session.tarea) return;
+  if(autoguardarEnCurso){ autoguardarPendienteDeNuevo = true; return; }
+  autoguardarEnCurso = true;
+  const tarea = session.tarea;
+  const estadoEl = document.getElementById('autoguardadoEstado');
+  if(estadoEl) estadoEl.textContent = '💾 Guardando…';
+  const planos = todosLosBloquesPlanos();
+  const resumen = planos.filter(b=>b.tipo==='texto').map(b=>b.texto).filter(Boolean).join('\n\n');
+  const fotoPortada = (planos.find(b=>b.tipo==='foto' && b.url)||{}).url || '';
+  const {error} = await db.rpc('bv_guardar_mi_tarea', {
+    p_nombre: session.nombre, p_cedula: session.cedula,
+    p_seccion_id: tarea.seccion_id, p_tema: tarea.tema, p_semana: tarea.semana||1,
+    p_bloques: miTareaBloques, p_resumen: resumen, p_foto_portada: fotoPortada,
+    p_enviar: false
+  });
+  autoguardarEnCurso = false;
+  const estadoEl2 = document.getElementById('autoguardadoEstado');
+  if(estadoEl2){
+    if(error) estadoEl2.innerHTML = `⚠️ No se pudo guardar automáticamente: ${escapeHtml(error.message)}`;
+    else estadoEl2.textContent = `✅ Guardado automáticamente · ${new Date().toLocaleTimeString('es-PA',{hour:'2-digit',minute:'2-digit'})}`;
+  }
+  if(autoguardarPendienteDeNuevo){ autoguardarPendienteDeNuevo = false; programarAutoguardado(); }
+}
 async function guardarMiTarea(enviar){
   const msg = document.getElementById('tareaMsg');
   const tarea = session.tarea;
