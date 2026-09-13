@@ -3297,39 +3297,80 @@ async function renderAdminMensajes(){
 }
 
 /* ---- tab: tareas individuales ---- */
+let tareasCache = [];
+let tareasFiltro = '';
 async function renderAdminTareas(){
   const body = document.getElementById('adminBody');
   body.innerHTML = `
     <div class="row-actions" style="margin-bottom:1.2em;">
       <button class="btn gold" id="nuevaTareaBtn">+ Asignar una tarea</button>
     </div>
-    <p class="hint">Cada tarea le da a un estudiante una página propia y bloqueada: solo él la puede ver y editar (texto, fotos, video, mapa y redes).</p>
+    <p class="hint">Cada tarea le da a un estudiante una página propia y bloqueada: solo él la puede ver y editar (texto, fotos, video, mapa y redes). Aquí abajo están agrupadas por tema para que sea fácil ver quién tiene qué y agregar más estudiantes al mismo tema.</p>
+    <div class="field" style="max-width:380px;">
+      <label>Buscar por tema o estudiante</label>
+      <input id="buscarTareaInput" placeholder="Ej. Alto de La Gloria, o ABREGO" value="${escapeHtml(tareasFiltro)}">
+    </div>
     <div id="listaTareas">Cargando…</div>
   `;
   document.getElementById('nuevaTareaBtn').onclick = ()=> openTareaModal();
+  document.getElementById('buscarTareaInput').oninput = (e)=>{ tareasFiltro = e.target.value.trim().toLowerCase(); pintarTareasAgrupadas(); };
   cargarTareas();
 }
 async function cargarTareas(){
   const cont = document.getElementById('listaTareas');
+  cont.innerHTML = 'Cargando…';
   const {data, error} = await db.rpc('bv_admin_listar_tareas', adminCreds());
   if(error){ cont.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
-  if(!data || data.length===0){ cont.innerHTML = '<div class="empty">Todavía no has asignado ninguna tarea individual.</div>'; return; }
+  tareasCache = data || [];
+  pintarTareasAgrupadas();
+}
+function pintarTareasAgrupadas(){
+  const cont = document.getElementById('listaTareas');
+  if(!tareasCache.length){ cont.innerHTML = '<div class="empty">Todavía no has asignado ninguna tarea individual.</div>'; return; }
+
+  const filtro = tareasFiltro;
+  const filtradas = !filtro ? tareasCache : tareasCache.filter(t=>
+    String(t.tema||'').toLowerCase().includes(filtro) || String(t.nombre||'').toLowerCase().includes(filtro)
+  );
+  if(!filtradas.length){ cont.innerHTML = '<div class="empty">Ningún tema o estudiante coincide con la búsqueda.</div>'; return; }
+
+  const grupos = new Map();
+  filtradas.forEach(t=>{
+    const key = `${t.seccion_id}||${t.tema}`;
+    if(!grupos.has(key)) grupos.set(key, []);
+    grupos.get(key).push(t);
+  });
+  const gruposOrdenados = [...grupos.entries()].sort((a,b)=> a[0].localeCompare(b[0],'es'));
+
   const estadoLabel = {borrador:'Borrador', pendiente:'En revisión', publicado:'Publicado', devuelto:'Devuelto'};
   const estadoClase = {borrador:'status-pending', pendiente:'status-pending', publicado:'status-published', devuelto:'status-rejected'};
-  cont.innerHTML = `<table><thead><tr><th>Estudiante</th><th>Sección</th><th>Tema</th><th>Estado</th><th></th></tr></thead><tbody>${data.map(t=>{
-    const s = SECTIONS.find(x=>x.id===t.seccion_id);
-    return `<tr>
-      <td>${escapeHtml(t.nombre)}<br><span class="hint" style="margin:0;">${SALON_LABEL[t.salon]||t.salon}</span></td>
-      <td>${s?s.icon+' '+s.name:t.seccion_id}</td>
-      <td>${escapeHtml(t.tema).replace(/ • /g,'<br>• ')}</td>
-      <td><span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoLabel[t.estado]||t.estado}</span></td>
-      <td style="white-space:nowrap;">
-        <button class="btn small outline" data-ver='${escapeHtml(JSON.stringify(t.bloques||[]))}'>Ver</button>
-        <button class="btn small outline" data-editar="${t.estudiante_id}" data-seccion="${t.seccion_id}" data-tema="${escapeHtml(t.tema)}">Cambiar</button>
-        <button class="btn small danger" data-quitar="${t.estudiante_id}" data-seccionq="${t.seccion_id}">Quitar</button>
-      </td>
-    </tr>`;
-  }).join('')}</tbody></table>`;
+
+  cont.innerHTML = gruposOrdenados.map(([key, items])=>{
+    const [seccionId, tema] = key.split('||');
+    const s = SECTIONS.find(x=>x.id===seccionId);
+    return `
+      <div class="card" style="margin-bottom:1em;">
+        <div class="tarea-head">
+          <h3 style="margin:0;">${s?s.icon:'🎯'} ${escapeHtml(tema).replace(/ • /g,' · ')}</h3>
+          <button class="btn small outline" data-agregar-tema="${escapeHtml(seccionId)}" data-agregar-tema-nombre="${escapeHtml(tema)}">+ Agregar estudiante aquí</button>
+        </div>
+        <p class="hint" style="margin:0 0 .8em;">${s?s.name:seccionId} · ${items.length} estudiante${items.length===1?'':'s'} en este tema</p>
+        <table><thead><tr><th>Estudiante</th><th>Estado</th><th></th></tr></thead><tbody>${items.map(t=>`
+          <tr>
+            <td>${escapeHtml(t.nombre)}<br><span class="hint" style="margin:0;">${SALON_LABEL[t.salon]||t.salon}</span></td>
+            <td><span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoLabel[t.estado]||t.estado}</span></td>
+            <td style="white-space:nowrap;">
+              <button class="btn small outline" data-ver='${escapeHtml(JSON.stringify(t.bloques||[]))}'>Ver</button>
+              <button class="btn small outline" data-editar="${t.estudiante_id}" data-seccion="${t.seccion_id}" data-tema="${escapeHtml(t.tema)}">Cambiar</button>
+              <button class="btn small danger" data-quitar="${t.estudiante_id}" data-seccionq="${t.seccion_id}">Quitar</button>
+            </td>
+          </tr>`).join('')}</tbody></table>
+      </div>`;
+  }).join('');
+
+  cont.querySelectorAll('[data-agregar-tema]').forEach(b=> b.onclick = ()=>{
+    openTareaModal({seccion_id:b.dataset.agregarTema, tema:b.dataset.agregarTemaNombre});
+  });
   cont.querySelectorAll('[data-ver]').forEach(b=> b.onclick = ()=>{
     const bloques = JSON.parse(b.getAttribute('data-ver'));
     const html = `
