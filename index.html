@@ -2309,6 +2309,11 @@ function pintarBloquesList(){
       const u=ubicarBloque(editor.dataset.richtext); if(!u) return;
       u.bloque.html=sanitizarHTML(editor.innerHTML);
       u.bloque.texto=editor.innerText.trim();
+      // Cuando el navegador aplica la alineación directo a la cajita (en vez de
+      // a un párrafo dentro), guardamos ese valor en el bloque para que no se
+      // pierda al redibujar por otro cambio (color, tamaño, etc.)
+      const alineacionMap = {left:'izquierda', center:'centro', right:'derecha'};
+      if(alineacionMap[editor.style.textAlign]) u.bloque.alineacion = alineacionMap[editor.style.textAlign];
     };
     editor.oninput=guardar; editor.onblur=guardar;
     editor.onpaste=()=>setTimeout(guardar,0);
