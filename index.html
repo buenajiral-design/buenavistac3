@@ -1183,11 +1183,9 @@ async function cargarListaParaLogin(){
   const salonSelect = document.getElementById('loginSalon');
   const nombreSelect = document.getElementById('loginNombre');
   try{
-    const response = await fetch('estudiantes.csv', {cache:'no-store'});
-    if(!response.ok) throw new Error('No se encontró la lista de estudiantes.');
-    const text = (await response.text()).replace(/^\uFEFF/, '');
-    listaLoginEstudiantes = text.split(/\r?\n/).slice(1).filter(Boolean).map(parseCSVLine)
-      .map(r=>({nombre:r[0], cedula:r[1], salon:r[2]}));
+    const {data, error} = await db.rpc('bv_listar_estudiantes_login');
+    if(error) throw error;
+    listaLoginEstudiantes = (data||[]).map(r=>({nombre:r.nombre, salon:r.salon}));
     const salones = [...new Set(listaLoginEstudiantes.map(e=>e.salon).filter(Boolean))]
       .sort((a,b)=>a.localeCompare(b, 'es', {numeric:true}));
     salonSelect.innerHTML = '<option value="">Selecciona tu grado y grupo</option>' +
@@ -3383,7 +3381,7 @@ function pintarTablaSemanal(){
                 <button class="btn small outline" data-editar-celda="${al.id}" data-semana="${n}" title="Clic para cambiar la tarea">
                   <span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoAbrev[t.estado]||t.estado}</span>
                 </button>
-                <button class="btn small outline" data-ver-celda='${escapeHtml(JSON.stringify(t.bloques||[]))}' data-ver-tema="${escapeHtml(t.tema)}" title="Ver lo que el estudiante ha hecho" style="padding:.2em .5em;line-height:1;">👁</button>
+                <button class="btn small outline" data-ver-celda='${escapeHtml(JSON.stringify({tema:t.tema, estado:t.estado, observacion:t.observacion, bloques:t.bloques||[]}))}' title="Ver la página que el estudiante está editando" style="padding:.2em .5em;line-height:1;">👁</button>
                 <button class="btn small danger" data-borrar-celda="${al.id}" data-semana="${n}" title="Quitar esta tarea" style="padding:.2em .5em;line-height:1;">✕</button>
               </div>
               <div class="hint" style="margin:.25em 0 0;max-width:130px;white-space:normal;">${escapeHtml(t.tema)}</div>
@@ -3403,10 +3401,7 @@ function pintarTablaSemanal(){
     };
   });
   cont.querySelectorAll('[data-ver-celda]').forEach(b=>{
-    b.onclick = ()=>{
-      const bloques = JSON.parse(b.getAttribute('data-ver-celda'));
-      abrirVistaPreviaTarea(b.dataset.verTema, bloques);
-    };
+    b.onclick = ()=> abrirVistaPreviaTarea(JSON.parse(b.getAttribute('data-ver-celda')));
   });
   cont.querySelectorAll('[data-editar-celda]').forEach(b=>{
     b.onclick = ()=>{
@@ -3458,19 +3453,31 @@ async function cargarTareas(){
   if(tareasVista==='semanal') pintarTablaSemanal();
   else pintarTareasAgrupadas();
 }
-function abrirVistaPreviaTarea(tema, bloques){
-  const existente = document.getElementById('verTareaModal');
-  if(existente) existente.remove();
-  const html = `
-    <div class="modal-overlay open" id="verTareaModal">
-      <div class="modal" style="max-width:640px;">
-        <button class="modal-close" id="verTareaModalClose">×</button>
-        <h3>${tema ? escapeHtml(tema) : 'Vista previa'}</h3>
-        ${renderBloquesHTML(bloques) || '<div class="empty">Todavía no ha agregado nada.</div>'}
-      </div>
-    </div>`;
-  document.body.insertAdjacentHTML('beforeend', html);
-  document.getElementById('verTareaModalClose').onclick = ()=> document.getElementById('verTareaModal').remove();
+function abrirVistaPreviaTarea(t){
+  openModal('pgPreviewModal');
+  const frame = document.getElementById('pgPreviewFrame');
+  frame.classList.remove('movil');
+  document.getElementById('pgPreviewDesktop').classList.add('active');
+  document.getElementById('pgPreviewMovil').classList.remove('active');
+  const estadoLabel = {borrador:'Borrador', pendiente:'En revisión', publicado:'Publicado', devuelto:'Devuelto'};
+  const estadoColor = {borrador:'#e9dcb8', pendiente:'#e9dcb8', publicado:'#cfe4c9', devuelto:'#f1c7c7'};
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@700&family=Karla:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Karla',sans-serif;background:#F3EAD3;color:#2B2620;margin:0;padding:1.4em;}
+  h1{font-family:'Bitter',serif;font-size:1.5rem;margin:0 0 .3em;}
+  .pill{display:inline-block;padding:.2em .7em;border-radius:99px;font-size:.75rem;font-weight:700;background:${estadoColor[t.estado]||'#e9dcb8'};margin-left:.5em;vertical-align:middle;}
+  .obs{background:#f4dfa8;color:#6b4c0a;padding:.8em 1em;border-radius:6px;margin:.8em 0;}
+  .video-wrap{position:relative;width:100%;padding-top:56.25%;border-radius:4px;overflow:hidden;margin-bottom:1em;background:#000;}
+  .video-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  @media(max-width:520px){ div[style*="grid-template-columns"]{grid-template-columns:1fr !important;} }
+</style></head><body>
+<h1>${escapeHtml(t.tema||'')}<span class="pill">${estadoLabel[t.estado]||t.estado||''}</span></h1>
+${t.observacion ? `<div class="obs">📝 Observación del profesor(a): ${escapeHtml(t.observacion)}</div>` : ''}
+${renderBloquesHTML(t.bloques||[]) || '<p style="opacity:.6;">Todavía no ha agregado nada.</p>'}
+</body></html>`;
+  frame.srcdoc = html;
 }
 function pintarTareasAgrupadas(){
   const cont = document.getElementById('listaTareas');
@@ -3509,7 +3516,7 @@ function pintarTareasAgrupadas(){
             <td>${t.semana||1}</td>
             <td><span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoLabel[t.estado]||t.estado}</span></td>
             <td style="white-space:nowrap;">
-              <button class="btn small outline" data-ver='${escapeHtml(JSON.stringify(t.bloques||[]))}'>Ver</button>
+              <button class="btn small outline" data-ver='${escapeHtml(JSON.stringify({tema:t.tema, estado:t.estado, observacion:t.observacion, bloques:t.bloques||[]}))}'>Ver</button>
               <button class="btn small outline" data-editar="${t.estudiante_id}" data-seccion="${t.seccion_id}" data-tema="${escapeHtml(t.tema)}" data-semana="${t.semana||1}">Cambiar</button>
               <button class="btn small danger" data-quitar="${t.estudiante_id}" data-seccionq="${t.seccion_id}" data-semanaq="${t.semana||1}">Quitar</button>
             </td>
@@ -3521,8 +3528,7 @@ function pintarTareasAgrupadas(){
     openTareaModal({seccion_id:b.dataset.agregarTema, tema:b.dataset.agregarTemaNombre});
   });
   cont.querySelectorAll('[data-ver]').forEach(b=> b.onclick = ()=>{
-    const bloques = JSON.parse(b.getAttribute('data-ver'));
-    abrirVistaPreviaTarea('', bloques);
+    abrirVistaPreviaTarea(JSON.parse(b.getAttribute('data-ver')));
   });
   cont.querySelectorAll('[data-editar]').forEach(b=> b.onclick = ()=>{
     openTareaModal({estudiante_id:b.dataset.editar, seccion_id:b.dataset.seccion, tema:b.dataset.tema, semana:Number(b.dataset.semana)||1});
