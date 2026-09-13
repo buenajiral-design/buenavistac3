@@ -1921,6 +1921,7 @@ async function renderMiTarea(){
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>Mi tarea</h2><div class="rule"></div></div>
     <div class="tarea-head">
       <h3 style="margin:0;">${escapeHtml(tarea.tema)} ${pill}</h3>
+      <span class="hint" style="margin:0;">Semana ${tarea.semana||1}</span>
     </div>
     <p class="section-desc">Sección: ${escapeHtml(s.name)}. ${tarea.seccion_id==='negocios' ? '<strong>Si te asignaron varios negocios, crea una fila o grupo separado para cada uno</strong> y agrega su nombre, tipo, información, fotos, teléfono y un bloque de ubicación. Cada punto aparecerá automáticamente en el mapa general cuando el profesor publique tu trabajo.' : 'Agrega texto, fotos, un video, la ubicación en el mapa y tus redes sociales si hiciste una entrevista.'}</p>
     ${tarea.seccion_id==='escuelas' ? `<div class="card" style="border-left:5px solid var(--gold);"><h3>🏫 Datos del centro educativo</h3><div class="field"><label>Selecciona el tipo de centro</label><select id="tipoCentroEducativo"><option value="">Selecciona una opción…</option>${TIPOS_CENTRO_EDUCATIVO.map(t=>`<option value="${escapeHtml(t)}" ${t===tipoCentroGuardado?'selected':''}>${escapeHtml(t)}</option>`).join('')}</select></div><p class="hint" style="margin:0;"><strong>Investiga:</strong> nombre oficial; si es público o privado; categoría; comunidad y dirección; historia y fundación; director o propietario; niveles; cantidad aproximada de estudiantes; teléfono y horario; fotografías antiguas y actuales; ubicación en el mapa y fuente.</p></div>` : ''}
@@ -2519,7 +2520,7 @@ async function guardarMiTarea(enviar){
   msg.innerHTML = `<div class="msg">Guardando…</div>`;
   const {error} = await db.rpc('bv_guardar_mi_tarea', {
     p_nombre: session.nombre, p_cedula: session.cedula,
-    p_seccion_id: tarea.seccion_id, p_tema: tarea.tema,
+    p_seccion_id: tarea.seccion_id, p_tema: tarea.tema, p_semana: tarea.semana||1,
     p_bloques: miTareaBloques, p_resumen: resumen, p_foto_portada: fotoPortada,
     p_enviar: enviar
   });
@@ -3299,30 +3300,112 @@ async function renderAdminMensajes(){
 /* ---- tab: tareas individuales ---- */
 let tareasCache = [];
 let tareasFiltro = '';
+let tareasVista = 'tema'; // 'tema' | 'semanal'
+let tablaSemanalSeccion = SECTIONS[0].id;
 async function renderAdminTareas(){
   const body = document.getElementById('adminBody');
   body.innerHTML = `
     <div class="row-actions" style="margin-bottom:1.2em;">
       <button class="btn gold" id="nuevaTareaBtn">+ Asignar una tarea</button>
+      <button class="btn small ${tareasVista==='tema'?'':'outline'}" id="vistaTemaBtn" type="button">📋 Por tema</button>
+      <button class="btn small ${tareasVista==='semanal'?'':'outline'}" id="vistaSemanalBtn" type="button">🗓️ Tabla semanal</button>
     </div>
-    <p class="hint">Cada tarea le da a un estudiante una página propia y bloqueada: solo él la puede ver y editar (texto, fotos, video, mapa y redes). Aquí abajo están agrupadas por tema para que sea fácil ver quién tiene qué y agregar más estudiantes al mismo tema.</p>
-    <div class="field" style="max-width:380px;">
-      <label>Buscar por tema o estudiante</label>
-      <input id="buscarTareaInput" placeholder="Ej. Alto de La Gloria, o ABREGO" value="${escapeHtml(tareasFiltro)}">
-    </div>
-    <div id="listaTareas">Cargando…</div>
+    <p class="hint">Cada tarea le da a un estudiante una página propia y bloqueada: solo él la puede ver y editar (texto, fotos, video, mapa y redes).</p>
+    <div id="tareasVistaBody"></div>
   `;
   document.getElementById('nuevaTareaBtn').onclick = ()=> openTareaModal();
-  document.getElementById('buscarTareaInput').oninput = (e)=>{ tareasFiltro = e.target.value.trim().toLowerCase(); pintarTareasAgrupadas(); };
-  cargarTareas();
+  document.getElementById('vistaTemaBtn').onclick = ()=>{ tareasVista='tema'; renderAdminTareas(); };
+  document.getElementById('vistaSemanalBtn').onclick = ()=>{ tareasVista='semanal'; renderAdminTareas(); };
+  if(tareasVista==='semanal'){ renderTablaSemanal(); }
+  else{
+    document.getElementById('tareasVistaBody').innerHTML = `
+      <p class="hint">Agrupadas por tema, para que sea fácil ver quién tiene qué y agregar más estudiantes al mismo tema.</p>
+      <div class="field" style="max-width:380px;">
+        <label>Buscar por tema o estudiante</label>
+        <input id="buscarTareaInput" placeholder="Ej. Alto de La Gloria, o ABREGO" value="${escapeHtml(tareasFiltro)}">
+      </div>
+      <div id="listaTareas">Cargando…</div>
+    `;
+    document.getElementById('buscarTareaInput').oninput = (e)=>{ tareasFiltro = e.target.value.trim().toLowerCase(); pintarTareasAgrupadas(); };
+    cargarTareas();
+  }
+}
+
+/* ---- tabla semanal: estudiantes en filas, semana 1-7 en columnas ---- */
+async function renderTablaSemanal(){
+  const cont = document.getElementById('tareasVistaBody');
+  const secOptions = SECTIONS.map(s=>`<option value="${s.id}" ${s.id===tablaSemanalSeccion?'selected':''}>${s.icon} ${s.name}</option>`).join('');
+  cont.innerHTML = `
+    <div class="field" style="max-width:380px;">
+      <label>Sección</label>
+      <select id="tablaSemanalSeccionSelect">${secOptions}</select>
+    </div>
+    <div id="tablaSemanalCont">Cargando…</div>
+  `;
+  document.getElementById('tablaSemanalSeccionSelect').onchange = (e)=>{ tablaSemanalSeccion = e.target.value; pintarTablaSemanal(); };
+  if(!estudiantesCache.length){
+    const {data} = await db.rpc('bv_admin_listar_estudiantes', adminCreds());
+    estudiantesCache = data || [];
+  }
+  if(!tareasCache.length){
+    const {data, error} = await db.rpc('bv_admin_listar_tareas', adminCreds());
+    if(!error) tareasCache = data || [];
+  }
+  pintarTablaSemanal();
+}
+function pintarTablaSemanal(){
+  const cont = document.getElementById('tablaSemanalCont');
+  if(!cont) return;
+  const seccionId = tablaSemanalSeccion;
+  const estadoAbrev = {borrador:'Borr.', pendiente:'Rev.', publicado:'Pub.', devuelto:'Dev.'};
+  const estadoClase = {borrador:'status-pending', pendiente:'status-pending', publicado:'status-published', devuelto:'status-rejected'};
+  const alumnos = estudiantesCache
+    .filter(e=> !e.secciones || !e.secciones.length || e.secciones.includes(seccionId))
+    .sort((a,b)=> String(a.salon).localeCompare(String(b.salon),'es',{numeric:true}) || a.nombre.localeCompare(b.nombre,'es'));
+  if(!alumnos.length){ cont.innerHTML = '<div class="empty">No hay estudiantes con esta sección habilitada.</div>'; return; }
+
+  const porEstudianteSemana = new Map(); // key `${estudiante_id}||${semana}` -> tarea
+  tareasCache.filter(t=>t.seccion_id===seccionId).forEach(t=>{
+    porEstudianteSemana.set(`${t.estudiante_id}||${t.semana||1}`, t);
+  });
+
+  cont.innerHTML = `
+    <div style="overflow-x:auto;">
+    <table><thead><tr><th>Estudiante</th>${[1,2,3,4,5,6,7].map(n=>`<th>Sem. ${n}</th>`).join('')}</tr></thead>
+    <tbody>${alumnos.map(al=>`
+      <tr>
+        <td>${escapeHtml(al.nombre)}<br><span class="hint" style="margin:0;">${SALON_LABEL[al.salon]||al.salon}</span></td>
+        ${[1,2,3,4,5,6,7].map(n=>{
+          const t = porEstudianteSemana.get(`${al.id}||${n}`);
+          if(t){
+            return `<td><button class="btn small outline" data-celda="${al.id}" data-semana="${n}" title="${escapeHtml(t.tema)}">
+              <span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoAbrev[t.estado]||t.estado}</span>
+            </button></td>`;
+          }
+          return `<td><button class="btn small" data-celda="${al.id}" data-semana="${n}" style="opacity:.55;">+</button></td>`;
+        }).join('')}
+      </tr>`).join('')}
+    </tbody></table>
+    </div>
+    <p class="hint" style="margin-top:.8em;">Haz clic en una celda para asignar, cambiar o ver esa semana. Los botones con "+" están libres.</p>
+  `;
+  cont.querySelectorAll('[data-celda]').forEach(b=>{
+    b.onclick = ()=>{
+      const estId = b.dataset.celda, semana = Number(b.dataset.semana);
+      const t = porEstudianteSemana.get(`${estId}||${semana}`);
+      if(t) openTareaModal({estudiante_id:estId, seccion_id:seccionId, tema:t.tema, semana});
+      else openTareaModal({estudiante_id:estId, seccion_id:seccionId, semana});
+    };
+  });
 }
 async function cargarTareas(){
   const cont = document.getElementById('listaTareas');
-  cont.innerHTML = 'Cargando…';
+  if(cont) cont.innerHTML = 'Cargando…';
   const {data, error} = await db.rpc('bv_admin_listar_tareas', adminCreds());
-  if(error){ cont.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  if(error){ if(cont) cont.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
   tareasCache = data || [];
-  pintarTareasAgrupadas();
+  if(tareasVista==='semanal') pintarTablaSemanal();
+  else pintarTareasAgrupadas();
 }
 function pintarTareasAgrupadas(){
   const cont = document.getElementById('listaTareas');
@@ -3355,14 +3438,15 @@ function pintarTareasAgrupadas(){
           <button class="btn small outline" data-agregar-tema="${escapeHtml(seccionId)}" data-agregar-tema-nombre="${escapeHtml(tema)}">+ Agregar estudiante aquí</button>
         </div>
         <p class="hint" style="margin:0 0 .8em;">${s?s.name:seccionId} · ${items.length} estudiante${items.length===1?'':'s'} en este tema</p>
-        <table><thead><tr><th>Estudiante</th><th>Estado</th><th></th></tr></thead><tbody>${items.map(t=>`
+        <table><thead><tr><th>Estudiante</th><th>Semana</th><th>Estado</th><th></th></tr></thead><tbody>${items.map(t=>`
           <tr>
             <td>${escapeHtml(t.nombre)}<br><span class="hint" style="margin:0;">${SALON_LABEL[t.salon]||t.salon}</span></td>
+            <td>${t.semana||1}</td>
             <td><span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoLabel[t.estado]||t.estado}</span></td>
             <td style="white-space:nowrap;">
               <button class="btn small outline" data-ver='${escapeHtml(JSON.stringify(t.bloques||[]))}'>Ver</button>
-              <button class="btn small outline" data-editar="${t.estudiante_id}" data-seccion="${t.seccion_id}" data-tema="${escapeHtml(t.tema)}">Cambiar</button>
-              <button class="btn small danger" data-quitar="${t.estudiante_id}" data-seccionq="${t.seccion_id}">Quitar</button>
+              <button class="btn small outline" data-editar="${t.estudiante_id}" data-seccion="${t.seccion_id}" data-tema="${escapeHtml(t.tema)}" data-semana="${t.semana||1}">Cambiar</button>
+              <button class="btn small danger" data-quitar="${t.estudiante_id}" data-seccionq="${t.seccion_id}" data-semanaq="${t.semana||1}">Quitar</button>
             </td>
           </tr>`).join('')}</tbody></table>
       </div>`;
@@ -3385,11 +3469,11 @@ function pintarTareasAgrupadas(){
     document.getElementById('verTareaModalClose').onclick = ()=> document.getElementById('verTareaModal').remove();
   });
   cont.querySelectorAll('[data-editar]').forEach(b=> b.onclick = ()=>{
-    openTareaModal({estudiante_id:b.dataset.editar, seccion_id:b.dataset.seccion, tema:b.dataset.tema});
+    openTareaModal({estudiante_id:b.dataset.editar, seccion_id:b.dataset.seccion, tema:b.dataset.tema, semana:Number(b.dataset.semana)||1});
   });
   cont.querySelectorAll('[data-quitar]').forEach(b=> b.onclick = async ()=>{
     if(!confirm('¿Quitarle esta tarea al estudiante?')) return;
-    await db.rpc('bv_admin_quitar_tarea', {...adminCreds(), p_estudiante_id:b.dataset.quitar, p_seccion_id:b.dataset.seccionq});
+    await db.rpc('bv_admin_quitar_tarea', {...adminCreds(), p_estudiante_id:b.dataset.quitar, p_seccion_id:b.dataset.seccionq, p_semana:Number(b.dataset.semanaq)||1});
     cargarTareas();
   });
 }
@@ -3408,7 +3492,7 @@ async function openTareaModal(actual){
     <div class="modal-overlay open" id="tareaModal">
       <div class="modal">
         <button class="modal-close" id="tareaModalClose">×</button>
-        <h3>${actual?'Cambiar tarea':'Asignar una tarea'}</h3>
+        <h3>${actual&&actual.tema?'Cambiar tarea':'Asignar una tarea'}</h3>
         <div id="tareaModalMsg"></div>
         <div class="field"><label>Sección</label><select id="tSeccion">${secOptions}</select></div>
         <div class="field" id="tTemaSelectWrap"><label>Tema específico</label><select id="tTemaSelect"></select></div>
@@ -3420,6 +3504,7 @@ async function openTareaModal(actual){
           <label style="margin-top:.8em;">Negocios específicos (uno por línea)</label>
           <textarea id="tNegociosNombres" rows="5" placeholder="Restaurante El Buen Sabor&#10;Restaurante Delicias de Buena Vista&#10;Minisúper La Esperanza"></textarea>
         </div>
+        <div class="field"><label>Semana</label><select id="tSemana">${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${actual&&Number(actual.semana)===n?'selected':(!actual&&n===1?'selected':'')}>Semana ${n}</option>`).join('')}</select></div>
         <div class="field"><label>Grado y grupo</label><select id="tSalon">${salonOptions}</select></div>
         <div class="field"><label>Estudiante</label><select id="tEstudiante"></select></div>
         <button class="btn" id="guardarTareaBtn">Guardar</button>
@@ -3442,8 +3527,8 @@ async function openTareaModal(actual){
     document.getElementById('tTemaSelectWrap').style.display=esNegocios?'none':'';
     document.getElementById('tNegociosWrap').style.display=esNegocios?'':'none';
     temaSelect.innerHTML = temas.map(t=>`<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('') + `<option value="__otro__">Otro (escribir)…</option>`;
-    if(actual && actual.seccion_id===secSelect.value && temas.includes(actual.tema)) temaSelect.value = actual.tema;
-    else if(actual && actual.seccion_id===secSelect.value){ temaSelect.value='__otro__'; }
+    if(actual && actual.tema && actual.seccion_id===secSelect.value && temas.includes(actual.tema)) temaSelect.value = actual.tema;
+    else if(actual && actual.tema && actual.seccion_id===secSelect.value){ temaSelect.value='__otro__'; }
     document.getElementById('tTemaCustomWrap').style.display = !esNegocios && temaSelect.value==='__otro__' ? '' : 'none';
     if(temaSelect.value==='__otro__' && actual) document.getElementById('tTemaCustom').value = actual.tema;
     if(esNegocios && actual && actual.seccion_id==='negocios'){
@@ -3469,9 +3554,10 @@ async function openTareaModal(actual){
     }else{
       tema=temaSelect.value==='__otro__' ? document.getElementById('tTemaCustom').value.trim() : temaSelect.value;
     }
+    const semana = Number(document.getElementById('tSemana').value)||1;
     const msg = document.getElementById('tareaModalMsg');
     if(!estudianteId || !seccionId || !tema){ msg.innerHTML = '<div class="msg error">Completa estudiante, sección y tema.</div>'; return; }
-    const {error} = await db.rpc('bv_admin_asignar_tarea', {...adminCreds(), p_estudiante_id:estudianteId, p_seccion_id:seccionId, p_tema:tema});
+    const {error} = await db.rpc('bv_admin_asignar_tarea', {...adminCreds(), p_estudiante_id:estudianteId, p_seccion_id:seccionId, p_tema:tema, p_semana:semana});
     if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
     document.getElementById('tareaModal').remove();
     cargarTareas();
