@@ -1,0 +1,77 @@
+BUENA VISTA — PUNTOS GUARDADOS EN GOOGLE
+
+ARCHIVOS PARA GITHUB
+Reemplaza index.html en la raíz de tu repositorio.
+Agrega la carpeta google completa en la misma raíz.
+El resto del proyecto se incluye sin cambios. No necesitas ejecutar SQL.
+En el Panel del profesor aparecerá «Puntos y Google».
+
+ACTIVAR UNA VEZ CON TU CUENTA
+1. Inicia sesión en Google con profesorsamuelortega@gmail.com.
+2. Crea una hoja NUEVA en https://sheets.google.com y llámala Buena Vista — Puntos.
+3. Abre Extensiones > Apps Script.
+4. Borra el código de ejemplo y pega TODO el contenido de GooglePuntos.gs.
+5. Guarda. Selecciona activarBuenaVista y pulsa Ejecutar. Autoriza tu cuenta.
+6. Regresa a la hoja y recarga. Aparecerá el menú Buena Vista.
+7. La pestaña Puntos contiene nombre, sección, coordenadas y enlace de Google Maps.
+   Estado muestra la última actualización correcta, cantidad y errores.
+   Se consulta cada cinco minutos; no es una copia instantánea.
+
+ALCANCE
+Los borradores se siguen guardando en Supabase. La copia de Google incluye
+solo puntos con coordenadas válidas de páginas publicadas por el profesor.
+Los enlaces sin coordenadas no pueden convertirse automáticamente en puntos.
+No copia cédulas, contraseñas ni listas de estudiantes.
+GooglePuntos.gs respeta los permisos públicos existentes (RLS).
+No pongas una clave service_role ni desactives RLS.
+Si hay error de permisos al activarlo, revisa las políticas de lectura pública
+de bv_contenido. No se ha probado la conexión real con tu cuenta desde aquí.
+
+La hoja Puntos es una copia sincronizada: se reemplaza con las publicaciones
+vigentes. Los cambios, puntos retirados y eliminados se reflejan en la siguiente
+actualización. No es un historial. No escribas datos manuales en esa pestaña.
+Una falla de lectura no borra la copia anterior; Estado indica el error.
+Usa una hoja nueva dedicada a este proyecto. La sincronización requiere que
+Google permita ejecutar el script y que Supabase esté disponible.
+
+CAMBIAR LA HOJA DE DESTINO
+Crea otra hoja. Puede pertenecer a otra cuenta si tu cuenta tiene permiso de
+edición. Desde la hoja original: Buena Vista > Cambiar hoja de destino.
+Pega su enlace. Los siguientes puntos irán allí. La hoja anterior conserva
+su última copia y sus permisos de acceso; no se elimina ni se revoca acceso.
+
+CAMBIAR DE CUENTA GOOGLE
+Escribir otro correo no transfiere propiedad ni autorización.
+1. En la cuenta anterior: Buena Vista > Detener actualización.
+2. Inicia sesión con la nueva cuenta y crea una hoja nueva.
+3. Instala GooglePuntos.gs y ejecuta activarBuenaVista desde esa cuenta.
+Se copiarán también todos los puntos que ya estaban publicados; no tendrás
+que registrarlos de nuevo. La cuenta anterior conserva su copia.
+Si deseas transferir el archivo original, usa las opciones de propiedad de
+Google Drive disponibles para esas cuentas; el script no hace transferencias.
+
+PARA QUE OTRAS PERSONAS VEAN LOS PUNTOS
+La página Buena Vista ya muestra las ubicaciones publicadas.
+Para compartir la hoja, usa Compartir en Google Sheets y elige lectores.
+El script no cambia automáticamente permisos de Drive.
+
+Para un mapa propio en Google:
+1. Abre https://www.google.com/mymaps con tu cuenta y crea un mapa.
+2. En una capa, pulsa Importar. Selecciona la hoja Puntos o el CSV que puedes
+   descargar desde el Panel del profesor > Puntos y Google.
+3. Elige Latitud y Longitud como posición y Nombre como título.
+4. Comparte el mapa mediante sus opciones de acceso.
+5. Cuando cambien los puntos: menú de la capa > Volver a importar y combinar
+   > Sustituir todos los elementos. Selecciona la hoja actualizada.
+Google My Maps NO actualiza automáticamente la capa al cambiar la hoja.
+Divide en capas/archivos si superas 2000 filas por importación.
+
+PARA APARECER COMO LUGAR EN GOOGLE MAPS PÚBLICO
+Es otro proceso. En Google Maps usa «Añadir un sitio que falta» y envía los
+datos. Google revisa las contribuciones; no se garantiza su publicación.
+Esta integración no crea fichas de lugares en el buscador público de Google.
+
+REFERENCIAS OFICIALES
+https://support.google.com/mymaps/answer/3024836?hl=es
+https://support.google.com/maps/answer/6320846?hl=es
+https://developers.google.com/apps-script/guides/triggers/installable
