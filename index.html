@@ -2063,6 +2063,10 @@ function pintarRubrica(){
     (b.tipo==='redes' && ['whatsapp','instagram','tiktok','facebook','telegram','youtube','correo'].some(k=>(b[k]||'').trim()))
   );
   const menionaParticipantes = /particip|colabor/.test(sinAcentos(textoCompleto));
+  const tieneTelefono = /\d{3,4}[-.\s]?\d{4}/.test(textoCompleto);
+  const mencionaAyudantes = /ayud|consegu|contact/.test(sinAcentos(textoCompleto));
+  const tieneAyudantesConContacto = mencionaAyudantes && tieneTelefono;
+  const tieneAgradecimiento = /agradec|reconoc/.test(sinAcentos(textoCompleto));
 
   const items = [
     {ok:tieneTexto, label:'Texto con información (mínimo un párrafo)', req:true},
@@ -2071,6 +2075,8 @@ function pintarRubrica(){
     {ok:fotosConDescripcion, label:'Las fotos tienen descripción: qué es y quién la tomó o investigó', req:true},
     {ok:tieneMapa, label:'Ubicación marcada en el mapa', req:true},
     {ok:menionaParticipantes, label:'Menciona quiénes participaron o colaboraron en el trabajo', req:true},
+    {ok:tieneAyudantesConContacto, label:'Menciona quiénes le ayudaron a conseguir el trabajo, con nombre y teléfono', req:true},
+    {ok:tieneAgradecimiento, label:'Tiene una sección de agradecimiento y reconocimiento', req:true},
     {ok:tieneVideoORedes, label:'Video o redes sociales (si hiciste una entrevista)', req:false},
   ];
   const completos = items.filter(i=>i.req).every(i=>i.ok);
