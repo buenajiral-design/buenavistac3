@@ -3378,12 +3378,16 @@ function pintarTablaSemanal(){
         ${[1,2,3,4,5,6,7].map(n=>{
           const t = porEstudianteSemana.get(`${al.id}||${n}`);
           if(t){
-            return `<td><div style="display:flex;align-items:center;gap:.3em;justify-content:center;">
-              <button class="btn small outline" data-editar-celda="${al.id}" data-semana="${n}" title="${escapeHtml(t.tema)} — clic para cambiar">
-                <span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoAbrev[t.estado]||t.estado}</span>
-              </button>
-              <button class="btn small danger" data-borrar-celda="${al.id}" data-semana="${n}" title="Quitar esta tarea" style="padding:.2em .5em;line-height:1;">✕</button>
-            </div></td>`;
+            return `<td>
+              <div style="display:flex;align-items:center;gap:.3em;justify-content:center;flex-wrap:wrap;">
+                <button class="btn small outline" data-editar-celda="${al.id}" data-semana="${n}" title="Clic para cambiar la tarea">
+                  <span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoAbrev[t.estado]||t.estado}</span>
+                </button>
+                <button class="btn small outline" data-ver-celda='${escapeHtml(JSON.stringify(t.bloques||[]))}' data-ver-tema="${escapeHtml(t.tema)}" title="Ver lo que el estudiante ha hecho" style="padding:.2em .5em;line-height:1;">👁</button>
+                <button class="btn small danger" data-borrar-celda="${al.id}" data-semana="${n}" title="Quitar esta tarea" style="padding:.2em .5em;line-height:1;">✕</button>
+              </div>
+              <div class="hint" style="margin:.25em 0 0;max-width:130px;white-space:normal;">${escapeHtml(t.tema)}</div>
+            </td>`;
           }
           return `<td><button class="btn small" data-celda="${al.id}" data-semana="${n}" style="opacity:.55;">+</button></td>`;
         }).join('')}
@@ -3396,6 +3400,12 @@ function pintarTablaSemanal(){
     b.onclick = ()=>{
       const estId = b.dataset.celda, semana = Number(b.dataset.semana);
       openTareaModal({estudiante_id:estId, seccion_id:seccionId, semana});
+    };
+  });
+  cont.querySelectorAll('[data-ver-celda]').forEach(b=>{
+    b.onclick = ()=>{
+      const bloques = JSON.parse(b.getAttribute('data-ver-celda'));
+      abrirVistaPreviaTarea(b.dataset.verTema, bloques);
     };
   });
   cont.querySelectorAll('[data-editar-celda]').forEach(b=>{
@@ -3448,6 +3458,20 @@ async function cargarTareas(){
   if(tareasVista==='semanal') pintarTablaSemanal();
   else pintarTareasAgrupadas();
 }
+function abrirVistaPreviaTarea(tema, bloques){
+  const existente = document.getElementById('verTareaModal');
+  if(existente) existente.remove();
+  const html = `
+    <div class="modal-overlay open" id="verTareaModal">
+      <div class="modal" style="max-width:640px;">
+        <button class="modal-close" id="verTareaModalClose">×</button>
+        <h3>${tema ? escapeHtml(tema) : 'Vista previa'}</h3>
+        ${renderBloquesHTML(bloques) || '<div class="empty">Todavía no ha agregado nada.</div>'}
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  document.getElementById('verTareaModalClose').onclick = ()=> document.getElementById('verTareaModal').remove();
+}
 function pintarTareasAgrupadas(){
   const cont = document.getElementById('listaTareas');
   if(!tareasCache.length){ cont.innerHTML = '<div class="empty">Todavía no has asignado ninguna tarea individual.</div>'; return; }
@@ -3498,16 +3522,7 @@ function pintarTareasAgrupadas(){
   });
   cont.querySelectorAll('[data-ver]').forEach(b=> b.onclick = ()=>{
     const bloques = JSON.parse(b.getAttribute('data-ver'));
-    const html = `
-      <div class="modal-overlay open" id="verTareaModal">
-        <div class="modal" style="max-width:640px;">
-          <button class="modal-close" id="verTareaModalClose">×</button>
-          <h3>Vista previa</h3>
-          ${renderBloquesHTML(bloques) || '<div class="empty">Todavía no ha agregado nada.</div>'}
-        </div>
-      </div>`;
-    document.body.insertAdjacentHTML('beforeend', html);
-    document.getElementById('verTareaModalClose').onclick = ()=> document.getElementById('verTareaModal').remove();
+    abrirVistaPreviaTarea('', bloques);
   });
   cont.querySelectorAll('[data-editar]').forEach(b=> b.onclick = ()=>{
     openTareaModal({estudiante_id:b.dataset.editar, seccion_id:b.dataset.seccion, tema:b.dataset.tema, semana:Number(b.dataset.semana)||1});
