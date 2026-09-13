@@ -2311,6 +2311,32 @@ function pintarBloquesList(){
     if(u){ u.bloques.splice(u.index,1); pintarBloquesList(); }
   });
 
+  // Guarda en el bloque lo que hay AHORA MISMO en la cajita de texto (contenido
+  // y alineación real), leyendo el DOM directamente. Se usa tanto al escribir/
+  // salir del editor como justo ANTES de redibujar por otro cambio (color,
+  // tamaño, etc.) para que ese redibujado nunca borre lo que ya se veía.
+  const sincronizarRichtext = (editor) => {
+    const u = ubicarBloque(editor.dataset.richtext); if(!u) return;
+    u.bloque.html = sanitizarHTML(editor.innerHTML);
+    u.bloque.texto = editor.innerText.trim();
+    // Cuando el navegador aplica la alineación a un elemento de adentro (como
+    // el título) en vez de a la cajita completa, o usa el atributo antiguo
+    // "align", revisamos primero adentro (lo más específico y lo más reciente
+    // que el estudiante tocó) y solo si no hay nada ahí usamos la cajita.
+    const alineacionMap = {left:'izquierda', center:'centro', right:'derecha', justify:'izquierda'};
+    let alineacionDetectada = null;
+    const elAlineado = editor.querySelector('[style*="text-align"]');
+    if(elAlineado) alineacionDetectada = alineacionMap[elAlineado.style.textAlign];
+    if(!alineacionDetectada){
+      const elAlign = editor.querySelector('[align]') || (editor.hasAttribute('align') ? editor : null);
+      if(elAlign) alineacionDetectada = alineacionMap[elAlign.getAttribute('align')];
+    }
+    if(!alineacionDetectada && editor.style.textAlign){
+      alineacionDetectada = alineacionMap[editor.style.textAlign];
+    }
+    if(alineacionDetectada) u.bloque.alineacion = alineacionDetectada;
+  };
+
   cont.querySelectorAll('[data-campo]').forEach(input=>{
     const actualizar = ()=>{
       const id = input.closest('.bloque-editor').dataset.blockid;
@@ -2320,33 +2346,27 @@ function pintarBloquesList(){
     };
     input.oninput = actualizar;
     if(input.tagName==='SELECT' || input.type==='color' || input.type==='checkbox'){
-      input.onchange = ()=>{ actualizar(); pintarBloquesList(); };
+      input.onchange = ()=>{
+        actualizar();
+        // Antes de redibujar (lo que reconstruye la cajita de texto desde
+        // cero), guardamos primero lo que el estudiante ya tenía escrito y
+        // alineado, para no perderlo por cambiar solo el color o el tamaño.
+        // Excepción: si el campo que acaba de cambiar es la propia
+        // "Alineación", su valor nuevo manda — no lo pisamos releyendo la
+        // alineación vieja que todavía muestra la cajita sin redibujar.
+        if(input.dataset.campo !== 'alineacion'){
+          const card = input.closest('.bloque-editor');
+          const editorTexto = card && card.querySelector('[data-richtext]');
+          if(editorTexto) sincronizarRichtext(editorTexto);
+        }
+        pintarBloquesList();
+      };
     }else{
       input.onchange = actualizar;
     }
   });
   cont.querySelectorAll('[data-richtext]').forEach(editor=>{
-    const guardar=()=>{
-      const u=ubicarBloque(editor.dataset.richtext); if(!u) return;
-      u.bloque.html=sanitizarHTML(editor.innerHTML);
-      u.bloque.texto=editor.innerText.trim();
-      // Cuando el navegador aplica la alineación directo a la cajita, a un
-      // elemento adentro (como el título), o usando el atributo antiguo
-      // "align", la guardamos igual en el bloque para que no se pierda al
-      // redibujar por otro cambio (color, tamaño, etc.)
-      const alineacionMap = {left:'izquierda', center:'centro', right:'derecha'};
-      let alineacionDetectada = alineacionMap[editor.style.textAlign];
-      if(!alineacionDetectada){
-        const elAlineado = editor.querySelector('[style*="text-align"]');
-        if(elAlineado) alineacionDetectada = alineacionMap[elAlineado.style.textAlign];
-      }
-      if(!alineacionDetectada){
-        const elAlign = editor.querySelector('[align]') || (editor.hasAttribute('align') ? editor : null);
-        if(elAlign) alineacionDetectada = alineacionMap[elAlign.getAttribute('align')];
-      }
-      if(alineacionDetectada) u.bloque.alineacion = alineacionDetectada;
-      programarAutoguardado();
-    };
+    const guardar=()=>{ sincronizarRichtext(editor); programarAutoguardado(); };
     editor.oninput=guardar; editor.onblur=guardar;
     editor.onpaste=()=>setTimeout(guardar,0);
   });
