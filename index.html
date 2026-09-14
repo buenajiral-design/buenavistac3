@@ -1654,18 +1654,38 @@ function extraerUbicacionesPublicadas(publicaciones){
   });
   return puntos;
 }
+let mapasGeneralesLeaflets = {};
 function renderMapaGeneral(id, publicaciones){
   const el=document.getElementById('mapaGeneral-'+id);
   const estado=document.getElementById('mapaGeneralEstado-'+id);
+  const switchEl=document.getElementById('mapaGeneralTipoSwitch-'+id);
   if(!el || typeof L==='undefined') return;
   const puntos=extraerUbicacionesPublicadas(publicaciones);
+  if(mapasGeneralesLeaflets[id]){ try{ mapasGeneralesLeaflets[id].map.remove(); }catch(e){} delete mapasGeneralesLeaflets[id]; }
   if(!puntos.length){
     el.innerHTML='<div class="empty" style="height:100%;display:grid;place-items:center;border:0;">Todavía no hay ubicaciones publicadas en el mapa.</div>';
     if(estado) estado.textContent='El mapa se llenará automáticamente cuando se publiquen páginas con una ubicación marcada.';
+    if(switchEl) switchEl.style.display='none';
     return;
   }
+  if(switchEl) switchEl.style.display='';
   const map=L.map(el,{scrollWheelZoom:false}).setView([9.273936,-79.695537],14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; colaboradores de OpenStreetMap',maxZoom:19}).addTo(map);
+  /* misma fuente que el selector del editor: OpenStreetMap para "Mapa" y
+     Esri World Imagery (gratis, sin llave de API) para "Satélite". */
+  const capaCalle = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; colaboradores de OpenStreetMap',maxZoom:19});
+  const capaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri',maxZoom:19});
+  const capaReferencias = L.layerGroup([
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}),
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19})
+  ]);
+  capaCalle.addTo(map);
+  let capaActual='calle';
+  function cambiarCapa(tipo){
+    if(tipo===capaActual) return;
+    if(tipo==='satelite'){ map.removeLayer(capaCalle); capaSatelite.addTo(map); capaReferencias.addTo(map); }
+    else{ map.removeLayer(capaSatelite); map.removeLayer(capaReferencias); capaCalle.addTo(map); }
+    capaActual=tipo;
+  }
   const limites=[];
   puntos.forEach(p=>{
     const destino=`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
@@ -1675,6 +1695,15 @@ function renderMapaGeneral(id, publicaciones){
   if(limites.length===1) map.setView(limites[0],16); else map.fitBounds(limites,{padding:[35,35],maxZoom:16});
   if(estado) estado.textContent=`${puntos.length} ${puntos.length===1?'ubicación publicada':'ubicaciones publicadas'} en este mapa.`;
   setTimeout(()=>map.invalidateSize(),100);
+  mapasGeneralesLeaflets[id]={map,cambiarCapa};
+  if(switchEl){
+    switchEl.querySelectorAll('[data-generaltipo]').forEach(btn=>{
+      btn.onclick=()=>{
+        cambiarCapa(btn.dataset.generaltipo);
+        switchEl.querySelectorAll('[data-generaltipo]').forEach(b2=>b2.classList.toggle('active', b2===btn));
+      };
+    });
+  }
 }
 function historiaResumenHTML(){
   const censos=[{anio:1990,poblacion:7547},{anio:2000,poblacion:10428},{anio:2010,poblacion:14285},{anio:2023,poblacion:19221}];
@@ -1692,11 +1721,67 @@ function historiaResumenHTML(){
 }
 
 /* =====================  VISTA: SECCIÓN  ===================== */
-function cardHTML(item, permitirEditar){
+/* ---- ayuda para el botón "Copiar datos para Google Maps": junta lo que
+   el estudiante ya investigó (ubicación y teléfono) en un texto listo para
+   pegar en el formulario de Google Maps "Añadir un lugar que falta" o en el
+   Perfil de Negocio del dueño. No publica nada en Google automáticamente:
+   eso siempre lo hace una persona, a mano, desde Google Maps. ---- */
+function extraerUbicacionDeBloques(bloques){
+  let encontrado = null;
+  function recorrer(v){
+    if(encontrado || !v || typeof v!=='object') return;
+    if(v.tipo==='mapa' && v.lat!=null && v.lng!=null && String(v.lat).trim()!==''){
+      const lat=+v.lat, lng=+v.lng;
+      if(Number.isFinite(lat) && Number.isFinite(lng)) encontrado={lat,lng};
+      return;
+    }
+    Object.keys(v).forEach(k=>recorrer(v[k]));
+  }
+  recorrer(bloques);
+  return encontrado;
+}
+function extraerTelefonoDeBloques(bloques){
+  const textos=[];
+  function recorrer(v){
+    if(!v || typeof v!=='object') return;
+    if(v.tipo==='texto' && v.texto) textos.push(v.texto);
+    Object.keys(v).forEach(k=>recorrer(v[k]));
+  }
+  recorrer(bloques);
+  const match = textos.join(' ').match(/\d{3,4}[-.\s]?\d{4}/);
+  return match ? match[0] : '';
+}
+function textoParaGoogleMaps(item, seccionId){
+  const bloques = item.bloques || [];
+  const ubicacion = extraerUbicacionDeBloques(bloques);
+  const telefono = extraerTelefonoDeBloques(bloques);
+  const s = SECTIONS.find(x=>x.id===seccionId);
+  const categoria = seccionId==='negocios' ? 'Negocio' : 'Lugar de interés';
+  const lineas = [`Nombre: ${item.titulo||''}`, `Categoría: ${categoria}`];
+  if(ubicacion){
+    lineas.push(`Coordenadas: ${ubicacion.lat}, ${ubicacion.lng}`);
+    lineas.push(`Enlace de ubicación: https://www.google.com/maps?q=${ubicacion.lat},${ubicacion.lng}`);
+  }
+  if(telefono) lineas.push(`Teléfono: ${telefono}`);
+  lineas.push(`Investigado para: Buena Vista — ${s?s.name:seccionId}`);
+  return lineas.join('\n');
+}
+async function copiarParaGoogleMaps(btn, texto){
+  const original = btn.textContent;
+  try{
+    await navigator.clipboard.writeText(texto);
+    btn.textContent = '✅ Copiado — pégalo en Google Maps';
+  }catch(e){
+    alert('No se pudo copiar automáticamente. Copia este texto a mano:\n\n'+texto);
+  }
+  setTimeout(()=>{ btn.textContent = original; }, 2200);
+}
+function cardHTML(item, permitirEditar, seccionId){
   let pill = '';
   if(item.estado==='pendiente') pill = '<span class="status-pill status-pending">En revisión</span>';
   if(item.estado==='devuelto') pill = '<span class="status-pill status-rejected">Devuelto</span>';
   const tieneBloques = item.bloques && item.bloques.length;
+  const ubicacion = tieneBloques ? extraerUbicacionDeBloques(item.bloques) : null;
   return `
     <div class="card">
       ${!tieneBloques && item.img_url ? `<img src="${item.img_url}" alt="${escapeHtml(item.titulo)}">` : ''}
@@ -1704,7 +1789,10 @@ function cardHTML(item, permitirEditar){
       ${tieneBloques ? renderBloquesHTML(item.bloques) : `<p>${escapeHtml(item.cuerpo)}</p>`}
       ${item.observacion ? `<div class="msg" style="background:#f4dfa8;color:#6b4c0a;">📝 Observación del profesor(a): ${escapeHtml(item.observacion)}</div>` : ''}
       <div class="byline">Creado por: ${escapeHtml(item.autor_nombre||'')}${item.autor_salon? ' · '+(SALON_LABEL[item.autor_salon]||item.autor_salon) : ''}</div>
-      ${permitirEditar ? `<div class="row-actions" style="margin-top:.6em;"><button class="btn small outline" data-editarpub="${item.id}">✏️ Editar</button></div>` : ''}
+      <div class="row-actions" style="margin-top:.6em;flex-wrap:wrap;">
+        ${permitirEditar ? `<button class="btn small outline" data-editarpub="${item.id}">✏️ Editar</button>` : ''}
+        ${ubicacion && item.estado==='publicado' ? `<button class="btn small outline" data-copiarmaps="${item.id}" title="Copia nombre, categoría, coordenadas y teléfono para pegarlos en Google Maps">📋 Copiar datos para Google Maps</button>` : ''}
+      </div>
     </div>
   `;
 }
@@ -1747,7 +1835,7 @@ async function renderSection(id){
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>${s.name}</h2><div class="rule"></div></div>
     <p class="section-desc">${s.desc}</p>
     ${id==='historia' ? historiaResumenHTML() : ''}
-    ${['lugares','negocios'].includes(id) ? `<div class="mapa-general-card"><h3>${id==='negocios'?'📍 Mapa general de negocios':'🗺️ Mapa general de lugares'}</h3><p class="hint" id="mapaGeneralEstado-${id}">Cargando todas las ubicaciones publicadas…</p><div class="mapa-general" id="mapaGeneral-${id}"></div></div>` : ''}
+    ${['lugares','negocios'].includes(id) ? `<div class="mapa-general-card"><h3>${id==='negocios'?'📍 Mapa general de negocios':'🗺️ Mapa general de lugares'}</h3><p class="hint" id="mapaGeneralEstado-${id}">Cargando todas las ubicaciones publicadas…</p><div class="mapa-tipo-switch" id="mapaGeneralTipoSwitch-${id}"><button type="button" class="active" data-generaltipo="calle" data-generaltipo-id="${id}">🗺️ Mapa</button><button type="button" data-generaltipo="satelite" data-generaltipo-id="${id}">🛰️ Satélite</button></div><div class="mapa-general" id="mapaGeneral-${id}"></div></div>` : ''}
     ${id==='lugares' ? '<div id="directorioLugares"></div>' : ''}
     <div id="temasPanel"></div>
     ${canEdit ? `<div class="row-actions" style="margin-bottom:1.4em;"><button class="btn gold" id="addContentBtn">+ Agregar publicación</button></div>` : ''}
@@ -1771,9 +1859,17 @@ async function renderSection(id){
   if(['lugares','negocios'].includes(id)) renderMapaGeneral(id, publicados);
   document.getElementById('sectionList').innerHTML = visibles.length ? visibles.map(item=>{
     const esMio = canEdit && misPublicaciones.some(m=>m.id===item.id);
-    return cardHTML(item, esMio);
+    return cardHTML(item, esMio, id);
   }).join('') :
     `<div class="empty">${canEdit ? 'Todavía no has agregado nada aquí. ¡Empieza con la primera publicación!' : 'Todavía no hay publicaciones en esta sección.'}</div>`;
+
+  document.querySelectorAll('#sectionList [data-copiarmaps]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const item = visibles.find(v=>v.id===btn.dataset.copiarmaps);
+      if(!item) return;
+      copiarParaGoogleMaps(btn, textoParaGoogleMaps(item, id));
+    };
+  });
 
   if(canEdit){
     document.getElementById('addContentBtn').onclick = ()=> openContentModal(id);
