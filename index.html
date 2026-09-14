@@ -2226,7 +2226,15 @@ function pintarBloquesList(){
   const cont = document.getElementById('bloquesList');
   if(!cont) return;
   pintarRubrica();
-  programarAutoguardado();
+  /* OJO: aquí NO se debe llamar a programarAutoguardado(). Esta función se
+     ejecuta cada vez que se repinta la pantalla (por ejemplo justo después
+     de "Guardar borrador" o "Enviar para revisión"), no solo cuando el
+     estudiante edita algo. Llamarlo aquí agenda un autoguardado fantasma
+     1.2s después con p_enviar:false, que pisa un envío recién hecho y lo
+     regresa a "Borrador" sin que nadie lo note. Los lugares donde sí debe
+     dispararse el autoguardado (escribir texto, mover el mapa, subir una
+     foto, etc.) ya llaman a programarAutoguardado() por su cuenta más abajo
+     en este archivo. */
 
   const bloqueCardHTML = (b, colBloques) => {
     const idx = colBloques.findIndex(x=>x.id===b.id);
