@@ -1461,6 +1461,56 @@ function renderReportarPunto(){
   };
 }
 
+/* Mismo formulario de "Reportar un punto", pero como modal, para usarlo sin salir
+   de la página que el estudiante está llenando (por ejemplo, desde el bloque de mapa). */
+function abrirReportarPuntoModal(prefill){
+  prefill = prefill || {};
+  const existente = document.getElementById('reportarPuntoModal');
+  if(existente) existente.remove();
+  const esEstudiante = session && session.role==='student';
+  const html = `
+    <div class="modal-overlay open" id="reportarPuntoModal">
+      <div class="modal">
+        <button class="modal-close" id="rpModalClose">×</button>
+        <h3>📍 Reportar un punto para el mapa</h3>
+        <p class="hint" style="margin-top:0;">¿Falta este lugar en el mapa o hay un dato que cambió? Cuéntanoslo. No se publica solo: el profesor(a) lo revisa y lo actualiza en Google Maps.</p>
+        <div id="rpModalMsg"></div>
+        <div class="field"><label>Nombre del lugar o negocio</label><input id="rpmNombre" placeholder="Ej. Maxi Feria Xtra Buena Vista"></div>
+        <div class="field"><label>Categoría</label><select id="rpmCategoria">${CATEGORIAS_PUNTO.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select></div>
+        <div class="field"><label>¿Qué debe agregarse o corregirse?</label><textarea id="rpmDetalle" rows="4" placeholder="Ej. Falta en el mapa, cerca de la iglesia. O: cambió de nombre / de teléfono. O: ya cerró."></textarea></div>
+        <div class="field"><label>Teléfono del lugar (opcional)</label><input id="rpmTelefono" placeholder="Ej. 6000-0000"></div>
+        <div class="field"><label>Enlace de Google Maps (opcional)</label><input id="rpmEnlace" value="${escapeHtml(prefill.enlace||'')}" placeholder="Pega aquí el enlace si ya tienes la ubicación en Google Maps"></div>
+        ${esEstudiante
+          ? `<div class="field"><label>Tu nombre</label><input id="rpmReportante" value="${escapeHtml(session.nombre)}" disabled>
+             <p class="hint" style="margin:.3em 0 0;">Quedará registrado con tu nombre y salón (${escapeHtml(SALON_LABEL[session.salon]||session.salon||'')}).</p></div>`
+          : `<div class="field"><label>Tu nombre (opcional)</label><input id="rpmReportante" placeholder="Para poder preguntarte algo si hace falta"></div>`
+        }
+        <button class="btn gold" id="rpmEnviarBtn">Enviar</button>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  document.getElementById('rpModalClose').onclick = ()=> document.getElementById('reportarPuntoModal').remove();
+  document.getElementById('rpmEnviarBtn').onclick = async ()=>{
+    const msg = document.getElementById('rpModalMsg');
+    const nombre = document.getElementById('rpmNombre').value.trim();
+    const categoria = document.getElementById('rpmCategoria').value;
+    const detalle = document.getElementById('rpmDetalle').value.trim();
+    const telefono = document.getElementById('rpmTelefono').value.trim();
+    const enlace = document.getElementById('rpmEnlace').value.trim();
+    const reportante = esEstudiante ? session.nombre : document.getElementById('rpmReportante').value.trim();
+    if(!nombre || !detalle){ msg.innerHTML = '<div class="msg error">Escribe el nombre del lugar y qué debe agregarse o corregirse.</div>'; return; }
+    msg.innerHTML = '<div class="msg">Enviando…</div>';
+    const {error} = await db.rpc('bv_enviar_punto_sugerido', {
+      p_nombre:nombre, p_categoria:categoria, p_detalle:detalle,
+      p_telefono:telefono, p_enlace_maps:enlace, p_reportado_por:reportante,
+      p_salon: esEstudiante ? (session.salon||'') : ''
+    });
+    if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+    msg.innerHTML = '<div class="msg ok">✅ ¡Gracias! Lo revisaremos pronto. Puedes cerrar esta ventana y seguir con tu tarea.</div>';
+    document.getElementById('rpmEnviarBtn').disabled = true;
+  };
+}
+
 /* =====================  CONTADOR DE VISITAS  ===================== */
 function detectarDispositivo(){
   const ua = navigator.userAgent || '';
@@ -2629,6 +2679,15 @@ function pintarBloquesList(){
       if(u) abrirMapaFullscreen(u.bloque);
     };
   });
+  cont.querySelectorAll('[data-reportar-punto-blk]').forEach(a=>{
+    a.onclick = (e)=>{
+      e.preventDefault();
+      const u = ubicarBloque(a.dataset.reportarPuntoBlk);
+      const b = u ? u.bloque : null;
+      const enlace = (b && b.lat!=null) ? `https://www.google.com/maps?q=${b.lat},${b.lng}` : (b && b.url) || '';
+      abrirReportarPuntoModal({enlace});
+    };
+  });
   cont.querySelectorAll('[data-buscarmapa-btn]').forEach(btn=>{
     const buscar = async ()=>{
       const id = btn.dataset.buscarmapaBtn;
@@ -2897,6 +2956,7 @@ function bloqueCamposHTML(b,i){
       <div class="mapa-lienzo" id="mapaLienzo-${b.id}"></div>
       <p class="hint mapa-coords" id="mapaCoords-${b.id}">${b.lat!=null ? `📍 Ubicación seleccionada (${(+b.lat).toFixed(5)}, ${(+b.lng).toFixed(5)})` : 'Todavía no has marcado un lugar.'}</p>
       ${b.lat!=null ? `<p class="hint" style="margin-top:-.4em;">A los visitantes les va a aparecer un botón <a href="https://www.google.com/maps/dir/?api=1&destination=${b.lat},${b.lng}" target="_blank" rel="noopener">🧭 Cómo llegar</a> junto al mapa.</p>` : ''}
+      <p class="hint" style="margin-top:-.4em;">¿Es un lugar nuevo o hay algo que corregir aquí? <a href="#" data-reportar-punto-blk="${i}">📍 Repórtalo</a> sin salir de tu tarea.</p>
       <div class="field" style="margin-bottom:0;"><label>O pega el enlace de Google Maps (opcional)</label><input data-campo="url" value="${escapeHtml(b.url||'')}" placeholder="Pega aquí el enlace de Google Maps"></div>
     `;
   }
