@@ -753,8 +753,9 @@
       <button type="button" class="btn small outline" id="mapaFullscreenBuscarBtn">🔎 Buscar</button>
     </div>
     <div class="mapa-tipo-switch" id="mapaFullscreenTipoSwitch">
-      <button type="button" class="active" data-fstipo="calle">🗺️ Mapa</button>
-      <button type="button" data-fstipo="satelite">🛰️ Satélite</button>
+      <button type="button" data-fstipo="calle">🗺️ Mapa</button>
+      <button type="button" class="active" data-fstipo="satelite">🛰️ Satélite</button>
+      <button type="button" data-fstipo="satelite-hd">🛰️✨ Satélite HD</button>
     </div>
     <button class="btn gold small" id="mapaFullscreenCerrar" type="button">✕ Cerrar pantalla completa</button>
   </div>
@@ -1723,16 +1724,20 @@ function renderMapaGeneral(id, publicaciones){
      Esri World Imagery (gratis, sin llave de API) para "Satélite". */
   const capaCalle = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; colaboradores de OpenStreetMap',maxZoom:19});
   const capaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri',maxZoom:19});
+  /* Capa alternativa (archivo de Esri, a veces más nítida/menos nubes). Gratis y sin cuenta, igual que la anterior. */
+  const capaSateliteHD = L.tileLayer('https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri (Clarity)',maxZoom:19});
   const capaReferencias = L.layerGroup([
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}),
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19})
   ]);
-  capaCalle.addTo(map);
-  let capaActual='calle';
+  capaSatelite.addTo(map); capaReferencias.addTo(map);
+  let capaActual='satelite';
   function cambiarCapa(tipo){
     if(tipo===capaActual) return;
-    if(tipo==='satelite'){ map.removeLayer(capaCalle); capaSatelite.addTo(map); capaReferencias.addTo(map); }
-    else{ map.removeLayer(capaSatelite); map.removeLayer(capaReferencias); capaCalle.addTo(map); }
+    map.removeLayer(capaCalle); map.removeLayer(capaSatelite); map.removeLayer(capaSateliteHD); map.removeLayer(capaReferencias);
+    if(tipo==='satelite'){ capaSatelite.addTo(map); capaReferencias.addTo(map); }
+    else if(tipo==='satelite-hd'){ capaSateliteHD.addTo(map); capaReferencias.addTo(map); }
+    else{ capaCalle.addTo(map); }
     capaActual=tipo;
   }
   const limites=[];
@@ -1884,7 +1889,7 @@ async function renderSection(id){
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>${s.name}</h2><div class="rule"></div></div>
     <p class="section-desc">${s.desc}</p>
     ${id==='historia' ? historiaResumenHTML() : ''}
-    ${['lugares','negocios'].includes(id) ? `<div class="mapa-general-card"><h3>${id==='negocios'?'📍 Mapa general de negocios':'🗺️ Mapa general de lugares'}</h3><p class="hint" id="mapaGeneralEstado-${id}">Cargando todas las ubicaciones publicadas…</p><div class="mapa-tipo-switch" id="mapaGeneralTipoSwitch-${id}"><button type="button" class="active" data-generaltipo="calle" data-generaltipo-id="${id}">🗺️ Mapa</button><button type="button" data-generaltipo="satelite" data-generaltipo-id="${id}">🛰️ Satélite</button></div><div class="mapa-general" id="mapaGeneral-${id}"></div></div>` : ''}
+    ${['lugares','negocios'].includes(id) ? `<div class="mapa-general-card"><h3>${id==='negocios'?'📍 Mapa general de negocios':'🗺️ Mapa general de lugares'}</h3><p class="hint" id="mapaGeneralEstado-${id}">Cargando todas las ubicaciones publicadas…</p><div class="mapa-tipo-switch" id="mapaGeneralTipoSwitch-${id}"><button type="button" data-generaltipo="calle" data-generaltipo-id="${id}">🗺️ Mapa</button><button type="button" class="active" data-generaltipo="satelite" data-generaltipo-id="${id}">🛰️ Satélite</button><button type="button" data-generaltipo="satelite-hd" data-generaltipo-id="${id}">🛰️✨ Satélite HD</button></div><div class="mapa-general" id="mapaGeneral-${id}"></div></div>` : ''}
     ${id==='lugares' ? '<div id="directorioLugares"></div>' : ''}
     <div id="temasPanel"></div>
     ${canEdit ? `<div class="row-actions" style="margin-bottom:1.4em;"><button class="btn gold" id="addContentBtn">+ Agregar publicación</button></div>` : ''}
@@ -2686,17 +2691,23 @@ function crearMapaLeaflet(el, b, opciones){
   const capaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     attribution:'Tiles &copy; Esri', maxZoom:19
   });
+  /* Capa alternativa (archivo de Esri, a veces más nítida/menos nubes). Gratis y sin cuenta, igual que la anterior. */
+  const capaSateliteHD = L.tileLayer('https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution:'Tiles &copy; Esri (Clarity)', maxZoom:19
+  });
   /* referencias transparentes sobre el satélite: poblados, carreteras y límites */
   const capaReferencias = L.layerGroup([
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {maxZoom:19}),
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {maxZoom:19})
   ]);
-  capaCalle.addTo(map);
-  let capaActual = 'calle';
+  capaSatelite.addTo(map); capaReferencias.addTo(map);
+  let capaActual = 'satelite';
   function cambiarCapa(tipo){
     if(tipo===capaActual) return;
-    if(tipo==='satelite'){ map.removeLayer(capaCalle); capaSatelite.addTo(map); capaReferencias.addTo(map); }
-    else{ map.removeLayer(capaSatelite); map.removeLayer(capaReferencias); capaCalle.addTo(map); }
+    map.removeLayer(capaCalle); map.removeLayer(capaSatelite); map.removeLayer(capaSateliteHD); map.removeLayer(capaReferencias);
+    if(tipo==='satelite'){ capaSatelite.addTo(map); capaReferencias.addTo(map); }
+    else if(tipo==='satelite-hd'){ capaSateliteHD.addTo(map); capaReferencias.addTo(map); }
+    else{ capaCalle.addTo(map); }
     capaActual = tipo;
   }
   function avisar(lat, lng){
@@ -2878,8 +2889,9 @@ function bloqueCamposHTML(b,i){
         <button type="button" class="btn small outline" data-buscarmapa-btn="${i}">🔎 Buscar</button>
       </div>
       <div class="mapa-tipo-switch">
-        <button type="button" class="active" data-maptipo="calle" data-maptipo-blk="${i}">🗺️ Mapa</button>
-        <button type="button" data-maptipo="satelite" data-maptipo-blk="${i}">🛰️ Satélite</button>
+        <button type="button" data-maptipo="calle" data-maptipo-blk="${i}">🗺️ Mapa</button>
+        <button type="button" class="active" data-maptipo="satelite" data-maptipo-blk="${i}">🛰️ Satélite</button>
+        <button type="button" data-maptipo="satelite-hd" data-maptipo-blk="${i}">🛰️✨ Satélite HD</button>
         <button type="button" data-mapa-fullscreen="${i}">⛶ Pantalla completa</button>
       </div>
       <div class="mapa-lienzo" id="mapaLienzo-${b.id}"></div>
