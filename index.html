@@ -1418,6 +1418,7 @@ function renderContacto(){
 const CATEGORIAS_PUNTO = ['Negocio', 'Lugar de interés o atractivo', 'Institución o servicio', 'Otro'];
 function renderReportarPunto(){
   const main = document.getElementById('main');
+  const esEstudiante = session && session.role==='student';
   main.innerHTML = `
     <div class="section-divider"><div class="icon">📍</div><h2>Reportar un punto para el mapa</h2><div class="rule"></div></div>
     <p class="section-desc">¿Conoces un negocio o lugar que falta en el mapa, o un dato que cambió (nombre, teléfono, si cerró)? Cuéntanoslo aquí. No se publica de forma automática: el equipo lo revisa y lo actualiza a mano en Google Maps.</p>
@@ -1427,7 +1428,11 @@ function renderReportarPunto(){
     <div class="field"><label>¿Qué debe agregarse o corregirse?</label><textarea id="rpDetalle" rows="4" placeholder="Ej. Falta en el mapa, cerca de la iglesia. O: cambió de nombre / de teléfono. O: ya cerró."></textarea></div>
     <div class="field"><label>Teléfono del lugar (opcional)</label><input id="rpTelefono" placeholder="Ej. 6000-0000"></div>
     <div class="field"><label>Enlace de Google Maps (opcional)</label><input id="rpEnlace" placeholder="Pega aquí el enlace si ya tienes la ubicación en Google Maps"></div>
-    <div class="field"><label>Tu nombre (opcional)</label><input id="rpReportante" placeholder="Para poder preguntarte algo si hace falta"></div>
+    ${esEstudiante
+      ? `<div class="field"><label>Tu nombre</label><input id="rpReportante" value="${escapeHtml(session.nombre)}" disabled>
+         <p class="hint" style="margin:.3em 0 0;">Quedará registrado con tu nombre y salón (${escapeHtml(SALON_LABEL[session.salon]||session.salon||'')}).</p></div>`
+      : `<div class="field"><label>Tu nombre (opcional)</label><input id="rpReportante" placeholder="Para poder preguntarte algo si hace falta"></div>`
+    }
     <button class="btn gold" id="rpEnviarBtn">Enviar</button>
   `;
   document.getElementById('rpEnviarBtn').onclick = async ()=>{
@@ -1437,19 +1442,20 @@ function renderReportarPunto(){
     const detalle = document.getElementById('rpDetalle').value.trim();
     const telefono = document.getElementById('rpTelefono').value.trim();
     const enlace = document.getElementById('rpEnlace').value.trim();
-    const reportante = document.getElementById('rpReportante').value.trim();
+    const reportante = esEstudiante ? session.nombre : document.getElementById('rpReportante').value.trim();
     if(!nombre || !detalle){ msg.innerHTML = '<div class="msg error">Escribe el nombre del lugar y qué debe agregarse o corregirse.</div>'; return; }
     msg.innerHTML = '<div class="msg">Enviando…</div>';
     const {error} = await db.rpc('bv_enviar_punto_sugerido', {
       p_nombre:nombre, p_categoria:categoria, p_detalle:detalle,
-      p_telefono:telefono, p_enlace_maps:enlace, p_reportado_por:reportante
+      p_telefono:telefono, p_enlace_maps:enlace, p_reportado_por:reportante,
+      p_salon: esEstudiante ? (session.salon||'') : ''
     });
     if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
     document.getElementById('rpNombre').value='';
     document.getElementById('rpDetalle').value='';
     document.getElementById('rpTelefono').value='';
     document.getElementById('rpEnlace').value='';
-    document.getElementById('rpReportante').value='';
+    if(!esEstudiante) document.getElementById('rpReportante').value='';
     msg.innerHTML = '<div class="msg ok">✅ ¡Gracias! Lo revisaremos pronto.</div>';
   };
 }
@@ -4257,7 +4263,7 @@ async function renderAdminPuntosSugeridos(){
         <p><strong>${escapeHtml(p.categoria||'')}</strong> — ${escapeHtml(p.detalle||'')}</p>
         ${p.telefono ? `<p>📞 ${escapeHtml(p.telefono)}</p>` : ''}
         ${enlace ? `<p>🗺️ ${enlace}</p>` : ''}
-        <div class="byline">${p.reportado_por ? 'Reportado por: '+escapeHtml(p.reportado_por)+' · ' : ''}${new Date(p.creado_en).toLocaleString('es-PA')}</div>
+        <div class="byline">${p.reportado_por ? 'Reportado por: '+escapeHtml(p.reportado_por)+(p.reportado_por_salon ? ' · '+(SALON_LABEL[p.reportado_por_salon]||escapeHtml(p.reportado_por_salon)) : '')+' · ' : ''}${new Date(p.creado_en).toLocaleString('es-PA')}</div>
         <div class="row-actions">
           <button class="btn small outline" data-copiarpunto='${escapeHtml(textoCopiar)}'>📋 Copiar datos para Google Maps</button>
           ${p.estado!=='resuelto' ? `<button class="btn small" data-resolver="${p.id}">✅ Marcar como resuelto</button>` : ''}
