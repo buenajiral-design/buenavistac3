@@ -600,6 +600,7 @@
       <h5>Contacto</h5>
       <ul class="footer-links">
         <li><a href="#" id="footerContactoLink">✉️ Contáctanos</a></li>
+        <li><a href="#" id="footerReportarPuntoLink">📍 Reportar un punto para el mapa</a></li>
       </ul>
       <div id="contadorVisitas">Contando visitas…</div>
     </div>
@@ -1304,6 +1305,7 @@ function goTo(sectionId){
   else if(sectionId==='home') renderHome();
   else if(sectionId==='admin') renderAdmin();
   else if(sectionId==='contacto') renderContacto();
+  else if(sectionId==='reportarpunto') renderReportarPunto();
   else renderSection(sectionId);
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1346,7 +1348,7 @@ async function renderHome(){
       <div class="censo-datos"><div class="censo-dato"><strong>30</strong>lugares censales</div><div class="censo-dato"><strong>8</strong>grupos comunitarios</div><div class="censo-dato"><strong>19,221</strong>habitantes</div><div class="censo-dato"><strong>Ver fichas →</strong>directorio comunitario</div></div>
     </div>
     <div class="section-divider"><div class="icon">🧭</div><h2>Encuentra lo que necesitas</h2><div class="rule"></div></div>
-    <div class="quick-grid"><button class="quick-link" onclick="goTo('autoridades')"><span>🏛️</span>Autoridades</button><button class="quick-link" onclick="goTo('instituciones')"><span>🏢</span>Instituciones</button><button class="quick-link" onclick="goTo('escuelas')"><span>🏫</span>Escuelas</button><button class="quick-link" onclick="goTo('negocios')"><span>🏪</span>Negocios</button><button class="quick-link" onclick="goTo('proyectos')"><span>🛠️</span>Proyectos</button><button class="quick-link" onclick="goTo('noticias')"><span>📰</span>Noticias</button><button class="quick-link" onclick="goTo('galeria')"><span>📸</span>Galería</button><button class="quick-link" onclick="goTo('contacto')"><span>✉️</span>Contacto</button></div>
+    <div class="quick-grid"><button class="quick-link" onclick="goTo('autoridades')"><span>🏛️</span>Autoridades</button><button class="quick-link" onclick="goTo('instituciones')"><span>🏢</span>Instituciones</button><button class="quick-link" onclick="goTo('escuelas')"><span>🏫</span>Escuelas</button><button class="quick-link" onclick="goTo('negocios')"><span>🏪</span>Negocios</button><button class="quick-link" onclick="goTo('proyectos')"><span>🛠️</span>Proyectos</button><button class="quick-link" onclick="goTo('noticias')"><span>📰</span>Noticias</button><button class="quick-link" onclick="goTo('galeria')"><span>📸</span>Galería</button><button class="quick-link" onclick="goTo('contacto')"><span>✉️</span>Contacto</button><button class="quick-link" onclick="goTo('reportarpunto')"><span>📍</span>Reportar un punto</button></div>
     <div class="card"><h2>👥 Creadores y equipo responsable</h2><p><strong>Fundadora:</strong> Profa. Juana Browns.</p><p><strong>Coordinación:</strong> Prof. Samuel Ortega.</p><p><strong>Apoyo institucional:</strong> directora Teresa Atencio.</p><p><strong>Equipo investigador y creador de contenidos:</strong> estudiantes de 8.º y 9.º grado del C.E.B.G. El Jiral.</p><p><strong>Aliados:</strong> moradores, autoridades, instituciones, comercios y organizaciones que aportan información a este proyecto comunitario.</p></div>
     <div class="mosaic" id="mosaic">Cargando…</div>
     <div class="section-divider"><div class="icon">🏆</div><h2>Proyectos, actividades y logros</h2><div class="rule"></div></div>
@@ -1412,6 +1414,46 @@ function renderContacto(){
   };
 }
 
+/* =====================  VISTA: REPORTAR UN PUNTO PARA EL MAPA  ===================== */
+const CATEGORIAS_PUNTO = ['Negocio', 'Lugar de interés o atractivo', 'Institución o servicio', 'Otro'];
+function renderReportarPunto(){
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="section-divider"><div class="icon">📍</div><h2>Reportar un punto para el mapa</h2><div class="rule"></div></div>
+    <p class="section-desc">¿Conoces un negocio o lugar que falta en el mapa, o un dato que cambió (nombre, teléfono, si cerró)? Cuéntanoslo aquí. No se publica de forma automática: el equipo lo revisa y lo actualiza a mano en Google Maps.</p>
+    <div id="reportarPuntoMsg"></div>
+    <div class="field"><label>Nombre del lugar o negocio</label><input id="rpNombre" placeholder="Ej. Maxi Feria Xtra Buena Vista"></div>
+    <div class="field"><label>Categoría</label><select id="rpCategoria">${CATEGORIAS_PUNTO.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select></div>
+    <div class="field"><label>¿Qué debe agregarse o corregirse?</label><textarea id="rpDetalle" rows="4" placeholder="Ej. Falta en el mapa, cerca de la iglesia. O: cambió de nombre / de teléfono. O: ya cerró."></textarea></div>
+    <div class="field"><label>Teléfono del lugar (opcional)</label><input id="rpTelefono" placeholder="Ej. 6000-0000"></div>
+    <div class="field"><label>Enlace de Google Maps (opcional)</label><input id="rpEnlace" placeholder="Pega aquí el enlace si ya tienes la ubicación en Google Maps"></div>
+    <div class="field"><label>Tu nombre (opcional)</label><input id="rpReportante" placeholder="Para poder preguntarte algo si hace falta"></div>
+    <button class="btn gold" id="rpEnviarBtn">Enviar</button>
+  `;
+  document.getElementById('rpEnviarBtn').onclick = async ()=>{
+    const msg = document.getElementById('reportarPuntoMsg');
+    const nombre = document.getElementById('rpNombre').value.trim();
+    const categoria = document.getElementById('rpCategoria').value;
+    const detalle = document.getElementById('rpDetalle').value.trim();
+    const telefono = document.getElementById('rpTelefono').value.trim();
+    const enlace = document.getElementById('rpEnlace').value.trim();
+    const reportante = document.getElementById('rpReportante').value.trim();
+    if(!nombre || !detalle){ msg.innerHTML = '<div class="msg error">Escribe el nombre del lugar y qué debe agregarse o corregirse.</div>'; return; }
+    msg.innerHTML = '<div class="msg">Enviando…</div>';
+    const {error} = await db.rpc('bv_enviar_punto_sugerido', {
+      p_nombre:nombre, p_categoria:categoria, p_detalle:detalle,
+      p_telefono:telefono, p_enlace_maps:enlace, p_reportado_por:reportante
+    });
+    if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+    document.getElementById('rpNombre').value='';
+    document.getElementById('rpDetalle').value='';
+    document.getElementById('rpTelefono').value='';
+    document.getElementById('rpEnlace').value='';
+    document.getElementById('rpReportante').value='';
+    msg.innerHTML = '<div class="msg ok">✅ ¡Gracias! Lo revisaremos pronto.</div>';
+  };
+}
+
 /* =====================  CONTADOR DE VISITAS  ===================== */
 function detectarDispositivo(){
   const ua = navigator.userAgent || '';
@@ -1433,6 +1475,7 @@ async function registrarYMostrarVisitas(){
   }catch(e){ cont.textContent = ''; }
 }
 document.getElementById('footerContactoLink').onclick = (e)=>{ e.preventDefault(); goTo('contacto'); window.scrollTo({top:0,behavior:'smooth'}); };
+document.getElementById('footerReportarPuntoLink').onclick = (e)=>{ e.preventDefault(); goTo('reportarpunto'); window.scrollTo({top:0,behavior:'smooth'}); };
 
 /* =====================  BUSCADOR INTERNO  ===================== */
 let busquedaPublicacionesCache=null;
@@ -3070,6 +3113,7 @@ function renderAdmin(){
       <button data-tab="donantes" class="${adminTab==='donantes'?'active':''}">🎁 Donantes</button>
       <button data-tab="mensajes" class="${adminTab==='mensajes'?'active':''}">✉️ Mensajes</button>
       <button data-tab="google" class="${adminTab==='google'?'active':''}">📍 Puntos y Google</button>
+      <button data-tab="puntossugeridos" class="${adminTab==='puntossugeridos'?'active':''}">📮 Puntos sugeridos</button>
       <button data-tab="respaldos" class="${adminTab==='respaldos'?'active':''}">🗄️ Respaldos y papelera</button>
     </div>
     <div id="adminBody">Cargando…</div>
@@ -3085,6 +3129,7 @@ function renderAdmin(){
   else if(adminTab==='donantes') renderAdminDonantes();
   else if(adminTab==='mensajes') renderAdminMensajes();
   else if(adminTab==='google') renderAdminGoogle();
+  else if(adminTab==='puntossugeridos') renderAdminPuntosSugeridos();
   else renderAdminRespaldos();
 }
 
@@ -4190,6 +4235,47 @@ function pintarAprobadas(){
     if(error){ alert(error.message); return; }
     aprobadasCache = aprobadasCache.filter(x=>String(x.id)!==b.dataset.del);
     pintarAprobadas();
+  });
+}
+
+/* ---- tab: puntos sugeridos por la comunidad (formulario público) ---- */
+async function renderAdminPuntosSugeridos(){
+  const body = document.getElementById('adminBody');
+  body.innerHTML = `<div class="empty">Cargando…</div>`;
+  const {data, error} = await db.rpc('bv_admin_listar_puntos_sugeridos', adminCreds());
+  if(error){ body.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  if(!data || data.length===0){ body.innerHTML = '<div class="empty">Todavía no ha llegado ningún punto sugerido.</div>'; return; }
+  body.innerHTML = `<p class="hint">Enviados por cualquier persona desde «Reportar un punto para el mapa». Cuando lo actualices en Google Maps, márcalo como resuelto.</p>` + data.map(p=>{
+    const enlace = p.enlace_maps ? `<a href="${escapeHtml(p.enlace_maps)}" target="_blank" rel="noopener">${escapeHtml(p.enlace_maps)}</a>` : '';
+    const textoCopiar = [
+      `Nombre: ${p.nombre||''}`, `Categoría: ${p.categoria||''}`, `Detalle: ${p.detalle||''}`,
+      p.telefono ? `Teléfono: ${p.telefono}` : '', p.enlace_maps ? `Enlace: ${p.enlace_maps}` : ''
+    ].filter(Boolean).join('\n');
+    return `
+      <div class="card">
+        <h3>📍 ${escapeHtml(p.nombre)} <span class="status-pill ${p.estado==='resuelto'?'status-published':'status-pending'}">${p.estado==='resuelto'?'Resuelto':'Nuevo'}</span></h3>
+        <p><strong>${escapeHtml(p.categoria||'')}</strong> — ${escapeHtml(p.detalle||'')}</p>
+        ${p.telefono ? `<p>📞 ${escapeHtml(p.telefono)}</p>` : ''}
+        ${enlace ? `<p>🗺️ ${enlace}</p>` : ''}
+        <div class="byline">${p.reportado_por ? 'Reportado por: '+escapeHtml(p.reportado_por)+' · ' : ''}${new Date(p.creado_en).toLocaleString('es-PA')}</div>
+        <div class="row-actions">
+          <button class="btn small outline" data-copiarpunto='${escapeHtml(textoCopiar)}'>📋 Copiar datos para Google Maps</button>
+          ${p.estado!=='resuelto' ? `<button class="btn small" data-resolver="${p.id}">✅ Marcar como resuelto</button>` : ''}
+          <button class="btn small danger" data-delpunto="${p.id}">🗑️ Eliminar</button>
+        </div>
+      </div>`;
+  }).join('');
+  body.querySelectorAll('[data-copiarpunto]').forEach(b=> b.onclick = ()=> copiarParaGoogleMaps(b, b.getAttribute('data-copiarpunto')));
+  body.querySelectorAll('[data-resolver]').forEach(b=> b.onclick = async ()=>{
+    const {error} = await db.rpc('bv_admin_marcar_punto_sugerido', {...adminCreds(), p_id:b.dataset.resolver, p_estado:'resuelto'});
+    if(error){ alert(error.message); return; }
+    renderAdminPuntosSugeridos();
+  });
+  body.querySelectorAll('[data-delpunto]').forEach(b=> b.onclick = async ()=>{
+    if(!confirm('¿Eliminar este punto sugerido?')) return;
+    const {error} = await db.rpc('bv_admin_eliminar_punto_sugerido', {...adminCreds(), p_id:b.dataset.delpunto});
+    if(error){ alert(error.message); return; }
+    renderAdminPuntosSugeridos();
   });
 }
 
