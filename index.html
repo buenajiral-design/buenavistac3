@@ -3846,9 +3846,15 @@ function pintarTablaSemanal(){
     .sort((a,b)=> String(a.salon).localeCompare(String(b.salon),'es',{numeric:true}) || a.nombre.localeCompare(b.nombre,'es'));
   if(!alumnos.length){ cont.innerHTML = '<div class="empty">No hay estudiantes con esta sección habilitada.</div>'; return; }
 
-  const porEstudianteSemana = new Map(); // key `${estudiante_id}||${semana}` -> tarea
+  const porEstudianteSemana = new Map(); // key `${estudiante_id}||${semana}` -> tarea (solo de esta sección)
   tareasCache.filter(t=>t.seccion_id===seccionId).forEach(t=>{
     porEstudianteSemana.set(`${t.estudiante_id}||${t.semana||1}`, t);
+  });
+  // Un estudiante solo puede tener UNA tarea por semana en total, sin importar la sección.
+  // Este mapa cubre TODAS las secciones para saber si esa semana ya está ocupada por otra.
+  const porEstudianteSemanaGlobal = new Map(); // key `${estudiante_id}||${semana}` -> tarea (cualquier sección)
+  tareasCache.forEach(t=>{
+    porEstudianteSemanaGlobal.set(`${t.estudiante_id}||${t.semana||1}`, t);
   });
 
   cont.innerHTML = `
@@ -3871,12 +3877,20 @@ function pintarTablaSemanal(){
               <div class="hint" style="margin:.25em 0 0;max-width:130px;white-space:normal;">${escapeHtml(t.tema)}</div>
             </td>`;
           }
+          const ocupadaOtraSeccion = porEstudianteSemanaGlobal.get(`${al.id}||${n}`);
+          if(ocupadaOtraSeccion){
+            const secOcupa = SECTIONS.find(s=>s.id===ocupadaOtraSeccion.seccion_id);
+            return `<td>
+              <button class="btn small" disabled title="Ya tiene una tarea de &quot;${escapeHtml(secOcupa?secOcupa.name:ocupadaOtraSeccion.seccion_id)}&quot; en esta semana. Quítala primero para poder asignar otra." style="opacity:.35;cursor:not-allowed;">+</button>
+              <div class="hint" style="margin:.25em 0 0;max-width:130px;white-space:normal;">Ocupada: ${escapeHtml(secOcupa?secOcupa.name:ocupadaOtraSeccion.seccion_id)}</div>
+            </td>`;
+          }
           return `<td><button class="btn small" data-celda="${al.id}" data-semana="${n}" style="opacity:.55;">+</button></td>`;
         }).join('')}
       </tr>`).join('')}
     </tbody></table>
     </div>
-    <p class="hint" style="margin-top:.8em;">Clic en el estado para cambiar la tarea de esa semana · clic en <strong>✕</strong> para quitarla (puedes deshacerlo unos segundos después) · "+" para asignar una nueva.</p>
+    <p class="hint" style="margin-top:.8em;">Clic en el estado para cambiar la tarea de esa semana · clic en <strong>✕</strong> para quitarla (puedes deshacerlo unos segundos después) · "+" para asignar una nueva. Cada estudiante solo puede tener una tarea por semana; si una semana está ocupada por otra sección, primero quítala allí.</p>
   `;
   cont.querySelectorAll('[data-celda]').forEach(b=>{
     b.onclick = ()=>{
@@ -4121,6 +4135,21 @@ async function openTareaModal(actual){
     const fechaEntrega = document.getElementById('tFechaEntrega').value || null;
     const msg = document.getElementById('tareaModalMsg');
     if(!estudianteId || !seccionId || !tema){ msg.innerHTML = '<div class="msg error">Completa estudiante, sección y tema.</div>'; return; }
+
+    // Un estudiante solo puede tener UNA tarea por semana, sin importar la sección.
+    // Si ya tiene una tarea de otra sección en esa misma semana, se bloquea el guardado:
+    // el profesor(a) debe quitar esa tarea primero antes de poder asignar una nueva en esa semana.
+    const otraSeccionMismaSemana = tareasCache.find(t=>
+      String(t.estudiante_id)===String(estudianteId) &&
+      Number(t.semana||1)===semana &&
+      t.seccion_id!==seccionId
+    );
+    if(otraSeccionMismaSemana){
+      const secAnterior = SECTIONS.find(s=>s.id===otraSeccionMismaSemana.seccion_id);
+      msg.innerHTML = `<div class="msg error">Este estudiante ya tiene una tarea de "${escapeHtml(secAnterior?secAnterior.name:otraSeccionMismaSemana.seccion_id)}" en la Semana ${semana}. Solo puede haber una tarea por semana: ve a esa sección en la Tabla semanal y quítala (✕) antes de asignar esta.</div>`;
+      return;
+    }
+
     const {error} = await db.rpc('bv_admin_asignar_tarea', {...adminCreds(), p_estudiante_id:estudianteId, p_seccion_id:seccionId, p_tema:tema, p_semana:semana, p_fecha_entrega:fechaEntrega});
     if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
     document.getElementById('tareaModal').remove();
