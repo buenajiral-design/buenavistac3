@@ -2080,12 +2080,18 @@ async function renderMiTarea(claveElegida){
   if(tarea.estado==='publicado') pill = '<span class="status-pill status-published">Publicado</span>';
   if(tarea.estado==='devuelto') pill = '<span class="status-pill status-rejected">Devuelto — sigue editando</span>';
 
+  const semanaRepetida = {};
+  semanas.forEach(sem=>{ semanaRepetida[sem.semana] = (semanaRepetida[sem.semana]||0) + 1; });
   const pestañas = semanas.length>1 ? `
     <div class="tarea-modo" style="flex-wrap:wrap;">
       ${semanas.map(sem=>{
-        const sIcon = (SECTIONS.find(x=>x.id===sem.seccion_id)||{}).icon || '🎯';
+        const secSem = SECTIONS.find(x=>x.id===sem.seccion_id) || {};
+        const sIcon = secSem.icon || '🎯';
+        const etiqueta = semanaRepetida[sem.semana] > 1
+          ? `${secSem.name || sem.seccion_id} · Semana ${sem.semana}`
+          : `Semana ${sem.semana}`;
         return `<button data-tarea-clave="${escapeHtml(claveDe(sem))}" class="${claveDe(sem)===claveDe(tarea)?'active':''}">
-          ${sIcon} Semana ${sem.semana}
+          ${sIcon} ${escapeHtml(etiqueta)}
           <span class="status-pill ${estadoPillClase[sem.estado]||'status-pending'}" style="margin-left:.4em;font-size:.7em;">${sem.estado==='publicado'?'✓':sem.estado==='pendiente'?'…':''}</span>
         </button>`;
       }).join('')}
@@ -3057,6 +3063,7 @@ function renderAdmin(){
     <div class="section-divider"><div class="icon">⚙️</div><h2>Panel del profesor</h2><div class="rule"></div></div>
     <div class="tabs">
       <button data-tab="pendientes" class="${adminTab==='pendientes'?'active':''}">📝 Pendientes de revisión</button>
+      <button data-tab="aprobadas" class="${adminTab==='aprobadas'?'active':''}">✅ Ya aprobadas</button>
       <button data-tab="salones" class="${adminTab==='salones'?'active':''}">🏫 Salones y estudiantes</button>
       <button data-tab="tareas" class="${adminTab==='tareas'?'active':''}">🎯 Tareas individuales</button>
       <button data-tab="paginas" class="${adminTab==='paginas'?'active':''}">🎨 Páginas</button>
@@ -3071,6 +3078,7 @@ function renderAdmin(){
     b.onclick = ()=>{ adminTab = b.dataset.tab; renderAdmin(); };
   });
   if(adminTab==='pendientes') renderAdminPendientes();
+  else if(adminTab==='aprobadas') renderAdminAprobadas();
   else if(adminTab==='salones') renderAdminSalones();
   else if(adminTab==='tareas') renderAdminTareas();
   else if(adminTab==='paginas') renderAdminPaginas();
@@ -4106,6 +4114,82 @@ async function renderAdminPendientes(){
     if(!confirm('¿Eliminar esta publicación? Quedará guardada en la papelera por si acaso.')) return;
     await db.rpc('bv_admin_eliminar_contenido', {...adminCreds(), p_id:b.dataset.del});
     renderAdminPendientes();
+  });
+}
+
+/* ---- tab: aprobadas (ya revisadas y publicadas — para volver a verlas o mandarlas de vuelta a edición) ---- */
+let aprobadasCache = [];
+let aprobadasFiltro = '';
+let aprobadasSeccion = '';
+async function renderAdminAprobadas(){
+  const body = document.getElementById('adminBody');
+  body.innerHTML = `
+    <p class="hint">Páginas que ya revisaste y aprobaste. Si encuentras algo que corregir, pulsa «↩️ Devolver para editar»: el estudiante la verá como devuelta y podrá seguir trabajándola.</p>
+    <div class="row-actions" style="margin-bottom:1em;flex-wrap:wrap;align-items:flex-end;">
+      <div class="field" style="max-width:320px;margin:0;">
+        <label>Buscar por título o estudiante</label>
+        <input id="buscarAprobadaInput" placeholder="Ej. Alto de La Gloria, o ABREGO" value="${escapeHtml(aprobadasFiltro)}">
+      </div>
+      <div class="field" style="max-width:260px;margin:0;">
+        <label>Sección</label>
+        <select id="filtroSeccionAprobadas">
+          <option value="">Todas las secciones</option>
+          ${SECTIONS.map(s=>`<option value="${s.id}" ${s.id===aprobadasSeccion?'selected':''}>${s.icon} ${s.name}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div id="listaAprobadas">Cargando…</div>
+  `;
+  document.getElementById('buscarAprobadaInput').oninput = (e)=>{ aprobadasFiltro = e.target.value.trim().toLowerCase(); pintarAprobadas(); };
+  document.getElementById('filtroSeccionAprobadas').onchange = (e)=>{ aprobadasSeccion = e.target.value; pintarAprobadas(); };
+  const {data, error} = await db.from('bv_contenido').select('*').eq('estado','publicado').order('creado_en',{ascending:false});
+  if(error){ document.getElementById('listaAprobadas').innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+  aprobadasCache = data || [];
+  pintarAprobadas();
+}
+function pintarAprobadas(){
+  const cont = document.getElementById('listaAprobadas');
+  if(!cont) return;
+  if(!aprobadasCache.length){ cont.innerHTML = '<div class="empty">Todavía no hay páginas aprobadas.</div>'; return; }
+  let filtradas = aprobadasSeccion ? aprobadasCache.filter(it=>it.seccion_id===aprobadasSeccion) : aprobadasCache;
+  if(aprobadasFiltro){
+    filtradas = filtradas.filter(it=>
+      String(it.titulo||'').toLowerCase().includes(aprobadasFiltro) || String(it.autor_nombre||'').toLowerCase().includes(aprobadasFiltro)
+    );
+  }
+  if(!filtradas.length){ cont.innerHTML = '<div class="empty">Ninguna página coincide con la búsqueda.</div>'; return; }
+  cont.innerHTML = filtradas.map(item=>{
+    const s = SECTIONS.find(x=>x.id===item.seccion_id);
+    const fecha = item.creado_en ? new Date(item.creado_en).toLocaleDateString('es-PA',{day:'numeric',month:'long',year:'numeric'}) : '';
+    return `
+      <div class="card">
+        <h3>${s?s.icon:''} ${escapeHtml(item.titulo)} <span class="status-pill status-published">Publicado</span></h3>
+        <div class="byline">${escapeHtml(item.autor_nombre||'')}${item.autor_salon? ' · '+(SALON_LABEL[item.autor_salon]||item.autor_salon):''} — sección: ${s?s.name:item.seccion_id}${fecha?' · '+fecha:''}</div>
+        <div class="row-actions">
+          <button class="btn small outline" data-ver="${item.id}">👁 Ver</button>
+          <button class="btn small outline" data-reeditar="${item.id}">↩️ Devolver para editar</button>
+          <button class="btn small danger" data-del="${item.id}">🗑️ Eliminar</button>
+        </div>
+      </div>`;
+  }).join('');
+  cont.querySelectorAll('[data-ver]').forEach(b=> b.onclick = ()=>{
+    const item = aprobadasCache.find(x=>String(x.id)===b.dataset.ver);
+    if(item) abrirVistaPreviaTarea({tema:item.titulo, estado:item.estado, observacion:item.observacion, bloques:item.bloques||[]});
+  });
+  cont.querySelectorAll('[data-reeditar]').forEach(b=> b.onclick = async ()=>{
+    const nota = prompt('¿Qué debe corregir el estudiante? (esto lo verá al entrar; déjalo vacío si no quieres dejar una nota)', '');
+    if(nota===null) return;
+    const {error} = await db.rpc('bv_admin_moderar_con_nota', {...adminCreds(), p_id:b.dataset.reeditar, p_estado:'devuelto', p_observacion:nota});
+    if(error){ alert(error.message); return; }
+    aprobadasCache = aprobadasCache.filter(x=>String(x.id)!==b.dataset.reeditar);
+    pintarAprobadas();
+  });
+  cont.querySelectorAll('[data-del]').forEach(b=> b.onclick = async ()=>{
+    if(!confirm('¿Eliminar esta publicación? Quedará guardada en la papelera por si acaso.')) return;
+    const {error} = await db.rpc('bv_admin_eliminar_contenido', {...adminCreds(), p_id:b.dataset.del});
+    if(error){ alert(error.message); return; }
+    aprobadasCache = aprobadasCache.filter(x=>String(x.id)!==b.dataset.del);
+    pintarAprobadas();
   });
 }
 
