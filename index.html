@@ -655,11 +655,11 @@
     <div id="loginProfesorFields" style="display:none;">
       <div class="field">
         <label>Usuario</label>
-        <input id="loginUser" placeholder="usuario">
+        <input id="loginUser" placeholder="usuario" autocomplete="username" autocapitalize="none" spellcheck="false">
       </div>
       <div class="field">
         <label>Contraseña</label>
-        <input id="loginPass" type="password" placeholder="contraseña">
+        <input id="loginPass" type="password" placeholder="contraseña" autocomplete="current-password" autocapitalize="none" spellcheck="false">
       </div>
     </div>
 
@@ -1268,12 +1268,46 @@ document.getElementById('doLogin').onclick = async ()=>{
   const esEst = tabLoginEstudiante.classList.contains('active');
 
   if(!esEst){
-    const u = document.getElementById('loginUser').value.trim();
-    const p = document.getElementById('loginPass').value;
-    if(!u || !p){ msg.innerHTML = '<div class="msg error">Escribe usuario y contraseña.</div>'; return; }
-    const {data, error} = await db.rpc('bv_admin_login', {p_usuario:u, p_contrasena:p});
-    if(error || !data){ msg.innerHTML = '<div class="msg error">Usuario o contraseña incorrectos.</div>'; return; }
-    session = {role:'admin', usuario:u, contrasena:p, name:'Prof. Samuel Ortega'};
+    const botonEntrar = document.getElementById('doLogin');
+    const usuarioEscrito = document.getElementById('loginUser').value.trim();
+    const contrasenaEscrita = document.getElementById('loginPass').value;
+    if(!usuarioEscrito || !contrasenaEscrita){ msg.innerHTML = '<div class="msg error">Escribe usuario y contraseña.</div>'; return; }
+
+    // Algunos celulares ponen la primera letra en mayúscula o cambian el guion normal
+    // por un guion tipográfico. Se prueban ambas versiones sin cambiar la base de datos.
+    const usuarios = [...new Set([usuarioEscrito, usuarioEscrito.toLowerCase()])];
+    const contrasenaNormalizada = contrasenaEscrita.trim().replace(/[‐‑‒–—−]/g, '-');
+    const contrasenas = [...new Set([contrasenaEscrita, contrasenaNormalizada])];
+    let credencialesValidas = null;
+    let errorConexion = null;
+
+    botonEntrar.disabled = true;
+    botonEntrar.textContent = 'Verificando…';
+    try{
+      for(const usuario of usuarios){
+        for(const contrasena of contrasenas){
+          const {data, error} = await db.rpc('bv_admin_login', {p_usuario:usuario, p_contrasena:contrasena});
+          if(error){ errorConexion = error; break; }
+          if(data){ credencialesValidas = {usuario, contrasena}; break; }
+        }
+        if(credencialesValidas || errorConexion) break;
+      }
+    }catch(error){
+      errorConexion = error;
+    }finally{
+      botonEntrar.disabled = false;
+      botonEntrar.textContent = 'Entrar';
+    }
+
+    if(errorConexion){
+      msg.innerHTML = '<div class="msg error">No se pudo conectar. Revisa el internet del celular e intenta nuevamente.</div>';
+      return;
+    }
+    if(!credencialesValidas){
+      msg.innerHTML = '<div class="msg error">Usuario o contraseña incorrectos.</div>';
+      return;
+    }
+    session = {role:'admin', usuario:credencialesValidas.usuario, contrasena:credencialesValidas.contrasena, name:'Prof. Samuel Ortega'};
     sessionStorage.setItem('bv_session', JSON.stringify(session));
     closeModal('loginModal'); renderWho(); renderDrawer(); goTo('admin');
     return;
