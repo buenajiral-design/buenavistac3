@@ -1137,10 +1137,11 @@ try{
   if(saved) session = JSON.parse(saved);
 }catch(e){ session = null; }
 
-/* Un estudiante con una tarea específica asignada queda "bloqueado":
-   solo puede ver y editar esa tarea, nada más del sitio. */
+/* Todo estudiante que inicia sesión queda "bloqueado": solo ve su propia
+   página de "Mi tarea" (con su nombre y la tarea de la semana), nada más
+   del sitio, hasta que presiona "Salir". */
 function estaBloqueado(){
-  return !!(session && session.role==='student' && session.tarea && session.tarea.tema);
+  return !!(session && session.role==='student');
 }
 
 /* =====================  UI: TOPBAR / DRAWER  ===================== */
@@ -1148,6 +1149,7 @@ function renderWho(){
   const who = document.getElementById('whoLabel');
   const loginBtn = document.getElementById('loginBtn');
   const drawerBtn = document.getElementById('drawerBtn');
+  const buscarBtn = document.getElementById('buscarBtn');
   if(session){
     who.textContent = (session.role==='admin' ? '👑 ' : '🧑‍🎓 ') + (session.role==='admin'? session.name : session.nombre);
     loginBtn.textContent = 'Salir';
@@ -1156,6 +1158,7 @@ function renderWho(){
     loginBtn.textContent = 'Entrar';
   }
   drawerBtn.style.display = estaBloqueado() ? 'none' : '';
+  if(buscarBtn) buscarBtn.style.display = estaBloqueado() ? 'none' : '';
 }
 function renderFooterLinks(){
   const cont = document.getElementById('footerSecciones');
@@ -2248,6 +2251,10 @@ async function renderMiTarea(claveElegida){
 
   if(error || !tarea){
     main.innerHTML = `
+      <div style="text-align:center;margin:1.2em 0 1.6em;">
+        <div style="font-size:.9em;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dark);font-weight:700;">Bienvenido(a)</div>
+        <h1 style="font-size:2.1em;margin:.15em 0 0;">${escapeHtml(session.nombre)}</h1>
+      </div>
       <div class="section-divider"><div class="icon">🎯</div><h2>Mi tarea</h2><div class="rule"></div></div>
       <div class="empty">Todavía no tienes una tarea asignada. Pídele a tu profesor(a) que te asigne una desde el panel.</div>`;
     return;
@@ -2283,6 +2290,10 @@ async function renderMiTarea(claveElegida){
     </div>` : '';
 
   main.innerHTML = `
+    <div style="text-align:center;margin:1.2em 0 1.6em;">
+      <div style="font-size:.9em;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dark);font-weight:700;">Bienvenido(a)</div>
+      <h1 style="font-size:2.1em;margin:.15em 0 0;">${escapeHtml(session.nombre)}</h1>
+    </div>
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>Mi tarea</h2><div class="rule"></div></div>
     ${pestañas}
     <div class="tarea-head">
