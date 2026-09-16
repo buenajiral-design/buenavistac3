@@ -621,7 +621,7 @@
 
 <main id="main" class="page-frame"></main>
 
-<footer>
+<footer id="siteFooter">
   <div class="footer-cols">
     <div class="footer-col">
       <div class="footer-brand"><div class="mark">BV</div><strong>Buena Vista</strong></div>
@@ -1157,8 +1157,10 @@ function renderWho(){
     who.textContent = '';
     loginBtn.textContent = 'Entrar';
   }
+  const siteFooter = document.getElementById('siteFooter');
   drawerBtn.style.display = estaBloqueado() ? 'none' : '';
   if(buscarBtn) buscarBtn.style.display = estaBloqueado() ? 'none' : '';
+  if(siteFooter) siteFooter.style.display = estaBloqueado() ? 'none' : '';
 }
 function renderFooterLinks(){
   const cont = document.getElementById('footerSecciones');
