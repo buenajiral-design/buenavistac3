@@ -411,6 +411,128 @@
   .word-page{min-height:150px;padding:1.2em 1.35em;background:#fff;outline:none;line-height:1.6;overflow-wrap:anywhere;}
   .word-page:empty:before{content:attr(data-placeholder);color:#9a9287;pointer-events:none;}
   .word-page ul,.word-page ol{padding-left:1.5em;}
+
+  /* ============================================================
+     "Mi tarea" — vestido juvenil y colorido para estudiantes
+     Todo aquí vive bajo .mi-tarea-view para no afectar el resto
+     del sitio (portal público, panel del profesor, etc.)
+     ============================================================ */
+  .mi-tarea-view{
+    --kid-red:#FF6B6B; --kid-red-d:#e14b4b;
+    --kid-blue:#3DA9FC; --kid-blue-d:#1c8ee0;
+    --kid-teal:#1FBFA3; --kid-teal-d:#149885;
+    --kid-purple:#8B6FE0; --kid-purple-d:#6f52c9;
+    --kid-yellow:#FFB703; --kid-yellow-d:#e09e00;
+    --kid-pink:#FF7CAB; --kid-pink-d:#e85f8f;
+  }
+  .mi-tarea-view .section-divider .icon{font-size:1.7rem;filter:drop-shadow(0 2px 0 rgba(0,0,0,.08));}
+  .mi-tarea-view .section-divider h2{
+    background:linear-gradient(90deg,var(--kid-purple),var(--kid-blue) 45%,var(--kid-teal));
+    -webkit-background-clip:text;background-clip:text;color:transparent;font-family:'Bitter',serif;
+  }
+
+  /* pestañas Editar / Vista previa / semanas */
+  .mi-tarea-view .tarea-modo{gap:.55em;}
+  .mi-tarea-view .tarea-modo button{
+    border-radius:999px;border:2px solid var(--kid-purple);color:var(--kid-purple-d);
+    background:#fff;font-weight:800;box-shadow:0 2px 0 rgba(139,111,224,.25);
+    transition:transform .12s ease,background .15s ease,color .15s ease;
+  }
+  .mi-tarea-view .tarea-modo button:hover{transform:translateY(-2px);}
+  .mi-tarea-view .tarea-modo button.active{
+    background:linear-gradient(135deg,var(--kid-purple),var(--kid-blue));
+    color:#fff;border-color:transparent;box-shadow:0 4px 0 rgba(28,142,224,.3);
+  }
+
+  /* tarjetas de cada bloque de contenido */
+  .mi-tarea-view .bloque-editor{
+    border:none;border-radius:16px;box-shadow:0 4px 16px rgba(43,38,32,.1);
+    border-left:7px solid var(--kid-blue);transition:transform .12s ease,box-shadow .12s ease;
+  }
+  .mi-tarea-view .bloque-editor:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(43,38,32,.14);}
+  .mi-tarea-view .fila-editor:nth-of-type(5n+1) .bloque-editor{border-left-color:var(--kid-blue);}
+  .mi-tarea-view .fila-editor:nth-of-type(5n+2) .bloque-editor{border-left-color:var(--kid-pink);}
+  .mi-tarea-view .fila-editor:nth-of-type(5n+3) .bloque-editor{border-left-color:var(--kid-teal);}
+  .mi-tarea-view .fila-editor:nth-of-type(5n+4) .bloque-editor{border-left-color:var(--kid-yellow-d);}
+  .mi-tarea-view .fila-editor:nth-of-type(5n+5) .bloque-editor{border-left-color:var(--kid-purple);}
+  .mi-tarea-view .bloque-editor .bloque-tipo{
+    background:var(--kid-purple);color:#fff;padding:.25em .8em;border-radius:999px;
+    font-size:.72rem;letter-spacing:.04em;
+  }
+  .mi-tarea-view .bloque-editor .bloque-tools button{
+    background:var(--parchment);border-radius:50%;width:2em;height:2em;
+    transition:transform .1s ease,background .1s ease;
+  }
+  .mi-tarea-view .bloque-editor .bloque-tools button:hover{transform:scale(1.15);background:var(--kid-yellow);}
+
+  /* fila (contenedor de columnas) */
+  .mi-tarea-view .fila-editor{border:2px dashed rgba(139,111,224,.35);border-radius:16px;background:#fffefb;}
+
+  /* barra "+ Agregar" dentro de cada columna */
+  .mi-tarea-view .add-bloque-bar button{
+    border-radius:999px;border:2px dashed var(--kid-teal);color:var(--kid-teal-d);font-weight:800;
+    transition:transform .12s ease;
+  }
+  .mi-tarea-view .add-bloque-bar button:hover{
+    background:var(--kid-teal);color:#fff;border-style:solid;transform:translateY(-2px) rotate(-1deg);
+  }
+
+  /* botones grandes de acción (guardar, enviar, IA...) */
+  .mi-tarea-view .row-actions .btn{border-radius:999px;font-weight:800;box-shadow:0 3px 0 rgba(43,38,32,.15);}
+  .mi-tarea-view .row-actions .btn:active{transform:translateY(2px);box-shadow:none;}
+  .mi-tarea-view #enviarRevisionBtn{background:linear-gradient(135deg,var(--kid-yellow),var(--gold-dark));color:#3a2a06;}
+  .mi-tarea-view #mejorarIABtn{border-color:var(--kid-purple);color:var(--kid-purple-d);}
+  .mi-tarea-view #mejorarIABtn:hover{background:var(--kid-purple);color:#fff;}
+
+  /* editor de texto tipo "Word" — la estrella de la fiesta */
+  .mi-tarea-view .word-editor{
+    border:none;border-radius:16px;overflow:hidden;
+    box-shadow:0 6px 20px rgba(43,38,32,.12),0 0 0 2px rgba(139,111,224,.18);
+  }
+  .mi-tarea-view .word-toolbar{
+    background:linear-gradient(90deg,#f3ecff,#e8f7f4 55%,#fff7e6);
+    border-bottom:none;padding:.7em .6em;gap:.4em;
+  }
+  .mi-tarea-view .word-toolbar .wt-btn{
+    border-radius:10px;border:1.5px solid transparent;background:#fff;font-weight:800;
+    box-shadow:0 2px 0 rgba(43,38,32,.08);transition:transform .1s ease,background .12s ease,color .12s ease;
+  }
+  .mi-tarea-view .word-toolbar .wt-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .mi-tarea-view .word-toolbar .wt-btn[data-group="a"]{color:var(--kid-red-d);border-color:rgba(255,107,107,.35);}
+  .mi-tarea-view .word-toolbar .wt-btn[data-group="a"]:hover{background:var(--kid-red);color:#fff;}
+  .mi-tarea-view .word-toolbar .wt-btn[data-group="b"]{color:var(--kid-blue-d);border-color:rgba(61,169,252,.35);}
+  .mi-tarea-view .word-toolbar .wt-btn[data-group="b"]:hover{background:var(--kid-blue);color:#fff;}
+  .mi-tarea-view .word-toolbar .wt-btn[data-group="c"]{color:var(--kid-teal-d);border-color:rgba(31,191,163,.35);}
+  .mi-tarea-view .word-toolbar .wt-btn[data-group="c"]:hover{background:var(--kid-teal);color:#fff;}
+  .mi-tarea-view .word-toolbar .wt-btn[data-group="d"]{color:var(--kid-purple-d);border-color:rgba(139,111,224,.35);}
+  .mi-tarea-view .word-toolbar .wt-btn[data-group="d"]:hover{background:var(--kid-purple);color:#fff;}
+  .mi-tarea-view .word-toolbar .wt-btn[data-group="e"]{color:var(--kid-yellow-d);border-color:rgba(255,183,3,.4);}
+  .mi-tarea-view .word-toolbar .wt-btn[data-group="e"]:hover{background:var(--kid-yellow);color:#3a2a06;}
+  .mi-tarea-view .word-toolbar .sep{background:rgba(139,111,224,.3);width:2px;border-radius:2px;}
+  .mi-tarea-view .word-page{
+    font-size:1.05rem;padding:1.4em 1.5em;background:
+      linear-gradient(#fff,#fff) padding-box;
+    position:relative;
+  }
+  .mi-tarea-view .word-page:focus{background:#fffdf5;}
+  .mi-tarea-view .word-page:empty:before{color:#b7ac9c;font-style:italic;}
+
+  /* el panel lateral para elegir qué agregar */
+  .mi-tarea-view .bloque-picker-item{border-radius:12px;}
+  .mi-tarea-view .bloque-picker-item:hover{background:#f3ecff;border-color:var(--kid-purple);transform:translateX(3px);}
+  .mi-tarea-view .bloque-picker-icon{
+    background:linear-gradient(135deg,var(--kid-blue),var(--kid-teal));color:#fff;
+    border-radius:50%;width:1.9em;height:1.9em;display:flex;align-items:center;justify-content:center;font-size:1.2rem;
+  }
+  .mi-tarea-view .bloque-picker-list button:nth-child(5n+2) .bloque-picker-icon{background:linear-gradient(135deg,var(--kid-pink),var(--kid-red));}
+  .mi-tarea-view .bloque-picker-list button:nth-child(5n+3) .bloque-picker-icon{background:linear-gradient(135deg,var(--kid-yellow),var(--kid-yellow-d));}
+  .mi-tarea-view .bloque-picker-list button:nth-child(5n+4) .bloque-picker-icon{background:linear-gradient(135deg,var(--kid-purple),var(--kid-pink));}
+  .mi-tarea-view .bloque-picker-list button:nth-child(5n+5) .bloque-picker-icon{background:linear-gradient(135deg,var(--kid-teal),var(--kid-blue));}
+
+  @media(max-width:640px){
+    .mi-tarea-view .word-toolbar{padding:.5em .4em;}
+    .mi-tarea-view .word-toolbar .wt-btn{min-height:38px;}
+  }
   .donor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.8em;margin:1em 0;}
   .donor-tier{border:2px solid var(--line);border-radius:10px;padding:1em;text-align:center;background:var(--white);}
   .donor-tier strong{display:block;font-family:'Bitter',serif;font-size:1.25rem;color:var(--forest-dark);}
@@ -2253,12 +2375,14 @@ async function renderMiTarea(claveElegida){
 
   if(error || !tarea){
     main.innerHTML = `
+      <div class="mi-tarea-view">
       <div style="text-align:center;margin:1.2em 0 1.6em;">
         <div style="font-size:.9em;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dark);font-weight:700;">Bienvenido(a)</div>
         <h1 style="font-size:2.1em;margin:.15em 0 0;">${escapeHtml(session.nombre)}</h1>
       </div>
       <div class="section-divider"><div class="icon">🎯</div><h2>Mi tarea</h2><div class="rule"></div></div>
-      <div class="empty">Todavía no tienes una tarea asignada. Pídele a tu profesor(a) que te asigne una desde el panel.</div>`;
+      <div class="empty">Todavía no tienes una tarea asignada. Pídele a tu profesor(a) que te asigne una desde el panel.</div>
+      </div>`;
     return;
   }
 
@@ -2292,6 +2416,7 @@ async function renderMiTarea(claveElegida){
     </div>` : '';
 
   main.innerHTML = `
+    <div class="mi-tarea-view">
     <div style="text-align:center;margin:1.2em 0 1.6em;">
       <div style="font-size:.9em;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dark);font-weight:700;">Bienvenido(a)</div>
       <h1 style="font-size:2.1em;margin:.15em 0 0;">${escapeHtml(session.nombre)}</h1>
@@ -2311,6 +2436,7 @@ async function renderMiTarea(claveElegida){
     </div>
     <div id="tareaMsg"></div>
     <div id="tareaBody"></div>
+    </div>
   `;
   main.querySelectorAll('[data-tarea-clave]').forEach(b=>{
     b.onclick = ()=> renderMiTarea(b.dataset.tareaClave);
@@ -2977,20 +3103,20 @@ function bloqueCamposHTML(b,i){
       </div>
       <div class="word-editor">
         <div class="word-toolbar" data-word-toolbar="${i}">
-          <button type="button" data-cmd="bold" title="Negrita"><b>N</b></button>
-          <button type="button" data-cmd="italic" title="Cursiva"><i>K</i></button>
-          <button type="button" data-cmd="underline" title="Subrayado"><u>S</u></button>
-          <button type="button" data-cmd="strikeThrough" title="Tachado"><s>abc</s></button><span class="sep"></span>
-          <button type="button" data-cmd="justifyLeft" title="Alinear izquierda">☰</button>
-          <button type="button" data-cmd="justifyCenter" title="Centrar">≡</button>
-          <button type="button" data-cmd="justifyRight" title="Alinear derecha">☷</button><span class="sep"></span>
-          <button type="button" data-cmd="insertUnorderedList" title="Lista con viñetas">• Lista</button>
-          <button type="button" data-cmd="insertOrderedList" title="Lista numerada">1. Lista</button>
-          <button type="button" data-cmd="formatBlock" data-value="h2">Título</button>
-          <button type="button" data-cmd="formatBlock" data-value="p">Párrafo</button>
-          <button type="button" data-cmd="removeFormat">Borrar formato</button><span class="sep"></span>
-          <button type="button" data-cmd="mayusculas" title="Poner en MAYÚSCULAS el texto seleccionado">MAYÚS.</button>
-          <button type="button" data-cmd="minusculas" title="Poner en minúsculas el texto seleccionado">minús.</button>
+          <button type="button" class="wt-btn" data-group="a" data-cmd="bold" title="Negrita"><b>N</b></button>
+          <button type="button" class="wt-btn" data-group="a" data-cmd="italic" title="Cursiva"><i>K</i></button>
+          <button type="button" class="wt-btn" data-group="a" data-cmd="underline" title="Subrayado"><u>S</u></button>
+          <button type="button" class="wt-btn" data-group="a" data-cmd="strikeThrough" title="Tachado"><s>abc</s></button><span class="sep"></span>
+          <button type="button" class="wt-btn" data-group="b" data-cmd="justifyLeft" title="Alinear izquierda">☰</button>
+          <button type="button" class="wt-btn" data-group="b" data-cmd="justifyCenter" title="Centrar">≡</button>
+          <button type="button" class="wt-btn" data-group="b" data-cmd="justifyRight" title="Alinear derecha">☷</button><span class="sep"></span>
+          <button type="button" class="wt-btn" data-group="c" data-cmd="insertUnorderedList" title="Lista con viñetas">• Lista</button>
+          <button type="button" class="wt-btn" data-group="c" data-cmd="insertOrderedList" title="Lista numerada">1. Lista</button>
+          <button type="button" class="wt-btn" data-group="d" data-cmd="formatBlock" data-value="h2">🏷️ Título</button>
+          <button type="button" class="wt-btn" data-group="d" data-cmd="formatBlock" data-value="p">Párrafo</button>
+          <button type="button" class="wt-btn" data-group="d" data-cmd="removeFormat">Borrar formato</button><span class="sep"></span>
+          <button type="button" class="wt-btn" data-group="e" data-cmd="mayusculas" title="Poner en MAYÚSCULAS el texto seleccionado">MAYÚS.</button>
+          <button type="button" class="wt-btn" data-group="e" data-cmd="minusculas" title="Poner en minúsculas el texto seleccionado">minús.</button>
         </div>
         <div class="word-page" contenteditable="true" data-richtext="${i}" data-placeholder="Escribe aquí o pega texto de Word…" style="font-size:${TAMANOS_TEXTO[b.tamano]||TAMANOS_TEXTO.normal};color:${escapeHtml(b.color||'#2b2620')};font-weight:${b.negrita?'700':'400'};font-style:${b.cursiva?'italic':'normal'};text-align:${({izquierda:'left',centro:'center',derecha:'right'})[b.alineacion]||'left'};">${b.html ? sanitizarHTML(b.html) : escapeHtml(b.texto||'').replace(/\n/g,'<br>')}</div>
       </div>
