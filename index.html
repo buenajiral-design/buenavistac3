@@ -580,6 +580,17 @@
     border:none;background:linear-gradient(90deg,#f3ecff,#fff7e6);border-radius:12px;
     font-weight:700;color:var(--forest-dark);padding:.8em;
   }
+
+  /* vista previa: que se sienta como la página ya publicada */
+  .mi-tarea-view .vista-previa-aviso{
+    display:flex;align-items:center;justify-content:space-between;gap:.6em;flex-wrap:wrap;
+    background:linear-gradient(90deg,var(--kid-purple),var(--kid-blue));color:#fff;
+    border-radius:12px;padding:.7em 1em;margin-bottom:1em;font-weight:800;
+  }
+  .mi-tarea-view .vista-previa-pagina{
+    border:none;border-radius:16px;box-shadow:0 6px 22px rgba(43,38,32,.12);padding:1.6em 1.7em;
+  }
+  .mi-tarea-view .vista-previa-pagina .pie-pagina-fijo{margin-top:1.4em;}
   .donor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.8em;margin:1em 0;}
   .donor-tier{border:2px solid var(--line);border-radius:10px;padding:1em;text-align:center;background:var(--white);}
   .donor-tier strong{display:block;font-family:'Bitter',serif;font-size:1.25rem;color:var(--forest-dark);}
@@ -2644,8 +2655,23 @@ function pintarMiTarea(){
   document.getElementById('modoVistaBtn').classList.toggle('active', miTareaModo==='vista');
   const body = document.getElementById('tareaBody');
   if(miTareaModo==='vista'){
-    body.innerHTML = (miTareaBloques.length ? renderBloquesHTML(miTareaBloques) :
-      `<div class="empty">Todavía no has agregado nada. Cambia a "Editar" para empezar.</div>`) + piePaginaFijoHTML();
+    body.innerHTML = `
+      <div class="vista-previa-aviso">
+        <span>👁️ Así se verá tu página cuando se publique</span>
+        <button class="btn small gold" id="volverEditarBtn" type="button">✏️ Volver a editar</button>
+      </div>
+      <div class="vista-previa-pagina card">
+        ${miTareaBloques.length ? renderBloquesHTML(miTareaBloques) :
+          `<div class="empty">Todavía no has agregado nada. Cambia a "Editar" para empezar.</div>`}
+        ${piePaginaFijoHTML()}
+      </div>
+      <div class="row-actions" style="margin-top:1em;">
+        <button class="btn outline" id="volverEditarBtn2" type="button">✏️ Volver a editar</button>
+      </div>
+    `;
+    const irAEditar = ()=>{ miTareaModo='editar'; pintarMiTarea(); };
+    document.getElementById('volverEditarBtn').onclick = irAEditar;
+    document.getElementById('volverEditarBtn2').onclick = irAEditar;
     return;
   }
   body.innerHTML = `
