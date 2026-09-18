@@ -208,6 +208,11 @@
     padding:1.1em 1.2em;
     margin-bottom:1em;
   }
+  .card-title-tools{display:flex;align-items:center;gap:.45em;flex-wrap:wrap;margin-bottom:.25em;}
+  .card-title-tools h3{margin:0;flex:1;min-width:180px;}
+  .lectura-btn,.whatsapp-btn{border:1px solid var(--line);background:#fff;border-radius:999px;padding:.42em .7em;cursor:pointer;font-weight:700;white-space:nowrap;}
+  .lectura-btn:hover,.whatsapp-btn:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.08);}
+  @media(max-width:600px){.card-title-tools{align-items:flex-start}.lectura-btn,.whatsapp-btn{font-size:.88rem;padding:.38em .6em;}}
   .card h3{font-size:1.08rem;margin-bottom:.25em;}
   .card img{width:100%;max-height:260px;object-fit:cover;border-radius:var(--radius);margin-bottom:.7em;}
   .byline{font-size:.78rem;color:var(--clay);font-weight:700;margin-top:.6em;}
@@ -1231,6 +1236,17 @@ const TEMAS_SUGERIDOS = {
     'Un día de escuela',
     'Una celebración o fiesta local'
   ],
+  proyectos: [
+    'Proyecto de mejora de la comunidad',
+    'Jornada de limpieza o reciclaje',
+    'Actividad escolar realizada en Buena Vista',
+    'Obra o reparación comunitaria',
+    'Proyecto de una Junta de Desarrollo Local',
+    'Campaña ambiental o de salud',
+    'Actividad para niños, jóvenes o adultos mayores',
+    'Proyecto futuro propuesto por estudiantes',
+    'Otra iniciativa o actividad comunitaria'
+  ],
   noticias: [
     'Una actividad o evento reciente',
     'Un logro de la comunidad o de un vecino',
@@ -2146,6 +2162,38 @@ async function copiarParaGoogleMaps(btn, texto){
   }
   setTimeout(()=>{ btn.textContent = original; }, 2200);
 }
+let bvVozActualBtn=null;
+function textoLegibleDeTarjeta(btn){
+  const card=btn.closest('.card');
+  if(!card) return '';
+  const copia=card.cloneNode(true);
+  copia.querySelectorAll('button,.row-actions,.byline,.status-pill,.msg').forEach(x=>x.remove());
+  return (copia.innerText||copia.textContent||'').replace(/\s+/g,' ').trim();
+}
+function leerPublicacion(btn){
+  if(!('speechSynthesis' in window)){ alert('Este navegador no permite lectura en voz alta.'); return; }
+  if(window.speechSynthesis.speaking && bvVozActualBtn===btn){
+    window.speechSynthesis.cancel(); bvVozActualBtn=null; btn.textContent='🔊 Escuchar'; return;
+  }
+  window.speechSynthesis.cancel();
+  document.querySelectorAll('.lectura-btn').forEach(b=>b.textContent='🔊 Escuchar');
+  const texto=textoLegibleDeTarjeta(btn);
+  if(!texto){ alert('No hay texto para leer.'); return; }
+  const u=new SpeechSynthesisUtterance(texto); u.lang='es-PA'; u.rate=0.95;
+  bvVozActualBtn=btn; btn.textContent='⏹️ Detener';
+  u.onend=u.onerror=()=>{ btn.textContent='🔊 Escuchar'; bvVozActualBtn=null; };
+  window.speechSynthesis.speak(u);
+}
+function compartirWhatsAppPublicacion(btn){
+  const card=btn.closest('.card');
+  const titulo=btn.dataset.titulo||'Publicación de Buena Vista';
+  const seccion=btn.dataset.seccion||currentSection||'home';
+  const pub=btn.dataset.pub||'';
+  const url=new URL(window.location.href); url.search=''; url.hash='';
+  url.searchParams.set('seccion',seccion); if(pub) url.searchParams.set('pub',pub);
+  const texto=`${titulo}\n\nMira esta publicación del proyecto Buena Vista — C.E.B.G. El Jiral:\n${url.toString()}`;
+  window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank','noopener');
+}
 function cardHTML(item, permitirEditar, seccionId){
   let pill = '';
   if(item.estado==='pendiente') pill = '<span class="status-pill status-pending">En revisión</span>';
@@ -2153,9 +2201,9 @@ function cardHTML(item, permitirEditar, seccionId){
   const tieneBloques = item.bloques && item.bloques.length;
   const ubicacion = tieneBloques ? extraerUbicacionDeBloques(item.bloques) : null;
   return `
-    <div class="card">
+    <div class="card" data-publicacion-id="${item.id}">
       ${!tieneBloques && item.img_url ? `<img src="${item.img_url}" alt="${escapeHtml(item.titulo)}">` : ''}
-      <h3>${escapeHtml(item.titulo)} ${pill}</h3>
+      <div class="card-title-tools"><h3>${escapeHtml(item.titulo)} ${pill}</h3><button type="button" class="lectura-btn" onclick="leerPublicacion(this)" title="Leer todo el contenido en voz alta">🔊 Escuchar</button><button type="button" class="whatsapp-btn" data-pub="${item.id}" data-seccion="${seccionId||item.seccion_id||''}" data-titulo="${escapeHtml(item.titulo)}" onclick="compartirWhatsAppPublicacion(this)" title="Compartir esta publicación por WhatsApp">🟢 WhatsApp</button></div>
       ${tieneBloques ? renderBloquesHTML(item.bloques) : `<p>${escapeHtml(item.cuerpo)}</p>`}
       ${item.observacion ? `<div class="msg" style="background:#f4dfa8;color:#6b4c0a;">📝 Observación del profesor(a): ${escapeHtml(item.observacion)}</div>` : ''}
       <div class="byline">Creado por: ${escapeHtml(item.autor_nombre||'')}${item.autor_salon? ' · '+(SALON_LABEL[item.autor_salon]||item.autor_salon) : ''}</div>
@@ -2232,6 +2280,8 @@ async function renderSection(id){
     return cardHTML(item, esMio, id);
   }).join('') :
     `<div class="empty">${canEdit ? 'Todavía no has agregado nada aquí. ¡Empieza con la primera publicación!' : 'Todavía no hay publicaciones en esta sección.'}</div>`;
+  const pubCompartida = new URLSearchParams(location.search).get('pub');
+  if(pubCompartida){ setTimeout(()=>{ const el=document.querySelector(`[data-publicacion-id="${CSS.escape(pubCompartida)}"]`); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.boxShadow='0 0 0 4px rgba(212,160,23,.35)'; } },250); }
 
   document.querySelectorAll('#sectionList [data-copiarmaps]').forEach(btn=>{
     btn.onclick = ()=>{
@@ -4605,8 +4655,13 @@ async function openTareaModal(actual){
       return;
     }
 
-    const {error} = await db.rpc('bv_admin_asignar_tarea', {...adminCreds(), p_estudiante_id:estudianteId, p_seccion_id:seccionId, p_tema:tema, p_semana:semana, p_fecha_entrega:fechaEntrega});
-    if(error){ msg.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
+    let {error} = await db.rpc('bv_admin_asignar_tarea', {...adminCreds(), p_estudiante_id:estudianteId, p_seccion_id:seccionId, p_tema:tema, p_semana:semana, p_fecha_entrega:fechaEntrega});
+    // Compatibilidad con instalaciones donde la función todavía no recibe p_fecha_entrega.
+    if(error && /bv_admin_asignar_tarea|schema cache|function/i.test(String(error.message||''))){
+      const reintento = await db.rpc('bv_admin_asignar_tarea', {...adminCreds(), p_estudiante_id:estudianteId, p_seccion_id:seccionId, p_tema:tema, p_semana:semana});
+      error = reintento.error;
+    }
+    if(error){ msg.innerHTML = `<div class="msg error">No se pudo asignar la tarea: ${escapeHtml(error.message)}</div>`; return; }
     document.getElementById('tareaModal').remove();
     cargarTareas();
   };
@@ -4619,37 +4674,54 @@ async function renderAdminPendientes(){
   const {data, error} = await db.rpc('bv_admin_pendientes', adminCreds());
   if(error){ body.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; return; }
   if(!data || data.length===0){ body.innerHTML = '<div class="empty">No hay publicaciones esperando revisión.</div>'; return; }
-  body.innerHTML = data.map(item=>{
-    const s = SECTIONS.find(x=>x.id===item.seccion_id);
-    return `
-      <div class="card">
-        <h3>${s?s.icon:''} ${escapeHtml(item.titulo)} <span class="status-pill status-pending">En revisión</span></h3>
-        <p>${escapeHtml(item.cuerpo)}</p>
-        <div class="byline">${escapeHtml(item.autor_nombre||'')}${item.autor_salon? ' · '+(SALON_LABEL[item.autor_salon]||item.autor_salon):''} — sección: ${s?s.name:item.seccion_id}</div>
-        <div class="row-actions">
-          <button class="btn small" data-approve="${item.id}">✅ Publicar</button>
-          <button class="btn small danger" data-reject="${item.id}">✏️ Devolver</button>
-          <button class="btn small danger" data-del="${item.id}">🗑️ Eliminar</button>
-        </div>
-      </div>`;
+  body.innerHTML = `<p class="hint">Pulsa <b>Revisar tarea</b> para abrir el trabajo completo. El comentario que guardes quedará visible para el estudiante cuando entre a su tarea.</p>` + data.map(item=>{
+    const sec = SECTIONS.find(x=>x.id===item.seccion_id);
+    return `<div class="card" style="display:flex;gap:1em;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+      <div><strong>${escapeHtml(item.autor_nombre||'Estudiante')}</strong>${item.autor_salon?` · ${escapeHtml(SALON_LABEL[item.autor_salon]||item.autor_salon)}`:''}<br><span class="hint">${sec?sec.icon+' '+escapeHtml(sec.name):escapeHtml(item.seccion_id||'')} · ${escapeHtml(item.titulo||'Sin título')}</span></div>
+      <button class="btn small" data-revisar="${item.id}">🔗 Revisar tarea</button>
+    </div>`;
   }).join('');
-  body.querySelectorAll('[data-approve]').forEach(b=> b.onclick = async ()=>{
-    const nota = prompt('¿Quieres dejarle una observación al estudiante? (déjalo vacío si no)', '');
-    if(nota===null) return;
-    await db.rpc('bv_admin_moderar_con_nota', {...adminCreds(), p_id:b.dataset.approve, p_estado:'publicado', p_observacion:nota});
-    renderAdminPendientes();
+  body.querySelectorAll('[data-revisar]').forEach(btn=> btn.onclick=()=>{
+    const item=data.find(x=>String(x.id)===String(btn.dataset.revisar));
+    if(item) abrirRevisionPendiente(item);
   });
-  body.querySelectorAll('[data-reject]').forEach(b=> b.onclick = async ()=>{
-    const nota = prompt('Escribe qué debe corregir el estudiante (esto lo verá al entrar):', '');
-    if(nota===null) return;
-    await db.rpc('bv_admin_moderar_con_nota', {...adminCreds(), p_id:b.dataset.reject, p_estado:'devuelto', p_observacion:nota});
-    renderAdminPendientes();
-  });
-  body.querySelectorAll('[data-del]').forEach(b=> b.onclick = async ()=>{
-    if(!confirm('¿Eliminar esta publicación? Quedará guardada en la papelera por si acaso.')) return;
-    await db.rpc('bv_admin_eliminar_contenido', {...adminCreds(), p_id:b.dataset.del});
-    renderAdminPendientes();
-  });
+}
+
+function abrirRevisionPendiente(item){
+  const anterior=document.getElementById('revisionPendienteModal');
+  if(anterior) anterior.remove();
+  const sec=SECTIONS.find(x=>x.id===item.seccion_id);
+  document.body.insertAdjacentHTML('beforeend', `<div class="modal-overlay open" id="revisionPendienteModal">
+    <div class="modal" style="max-width:1050px;width:min(96vw,1050px);">
+      <button class="modal-close" id="cerrarRevisionPendiente">×</button>
+      <h3>📝 Revisar tarea — ${escapeHtml(item.autor_nombre||'Estudiante')}</h3>
+      <div class="byline">${item.autor_salon?escapeHtml(SALON_LABEL[item.autor_salon]||item.autor_salon)+' · ':''}${sec?sec.icon+' '+escapeHtml(sec.name):escapeHtml(item.seccion_id||'')}</div>
+      <div style="border:1px solid #d7c9a8;border-radius:8px;overflow:hidden;margin:1em 0;background:#fff;">
+        <iframe id="revisionPendienteFrame" style="width:100%;height:52vh;border:0;"></iframe>
+      </div>
+      <div class="field"><label>Comentario del profesor</label><textarea id="revisionComentario" rows="4" placeholder="Escribe aquí lo que debe corregir, mejorar o una felicitación…">${escapeHtml(item.observacion||'')}</textarea></div>
+      <div id="revisionMsg"></div>
+      <div class="row-actions" style="flex-wrap:wrap;">
+        <button class="btn outline" id="guardarComentarioRevision">💾 Guardar comentario</button>
+        <button class="btn" id="aprobarRevision">✅ Aprobar y publicar</button>
+        <button class="btn danger" id="devolverRevision">✏️ Devolver para corregir</button>
+      </div>
+    </div></div>`);
+  const frame=document.getElementById('revisionPendienteFrame');
+  frame.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:Arial,sans-serif;padding:18px;line-height:1.5;color:#2b2620}img{max-width:100%;height:auto}iframe{max-width:100%}h1{font-size:1.5rem}</style></head><body><h1>${escapeHtml(item.titulo||'')}</h1>${item.cuerpo?`<p>${escapeHtml(item.cuerpo).replace(/\n/g,'<br>')}</p>`:''}${renderBloquesHTML(item.bloques||[])||'<p>Todavía no ha agregado contenido.</p>'}</body></html>`;
+  document.getElementById('cerrarRevisionPendiente').onclick=()=>document.getElementById('revisionPendienteModal').remove();
+  async function moderar(estado,cerrar){
+    const nota=document.getElementById('revisionComentario').value.trim();
+    const msg=document.getElementById('revisionMsg');
+    msg.innerHTML='<div class="msg">Guardando…</div>';
+    const {error}=await db.rpc('bv_admin_moderar_con_nota',{...adminCreds(),p_id:item.id,p_estado:estado,p_observacion:nota});
+    if(error){msg.innerHTML=`<div class="msg error">${escapeHtml(error.message)}</div>`;return;}
+    if(cerrar){document.getElementById('revisionPendienteModal').remove();renderAdminPendientes();}
+    else msg.innerHTML='<div class="msg success">✅ Comentario guardado. El estudiante podrá verlo al entrar.</div>';
+  }
+  document.getElementById('guardarComentarioRevision').onclick=()=>moderar('pendiente',false);
+  document.getElementById('aprobarRevision').onclick=()=>moderar('publicado',true);
+  document.getElementById('devolverRevision').onclick=()=>moderar('devuelto',true);
 }
 
 /* ---- tab: aprobadas (ya revisadas y publicadas — para volver a verlas o mandarlas de vuelta a edición) ---- */
@@ -5062,7 +5134,9 @@ function initMapaFullscreenEstatico(){
   initEditorPaginasEstatico();
   initColManagerEstatico();
   initMapaFullscreenEstatico();
-  goTo(estaBloqueado() ? 'mitarea' : (session ? (session.role==='admin' ? 'admin' : 'home') : 'home'));
+  const seccionCompartida = new URLSearchParams(location.search).get('seccion');
+  const destinoInicial = seccionCompartida && SECTIONS.some(x=>x.id===seccionCompartida) ? seccionCompartida : (session ? (session.role==='admin' ? 'admin' : 'home') : 'home');
+  goTo(estaBloqueado() ? 'mitarea' : destinoInicial);
   registrarYMostrarVisitas();
 })();
 </script>
