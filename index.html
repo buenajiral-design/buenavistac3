@@ -556,6 +556,22 @@
     .pg-galeria-caption{font-size:.95rem!important;padding:.7em .6em!important;min-height:44px;margin-top:.6em!important;}
     .mi-tarea-view .tarea-modo{gap:.4em;}
     .mi-tarea-view .tarea-modo button{padding:.55em 1em;font-size:.85rem;min-height:40px;}
+    #tablaMisPaginas{max-width:100%;}
+    #tablaMisPaginas table{min-width:0!important;}
+    #tablaMisPaginas table,#tablaMisPaginas tbody,#tablaMisPaginas tr,#tablaMisPaginas td{display:block;width:100%;}
+    #tablaMisPaginas thead{display:none;}
+    #tablaMisPaginas tr{display:grid;grid-template-columns:1fr 1fr;gap:.45em;padding:.9em 0;border-top:1px solid var(--line);}
+    #tablaMisPaginas tr:first-child{border-top:none;}
+    #tablaMisPaginas td{padding:0!important;border:0!important;min-width:0;text-align:left!important;}
+    #tablaMisPaginas td:nth-child(1){grid-column:1/-1;font-size:1.05rem;}
+    #tablaMisPaginas td:nth-child(2)::before{content:'Tema: ';font-weight:700;color:var(--clay);}
+    #tablaMisPaginas td:nth-child(3)::before{content:'Estado: ';font-weight:700;color:var(--clay);}
+    #tablaMisPaginas td:nth-child(4)::before{content:'Nota: ';font-weight:700;color:var(--clay);}
+    #tablaMisPaginas td:nth-child(4){text-align:left!important;}
+    #tablaMisPaginas td:nth-child(5){grid-column:1/-1;}
+    #tablaMisPaginas td:nth-child(5)::before{content:'Comentario: ';font-weight:700;color:var(--clay);display:block;}
+    #tablaMisPaginas td:nth-child(6),#tablaMisPaginas td:nth-child(7){grid-column:1/-1;}
+    #tablaMisPaginas td:nth-child(6) .btn,#tablaMisPaginas td:nth-child(7) .btn{width:100%;min-height:44px;}
   }
 
   /* tarjeta de "¿qué debe llevar?" (checklist/rúbrica) */
