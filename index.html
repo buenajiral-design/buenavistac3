@@ -543,7 +543,19 @@
 
   @media(max-width:640px){
     .mi-tarea-view .word-toolbar{padding:.5em .4em;}
-    .mi-tarea-view .word-toolbar .wt-btn{min-height:38px;}
+    .mi-tarea-view .word-toolbar .wt-btn{min-height:44px;min-width:44px;}
+    .mi-tarea-view .word-page{min-height:240px;padding:1em 1em;font-size:1.05rem;}
+    .mi-tarea-view .bloque-editor{padding:.9em;}
+    .mi-tarea-view .titulo-fijo-input{font-size:1.2rem;padding:.6em .5em;}
+    .mi-tarea-view .field{margin-bottom:1.3em;}
+    .mi-tarea-view .field input,.mi-tarea-view .field select,.mi-tarea-view .field textarea{min-height:46px;padding:.7em .6em;}
+    .mi-tarea-view .field textarea{min-height:110px;}
+    .mi-tarea-view .upload-row{flex-direction:column;align-items:stretch;gap:.5em;}
+    .mi-tarea-view .upload-row input[type="file"]{min-width:0;min-height:46px;}
+    .mi-tarea-view .foto-preview{max-height:180px;margin-bottom:.8em;}
+    .pg-galeria-caption{font-size:.95rem!important;padding:.7em .6em!important;min-height:44px;margin-top:.6em!important;}
+    .mi-tarea-view .tarea-modo{gap:.4em;}
+    .mi-tarea-view .tarea-modo button{padding:.55em 1em;font-size:.85rem;min-height:40px;}
   }
 
   /* tarjeta de "¿qué debe llevar?" (checklist/rúbrica) */
@@ -2603,7 +2615,7 @@ function barraNavegacionSemanas(semanas, claveActual){
     }
     return `<button type="button" class="btn small outline" data-semana-nav="${n}">Semana ${n}</button>`;
   }).join('');
-  const pillActual = claveActual ? `<span class="btn small" style="background:var(--forest);color:#fff;cursor:default;">✓ Semana ${semanaActualNum}</span>` : '';
+  const pillActual = claveActual ? `<button type="button" id="btnNavPillActual" class="btn small" style="background:var(--forest);color:#fff;">✓ Semana ${semanaActualNum}</button>` : '';
   const otras = claveActual
     ? `<details style="display:inline-block;vertical-align:middle;"><summary class="btn small outline" style="cursor:pointer;">▾ Otras semanas</summary><div style="margin-top:.5em;display:flex;gap:.4em;flex-wrap:wrap;">${botonesSemana}</div></details>`
     : botonesSemana;
@@ -2614,22 +2626,38 @@ function barraNavegacionSemanas(semanas, claveActual){
     ${otras}
   </div>`;
 }
-function enlazarBarraNavegacion(){
-  const irA = id => { const el = document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); };
+let vistaEstudiantePanel = 'tarea';
+function aplicarVistaPanelEstudiante(){
+  const panels = {selector:'panelSelector', notas:'panelNotas', tarea:'panelEditorTarea'};
+  Object.entries(panels).forEach(([clave,id])=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = (vistaEstudiantePanel===clave) ? '' : 'none';
+  });
   const btnTema = document.getElementById('btnNavElegirTema');
-  if(btnTema) btnTema.onclick = ()=> irA('selectorTareaEstudiante');
+  if(btnTema) btnTema.classList.toggle('outline', vistaEstudiantePanel!=='selector');
   const btnNotas = document.getElementById('btnNavVerNotas');
-  if(btnNotas) btnNotas.onclick = ()=> irA('tablaMisPaginas');
+  if(btnNotas) btnNotas.classList.toggle('outline', vistaEstudiantePanel!=='notas');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function enlazarBarraNavegacion(){
+  const btnTema = document.getElementById('btnNavElegirTema');
+  if(btnTema) btnTema.onclick = ()=>{ vistaEstudiantePanel='selector'; aplicarVistaPanelEstudiante(); };
+  const btnNotas = document.getElementById('btnNavVerNotas');
+  if(btnNotas) btnNotas.onclick = ()=>{ vistaEstudiantePanel='notas'; aplicarVistaPanelEstudiante(); };
+  const pillActualEl = document.getElementById('btnNavPillActual');
+  if(pillActualEl) pillActualEl.onclick = ()=>{ vistaEstudiantePanel='tarea'; aplicarVistaPanelEstudiante(); };
   document.querySelectorAll('[data-semana-nav]').forEach(b=>{
     b.onclick = ()=>{
       if(b.dataset.claveNav){ renderMiTarea(b.dataset.claveNav); }
       else{
-        irA('selectorTareaEstudiante');
+        vistaEstudiantePanel='selector';
+        aplicarVistaPanelEstudiante();
         const sel = document.getElementById('autoSemana');
         if(sel) sel.value = b.dataset.semanaNav;
       }
     };
   });
+  aplicarVistaPanelEstudiante();
 }
 async function renderMiTarea(claveElegida){
   const main = document.getElementById('main');
@@ -2656,11 +2684,16 @@ async function renderMiTarea(claveElegida){
       </div>
       <div class="section-divider"><div class="icon">🎯</div><h2>Crear mi página</h2><div class="rule"></div></div>
       ${barraNavegacionSemanas(semanas, null)}
-      <div id="selectorTareaEstudiante"></div>
-      ${tablaControlEstudiante(semanas,notasSemanales)}
+      <div id="panelSelector">
+        <div id="selectorTareaEstudiante"></div>
+      </div>
+      <div id="panelNotas" style="display:none;">
+        ${tablaControlEstudiante(semanas,notasSemanales)}
+      </div>
       </div>`;
     pintarSelectorTareaEstudiante(semanas);
     enlazarBotonesEditarSemana();
+    vistaEstudiantePanel = 'selector';
     enlazarBarraNavegacion();
     return;
   }
@@ -2680,20 +2713,6 @@ async function renderMiTarea(claveElegida){
 
   const semanaRepetida = {};
   semanas.forEach(sem=>{ semanaRepetida[sem.semana] = (semanaRepetida[sem.semana]||0) + 1; });
-  const pestañas = semanas.length>1 ? `
-    <div class="tarea-modo" style="flex-wrap:wrap;">
-      ${semanas.map(sem=>{
-        const secSem = SECTIONS.find(x=>x.id===sem.seccion_id) || {};
-        const sIcon = secSem.icon || '🎯';
-        const etiqueta = semanaRepetida[sem.semana] > 1
-          ? `${secSem.name || sem.seccion_id} · Semana ${sem.semana}`
-          : `Semana ${sem.semana}`;
-        return `<button data-tarea-clave="${escapeHtml(claveDe(sem))}" class="${claveDe(sem)===claveDe(tarea)?'active':''}">
-          ${sIcon} ${escapeHtml(etiqueta)}
-          <span class="status-pill ${estadoPillClase[sem.estado]||'status-pending'}" style="margin-left:.4em;font-size:.7em;">${sem.estado==='publicado'?'✓':sem.estado==='pendiente'?'…':''}</span>
-        </button>`;
-      }).join('')}
-    </div>` : '';
 
   main.innerHTML = `
     <div class="mi-tarea-view">
@@ -2703,9 +2722,13 @@ async function renderMiTarea(claveElegida){
     </div>
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>Mi tarea</h2><div class="rule"></div></div>
     ${barraNavegacionSemanas(semanas, claveDe(tarea))}
-    ${pestañas}
-    <div id="selectorTareaEstudiante"></div>
-    ${tablaControlEstudiante(semanas,notasSemanales)}
+    <div id="panelSelector" style="display:none;">
+      <div id="selectorTareaEstudiante"></div>
+    </div>
+    <div id="panelNotas" style="display:none;">
+      ${tablaControlEstudiante(semanas,notasSemanales)}
+    </div>
+    <div id="panelEditorTarea">
     <div class="tarea-head">
       <h3 style="margin:0;">${escapeHtml(tarea.tema)} ${pill}</h3>
       <span class="hint" style="margin:0;">Semana ${tarea.semana||1}</span>
@@ -2720,9 +2743,11 @@ async function renderMiTarea(claveElegida){
     <div id="tareaMsg"></div>
     <div id="tareaBody"></div>
     </div>
+    </div>
   `;
   pintarSelectorTareaEstudiante(semanas);
   enlazarBotonesEditarSemana();
+  vistaEstudiantePanel = 'tarea';
   enlazarBarraNavegacion();
   main.querySelectorAll('[data-tarea-clave]').forEach(b=>{
     b.onclick = ()=> renderMiTarea(b.dataset.tareaClave);
