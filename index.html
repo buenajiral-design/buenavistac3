@@ -2412,6 +2412,10 @@ function infoSeccionFija(b){
   for(const clave in SECCION_FIJA_INFO){ if(b[clave]) return SECCION_FIJA_INFO[clave]; }
   return null;
 }
+function claveSeccionFija(b){
+  for(const clave in SECCION_FIJA_INFO){ if(b[clave]) return clave; }
+  return null;
+}
 function crearEsqueletoFijoMiTarea(){
   const bTitulo = crearBloqueBase('texto');
   bTitulo.esTituloFijo = true; bTitulo.tamano='enorme'; bTitulo.negrita=true; bTitulo.alineacion='centro';
@@ -2590,18 +2594,24 @@ async function cargarNotasEstudiante(){
 function barraNavegacionSemanas(semanas, claveActual){
   const porSemana = new Map((semanas||[]).map(s=>[Number(s.semana)||1, s]));
   const claveDe = s => `${s.seccion_id}||${s.semana}`;
+  const semanaActualNum = claveActual ? Number(claveActual.split('||')[1]) : null;
   const botonesSemana = [1,2,3,4,5,6,7].map(n=>{
+    if(claveActual && n===semanaActualNum) return '';
     const t = porSemana.get(n);
     if(t){
-      const activo = claveActual && claveDe(t)===claveActual;
-      return `<button type="button" class="btn small ${activo?'':'outline'}" data-semana-nav="${n}" data-clave-nav="${escapeHtml(claveDe(t))}">${activo?'✓ ':''}Semana ${n}</button>`;
+      return `<button type="button" class="btn small outline" data-semana-nav="${n}" data-clave-nav="${escapeHtml(claveDe(t))}">Semana ${n}</button>`;
     }
     return `<button type="button" class="btn small outline" data-semana-nav="${n}">Semana ${n}</button>`;
   }).join('');
-  return `<div class="tarea-modo" style="flex-wrap:wrap;">
+  const pillActual = claveActual ? `<span class="btn small" style="background:var(--forest);color:#fff;cursor:default;">✓ Semana ${semanaActualNum}</span>` : '';
+  const otras = claveActual
+    ? `<details style="display:inline-block;vertical-align:middle;"><summary class="btn small outline" style="cursor:pointer;">▾ Otras semanas</summary><div style="margin-top:.5em;display:flex;gap:.4em;flex-wrap:wrap;">${botonesSemana}</div></details>`
+    : botonesSemana;
+  return `<div class="tarea-modo" style="flex-wrap:wrap;align-items:center;">
     <button type="button" class="btn small outline" id="btnNavElegirTema">📝 Elegir tema</button>
     <button type="button" class="btn small outline" id="btnNavVerNotas">📊 Notas</button>
-    ${botonesSemana}
+    ${pillActual}
+    ${otras}
   </div>`;
 }
 function enlazarBarraNavegacion(){
@@ -2840,6 +2850,7 @@ function pintarMiTarea(){
     return;
   }
   body.innerHTML = `
+    <div id="indiceMiTarea" class="tarea-modo" style="flex-wrap:wrap;"></div>
     <div id="bloquesList"></div>
     <div class="row-actions" style="margin:1em 0 .6em;">
       <button class="btn outline small" id="agregarFilaBtn" type="button">➕ Agregar otra sección (opcional)</button>
@@ -2940,6 +2951,21 @@ function cambiarMayusMinus(editor, aMayus){
     node.nodeValue = node.nodeValue.slice(0,start) + transform(node.nodeValue.slice(start,end)) + node.nodeValue.slice(end);
   });
 }
+let seccionActivaMiTarea = 'esTituloFijo';
+function indiceMiTareaHTML(){
+  return Object.entries(SECCION_FIJA_INFO).map(([clave,info])=>{
+    const etiqueta = info.nombre.replace(' (si tiene)','');
+    return `<button type="button" class="btn small ${seccionActivaMiTarea===clave?'':'outline'}" data-seccion-indice="${clave}">${info.icon} ${etiqueta}</button>`;
+  }).join('');
+}
+function aplicarSeccionActivaMiTarea(){
+  document.querySelectorAll('#bloquesList [data-seccion-fija]').forEach(el=>{
+    el.style.display = (el.dataset.seccionFija===seccionActivaMiTarea) ? '' : 'none';
+  });
+  document.querySelectorAll('#indiceMiTarea [data-seccion-indice]').forEach(btn=>{
+    btn.classList.toggle('outline', btn.dataset.seccionIndice!==seccionActivaMiTarea);
+  });
+}
 function pintarBloquesList(){
   const cont = document.getElementById('bloquesList');
   if(!cont) return;
@@ -2984,7 +3010,7 @@ function pintarBloquesList(){
   function tituloFijoHTML(b){
     return `
       <p class="hint" style="margin-top:0;">Escribe el título de tu página. Siempre se verá grande y centrado, con el mismo estilo en todas las páginas.</p>
-      <input type="text" class="titulo-fijo-input" data-titulo-fijo="${b.id}" value="${escapeHtml(b.texto||'')}" placeholder="Ej. Alto de La Gloria N.° 2">
+      <input type="text" class="titulo-fijo-input" data-titulo-fijo="${b.id}" value="${escapeHtml(b.texto||'')}" placeholder="AGREGAR TÍTULO">
     `;
   }
 
@@ -2995,7 +3021,7 @@ function pintarBloquesList(){
       const cols = fila.columnas;
       if(fila.esFija){
         return `
-          <div class="fila-editor fila-fija" data-filaid="${fila.id}">
+          <div class="fila-editor fila-fija" data-filaid="${fila.id}" data-seccion-fija="${claveSeccionFija(cols[0].bloques[0])||''}">
             <div class="fila-columnas" style="grid-template-columns:1fr;">
               <div class="col-editor">
                 ${cols[0].bloques.map(b=>bloqueCardHTML(b,cols[0].bloques)).join('')}
@@ -3028,6 +3054,15 @@ function pintarBloquesList(){
       `;
     }).join('');
   }
+
+  const indiceCont = document.getElementById('indiceMiTarea');
+  if(indiceCont){
+    indiceCont.innerHTML = indiceMiTareaHTML();
+    indiceCont.querySelectorAll('[data-seccion-indice]').forEach(btn=>{
+      btn.onclick = ()=>{ seccionActivaMiTarea = btn.dataset.seccionIndice; aplicarSeccionActivaMiTarea(); };
+    });
+  }
+  aplicarSeccionActivaMiTarea();
 
   /* controles de fila */
   cont.querySelectorAll('[data-fila-subir]').forEach(b=> b.onclick=()=>{
