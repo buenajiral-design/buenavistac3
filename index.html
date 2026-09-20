@@ -2520,6 +2520,48 @@ function agregarColumnaManager(){
   pintarBloquesList();
 }
 
+function pintarSelectorTareaEstudiante(tareasActuales=[]){
+  const cont=document.getElementById('selectorTareaEstudiante');
+  if(!cont) return;
+  const usadas=new Set((tareasActuales||[]).map(t=>Number(t.semana)||1));
+  const faltantes=[1,2,3].filter(n=>!usadas.has(n));
+  if(!faltantes.length){ cont.innerHTML=''; return; }
+  const secOptions=SECTIONS.map(s=>`<option value="${escapeHtml(s.id)}">${s.icon} ${escapeHtml(s.name)}</option>`).join('');
+  const grupos=['8A','8B','8C','9A','9B','9C'];
+  const grupoActual=String(session.salon||'').replace(/[^0-9A-Za-z]/g,'').toUpperCase();
+  cont.innerHTML=`
+    <div class="card" style="max-width:620px;margin:0 auto 1.2em;border-left:5px solid var(--gold);">
+      <h3 style="margin-top:0;">📝 Elegir el tema de mi página</h3>
+      <p class="hint">Tú mismo eliges la sección, escribes el tema específico y seleccionas una de las semanas que todavía te faltan.</p>
+      <div id="autoTareaMsg"></div>
+      <div class="field"><label>Sección</label><select id="autoSeccion">${secOptions}</select></div>
+      <div class="field"><label>Tema específico</label><input id="autoTema" maxlength="160" placeholder="Escribe aquí el tema que vas a investigar"></div>
+      <div class="field"><label>Semana</label><select id="autoSemana">${faltantes.map(n=>`<option value="${n}">Semana ${n}</option>`).join('')}</select></div>
+      <div class="field"><label>Grado y grupo</label><select id="autoSalon">${grupos.map(g=>`<option value="${g}" ${g===grupoActual?'selected':''}>${g.slice(0,-1)}° ${g.slice(-1)}</option>`).join('')}</select></div>
+      <button class="btn" id="autoGuardarTarea">Crear mi página</button>
+    </div>`;
+  document.getElementById('autoGuardarTarea').onclick=async()=>{
+    const btn=document.getElementById('autoGuardarTarea');
+    const msg=document.getElementById('autoTareaMsg');
+    const seccion=document.getElementById('autoSeccion').value;
+    const tema=document.getElementById('autoTema').value.trim();
+    const semana=Number(document.getElementById('autoSemana').value);
+    const salon=document.getElementById('autoSalon').value;
+    if(!tema){ msg.innerHTML='<div class="msg error">Escribe el tema específico de tu página.</div>'; return; }
+    btn.disabled=true; btn.textContent='Creando…';
+    const {error}=await db.rpc('bv_estudiante_elegir_tarea',{p_nombre:session.nombre,p_cedula:session.cedula,p_seccion_id:seccion,p_tema:tema,p_semana:semana,p_salon:salon});
+    btn.disabled=false; btn.textContent='Crear mi página';
+    if(error){
+      const faltaSQL=/function|schema cache|bv_estudiante_elegir_tarea/i.test(String(error.message||''));
+      msg.innerHTML=`<div class="msg error">${faltaSQL?'Falta ejecutar en Supabase el archivo SQL incluido: supabase/estudiante_elegir_tarea.sql':escapeHtml(error.message||'No se pudo crear la página.')}</div>`;
+      return;
+    }
+    session.salon=salon;
+    sessionStorage.setItem('bv_session',JSON.stringify(session));
+    renderMiTarea();
+  };
+}
+
 async function renderMiTarea(claveElegida){
   const main = document.getElementById('main');
   main.innerHTML = `<div class="empty">Cargando tu tarea…</div>`;
@@ -2540,9 +2582,10 @@ async function renderMiTarea(claveElegida){
         <div style="font-size:.9em;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dark);font-weight:700;">Bienvenido(a)</div>
         <h1 style="font-size:2.1em;margin:.15em 0 0;">${escapeHtml(session.nombre)}</h1>
       </div>
-      <div class="section-divider"><div class="icon">🎯</div><h2>Mi tarea</h2><div class="rule"></div></div>
-      <div class="empty">Todavía no tienes una tarea asignada. Pídele a tu profesor(a) que te asigne una desde el panel.</div>
+      <div class="section-divider"><div class="icon">🎯</div><h2>Crear mi página</h2><div class="rule"></div></div>
+      <div id="selectorTareaEstudiante"></div>
       </div>`;
+    pintarSelectorTareaEstudiante(semanas);
     return;
   }
 
@@ -2584,6 +2627,7 @@ async function renderMiTarea(claveElegida){
     </div>
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>Mi tarea</h2><div class="rule"></div></div>
     ${pestañas}
+    <div id="selectorTareaEstudiante"></div>
     <div class="tarea-head">
       <h3 style="margin:0;">${escapeHtml(tarea.tema)} ${pill}</h3>
       <span class="hint" style="margin:0;">Semana ${tarea.semana||1}</span>
@@ -2599,6 +2643,7 @@ async function renderMiTarea(claveElegida){
     <div id="tareaBody"></div>
     </div>
   `;
+  pintarSelectorTareaEstudiante(semanas);
   main.querySelectorAll('[data-tarea-clave]').forEach(b=>{
     b.onclick = ()=> renderMiTarea(b.dataset.tareaClave);
   });
