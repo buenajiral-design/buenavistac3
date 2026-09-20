@@ -4662,10 +4662,12 @@ function pintarTareasAgrupadas(){
           <button class="btn small outline" data-agregar-tema="${escapeHtml(seccionId)}" data-agregar-tema-nombre="${escapeHtml(tema)}">+ Agregar estudiante aquí</button>
         </div>
         <p class="hint" style="margin:0 0 .8em;">${s?s.name:seccionId} · ${items.length} estudiante${items.length===1?'':'s'} en este tema</p>
-        <table class="tareas-tema-table"><thead><tr><th>Estudiante</th><th>Semana</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${items.map(t=>`
+        <table class="tareas-tema-table"><thead><tr><th>Estudiante</th><th>Semana</th><th>Abierta</th><th>Cerrada</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${items.map(t=>`
           <tr>
             <td>${escapeHtml(t.nombre)}<br><span class="hint" style="margin:0;">${SALON_LABEL[t.salon]||t.salon}</span></td>
             <td>${t.semana||1}</td>
+            <td style="white-space:nowrap;">${t.creado_en ? escapeHtml(new Date(t.creado_en).toLocaleString('es-PA',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})) : '<span class="hint">—</span>'}</td>
+            <td style="white-space:nowrap;">${t.publicado_en ? escapeHtml(new Date(t.publicado_en).toLocaleString('es-PA',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})) : '<span class="hint">—</span>'}</td>
             <td><span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoLabel[t.estado]||t.estado}</span></td>
             <td class="tareas-acciones" style="white-space:nowrap;">
               <button class="btn small outline" data-ver='${escapeHtml(JSON.stringify({tema:t.tema, estado:t.estado, observacion:t.observacion, bloques:t.bloques||[]}))}'>Ver</button>
