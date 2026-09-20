@@ -2570,12 +2570,17 @@ function tablaControlEstudiante(semanas=[], notas=[]){
   const porSemana=new Map((semanas||[]).map(t=>[Number(t.semana)||1,t]));
   const notaPorSemana=new Map((notas||[]).map(n=>[Number(n.semana),n]));
   const estadoTxt={borrador:'En proceso',pendiente:'En revisión',publicado:'✓ Realizada',devuelto:'Para corregir'};
-  return `<div class="card" style="max-width:760px;margin:1.2em auto;border-left:5px solid var(--forest);">
-    <h3 style="margin-top:0;">📊 Mi control de páginas web</h3>
-    <p class="hint">Aquí ves tu avance y la nota que el profesor te va colocando. Esta información solo corresponde a tu cuenta.</p>
-    <div style="overflow-x:auto;"><table style="min-width:560px;width:100%;"><thead><tr><th>Semana</th><th>Tema</th><th>Estado</th><th>Nota</th><th>Comentario</th></tr></thead><tbody>
-    ${[1,2,3,4,5,6,7].map(n=>{const t=porSemana.get(n), cal=notaPorSemana.get(n);return `<tr><td><b>Semana ${n}</b></td><td>${t?escapeHtml(t.tema||''):'—'}</td><td>${t?(estadoTxt[t.estado]||t.estado):'Pendiente'}</td><td style="text-align:center;font-weight:700;">${cal&&cal.nota!=null?escapeHtml(String(cal.nota)):'—'}</td><td>${cal&&cal.comentario?escapeHtml(cal.comentario):(t&&t.observacion?escapeHtml(t.observacion):'—')}</td></tr>`}).join('')}
+  return `<div class="card" style="max-width:860px;margin:1.2em auto;border-left:5px solid var(--forest);">
+    <h3 style="margin-top:0;">📊 Mis páginas para editar</h3>
+    <p class="hint">Cada semana que ya creaste tendrá su propio botón. Puedes entrar y editar solamente tus páginas.</p>
+    <div style="overflow-x:auto;"><table style="min-width:690px;width:100%;"><thead><tr><th>Semana</th><th>Tema</th><th>Estado</th><th>Nota</th><th>Comentario</th><th>Editar</th></tr></thead><tbody>
+    ${[1,2,3,4,5,6,7].map(n=>{const t=porSemana.get(n), cal=notaPorSemana.get(n), clave=t?`${t.seccion_id}||${t.semana}`:'';return `<tr><td><b>Semana ${n}</b></td><td>${t?escapeHtml(t.tema||''):'—'}</td><td>${t?(estadoTxt[t.estado]||t.estado):'Pendiente'}</td><td style="text-align:center;font-weight:700;">${cal&&cal.nota!=null?escapeHtml(String(cal.nota)):'—'}</td><td>${cal&&cal.comentario?escapeHtml(cal.comentario):(t&&t.observacion?escapeHtml(t.observacion):'—')}</td><td style="text-align:center;">${t?`<button type="button" class="btn small" data-editar-semana="${escapeHtml(clave)}">✏️ Editar Semana ${n}</button>`:'<span class="hint">Aún no creada</span>'}</td></tr>`}).join('')}
     </tbody></table></div></div>`;
+}
+function enlazarBotonesEditarSemana(){
+  document.querySelectorAll('[data-editar-semana]').forEach(btn=>{
+    btn.onclick=()=>renderMiTarea(btn.dataset.editarSemana);
+  });
 }
 async function cargarNotasEstudiante(){
   const {data,error}=await db.rpc('bv_mis_notas_semanales',{p_nombre:session.nombre,p_cedula:session.cedula});
@@ -2610,6 +2615,7 @@ async function renderMiTarea(claveElegida){
       ${tablaControlEstudiante(semanas,notasSemanales)}
       </div>`;
     pintarSelectorTareaEstudiante(semanas);
+    enlazarBotonesEditarSemana();
     return;
   }
 
@@ -2669,6 +2675,7 @@ async function renderMiTarea(claveElegida){
     </div>
   `;
   pintarSelectorTareaEstudiante(semanas);
+  enlazarBotonesEditarSemana();
   main.querySelectorAll('[data-tarea-clave]').forEach(b=>{
     b.onclick = ()=> renderMiTarea(b.dataset.tareaClave);
   });
