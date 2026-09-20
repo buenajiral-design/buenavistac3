@@ -2588,14 +2588,29 @@ function tablaControlEstudiante(semanas=[], notas=[]){
   const estadoTxt={borrador:'En proceso',pendiente:'En revisión',publicado:'✓ Realizada',devuelto:'Para corregir'};
   return `<div class="card" id="tablaMisPaginas" style="max-width:860px;margin:1.2em auto;border-left:5px solid var(--forest);">
     <h3 style="margin-top:0;">📊 Mis páginas para editar</h3>
-    <p class="hint">Cada semana que ya creaste tendrá su propio botón. Puedes entrar y editar solamente tus páginas.</p>
-    <div style="overflow-x:auto;"><table style="min-width:690px;width:100%;"><thead><tr><th>Semana</th><th>Tema</th><th>Estado</th><th>Nota</th><th>Comentario</th><th>Editar</th></tr></thead><tbody>
-    ${[1,2,3,4,5,6,7].map(n=>{const t=porSemana.get(n), cal=notaPorSemana.get(n), clave=t?`${t.seccion_id}||${t.semana}`:'';return `<tr><td><b>Semana ${n}</b></td><td>${t?escapeHtml(t.tema||''):'—'}</td><td>${t?(estadoTxt[t.estado]||t.estado):'Pendiente'}</td><td style="text-align:center;font-weight:700;">${cal&&cal.nota!=null?escapeHtml(String(cal.nota)):'—'}</td><td>${cal&&cal.comentario?escapeHtml(cal.comentario):(t&&t.observacion?escapeHtml(t.observacion):'—')}</td><td style="text-align:center;">${t?`<button type="button" class="btn small" data-editar-semana="${escapeHtml(clave)}">✏️ Editar Semana ${n}</button>`:'<span class="hint">Aún no creada</span>'}</td></tr>`}).join('')}
+    <p class="hint">Cada semana que ya creaste tendrá su propio botón. Puedes entrar y editar solamente tus páginas. Si borras una página, la semana queda libre y puedes volver a crearla con otro tema.</p>
+    <div style="overflow-x:auto;"><table style="min-width:820px;width:100%;"><thead><tr><th>Semana</th><th>Tema</th><th>Estado</th><th>Nota</th><th>Comentario</th><th>Editar</th><th>Eliminar</th></tr></thead><tbody>
+    ${[1,2,3,4,5,6,7].map(n=>{const t=porSemana.get(n), cal=notaPorSemana.get(n), clave=t?`${t.seccion_id}||${t.semana}`:'';return `<tr><td><b>Semana ${n}</b></td><td>${t?escapeHtml(t.tema||''):'—'}</td><td>${t?(estadoTxt[t.estado]||t.estado):'Pendiente'}</td><td style="text-align:center;font-weight:700;">${cal&&cal.nota!=null?escapeHtml(String(cal.nota)):'—'}</td><td>${cal&&cal.comentario?escapeHtml(cal.comentario):(t&&t.observacion?escapeHtml(t.observacion):'—')}</td><td style="text-align:center;">${t?`<button type="button" class="btn small" data-editar-semana="${escapeHtml(clave)}">✏️ Editar Semana ${n}</button>`:'<span class="hint">Aún no creada</span>'}</td><td style="text-align:center;">${t?`<button type="button" class="btn small danger" data-borrar-mi-semana="${n}" data-borrar-mi-seccion="${escapeHtml(t.seccion_id)}" data-borrar-mi-tema="${escapeHtml(t.tema||'')}">🗑️ Eliminar</button>`:'<span class="hint">—</span>'}</td></tr>`}).join('')}
     </tbody></table></div></div>`;
 }
 function enlazarBotonesEditarSemana(){
   document.querySelectorAll('[data-editar-semana]').forEach(btn=>{
     btn.onclick=()=>renderMiTarea(btn.dataset.editarSemana);
+  });
+  document.querySelectorAll('[data-borrar-mi-semana]').forEach(btn=>{
+    btn.onclick=async()=>{
+      const n = btn.dataset.borrarMiSemana;
+      const tema = btn.dataset.borrarMiTema || 'esta página';
+      if(!confirm(`¿Eliminar tu página "${tema}" de la Semana ${n}? Esta acción no se puede deshacer, pero podrás crear otra en esa semana.`)) return;
+      btn.disabled = true; btn.textContent = 'Eliminando…';
+      const {error} = await db.rpc('bv_estudiante_eliminar_pagina', {p_nombre:session.nombre, p_cedula:session.cedula, p_seccion_id:btn.dataset.borrarMiSeccion, p_semana:Number(n)});
+      if(error){
+        alert(error.message || 'No se pudo eliminar la página.');
+        btn.disabled = false; btn.textContent = '🗑️ Eliminar';
+        return;
+      }
+      renderMiTarea();
+    };
   });
 }
 async function cargarNotasEstudiante(){
