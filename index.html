@@ -420,7 +420,7 @@
   .word-toolbar button,.word-toolbar select{width:auto;min-width:34px;height:34px;padding:.25em .55em;border:1px solid #cfc9bd;border-radius:4px;background:#fff;color:var(--ink);font-weight:700;}
   .word-toolbar button:hover{background:var(--parchment-2);border-color:var(--gold);}
   .word-toolbar .sep{width:1px;height:25px;background:var(--line);margin:0 .15em;}
-  .word-page{min-height:150px;padding:1.2em 1.35em;background:#fff;outline:none;line-height:1.6;overflow-wrap:anywhere;}
+  .word-page{min-height:260px;padding:1.2em 1.35em;background:#fff;outline:none;line-height:1.6;overflow-wrap:anywhere;}
   .word-page:empty:before{content:attr(data-placeholder);color:#9a9287;pointer-events:none;}
   .word-page ul,.word-page ol{padding-left:1.5em;}
 
@@ -522,7 +522,7 @@
   .mi-tarea-view .word-toolbar .wt-btn[data-group="e"]:hover{background:var(--kid-yellow);color:#3a2a06;}
   .mi-tarea-view .word-toolbar .sep{background:rgba(139,111,224,.3);width:2px;border-radius:2px;}
   .mi-tarea-view .word-page{
-    font-size:1.05rem;padding:1.4em 1.5em;background:
+    font-size:1.05rem;padding:1.4em 1.5em;min-height:340px;background:
       linear-gradient(#fff,#fff) padding-box;
     position:relative;
   }
@@ -544,7 +544,7 @@
   @media(max-width:640px){
     .mi-tarea-view .word-toolbar{padding:.5em .4em;}
     .mi-tarea-view .word-toolbar .wt-btn{min-height:44px;min-width:44px;}
-    .mi-tarea-view .word-page{min-height:240px;padding:1em 1em;font-size:1.05rem;}
+    .mi-tarea-view .word-page{min-height:300px;padding:1em 1em;font-size:1.05rem;}
     .mi-tarea-view .bloque-editor{padding:.9em;}
     .mi-tarea-view .titulo-fijo-input{font-size:1.2rem;padding:.6em .5em;}
     .mi-tarea-view .field{margin-bottom:1.3em;}
