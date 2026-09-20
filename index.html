@@ -2524,8 +2524,8 @@ function pintarSelectorTareaEstudiante(tareasActuales=[]){
   const cont=document.getElementById('selectorTareaEstudiante');
   if(!cont) return;
   const usadas=new Set((tareasActuales||[]).map(t=>Number(t.semana)||1));
-  const faltantes=[1,2,3].filter(n=>!usadas.has(n));
-  if(!faltantes.length){ cont.innerHTML=''; return; }
+  const faltantes=[1,2,3,4,5,6,7].filter(n=>!usadas.has(n));
+  const todasCompletas=faltantes.length===0;
   const secOptions=SECTIONS.map(s=>`<option value="${escapeHtml(s.id)}">${s.icon} ${escapeHtml(s.name)}</option>`).join('');
   const grupos=['8A','8B','8C','9A','9B','9C'];
   const grupoActual=String(session.salon||'').replace(/[^0-9A-Za-z]/g,'').toUpperCase();
@@ -2536,9 +2536,9 @@ function pintarSelectorTareaEstudiante(tareasActuales=[]){
       <div id="autoTareaMsg"></div>
       <div class="field"><label>Sección</label><select id="autoSeccion">${secOptions}</select></div>
       <div class="field"><label>Tema específico</label><input id="autoTema" maxlength="160" placeholder="Escribe aquí el tema que vas a investigar"></div>
-      <div class="field"><label>Semana</label><select id="autoSemana">${faltantes.map(n=>`<option value="${n}">Semana ${n}</option>`).join('')}</select></div>
+      <div class="field"><label>Semana</label><select id="autoSemana" ${todasCompletas?'disabled':''}>${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${usadas.has(n)?'disabled':''}>Semana ${n}${usadas.has(n)?' — ✓ Realizada':''}</option>`).join('')}</select></div><div class="hint" style="margin-top:-.5em;">✓ Las semanas realizadas quedan marcadas y no se pueden repetir.</div>
       <div class="field"><label>Grado y grupo</label><select id="autoSalon">${grupos.map(g=>`<option value="${g}" ${g===grupoActual?'selected':''}>${g.slice(0,-1)}° ${g.slice(-1)}</option>`).join('')}</select></div>
-      <button class="btn" id="autoGuardarTarea">Crear mi página</button>
+      <button class="btn" id="autoGuardarTarea" ${todasCompletas?'disabled':''}>${todasCompletas?'✓ 7 semanas realizadas':'Crear mi página'}</button>
     </div>`;
   document.getElementById('autoGuardarTarea').onclick=async()=>{
     const btn=document.getElementById('autoGuardarTarea');
@@ -2562,12 +2562,29 @@ function pintarSelectorTareaEstudiante(tareasActuales=[]){
   };
 }
 
+function tablaControlEstudiante(semanas=[], notas=[]){
+  const porSemana=new Map((semanas||[]).map(t=>[Number(t.semana)||1,t]));
+  const notaPorSemana=new Map((notas||[]).map(n=>[Number(n.semana),n]));
+  const estadoTxt={borrador:'En proceso',pendiente:'En revisión',publicado:'✓ Realizada',devuelto:'Para corregir'};
+  return `<div class="card" style="max-width:760px;margin:1.2em auto;border-left:5px solid var(--forest);">
+    <h3 style="margin-top:0;">📊 Mi control de páginas web</h3>
+    <p class="hint">Aquí ves tu avance y la nota que el profesor te va colocando. Esta información solo corresponde a tu cuenta.</p>
+    <div style="overflow-x:auto;"><table style="min-width:560px;width:100%;"><thead><tr><th>Semana</th><th>Tema</th><th>Estado</th><th>Nota</th><th>Comentario</th></tr></thead><tbody>
+    ${[1,2,3,4,5,6,7].map(n=>{const t=porSemana.get(n), cal=notaPorSemana.get(n);return `<tr><td><b>Semana ${n}</b></td><td>${t?escapeHtml(t.tema||''):'—'}</td><td>${t?(estadoTxt[t.estado]||t.estado):'Pendiente'}</td><td style="text-align:center;font-weight:700;">${cal&&cal.nota!=null?escapeHtml(String(cal.nota)):'—'}</td><td>${cal&&cal.comentario?escapeHtml(cal.comentario):(t&&t.observacion?escapeHtml(t.observacion):'—')}</td></tr>`}).join('')}
+    </tbody></table></div></div>`;
+}
+async function cargarNotasEstudiante(){
+  const {data,error}=await db.rpc('bv_mis_notas_semanales',{p_nombre:session.nombre,p_cedula:session.cedula});
+  return error?[]:(data||[]);
+}
+
 async function renderMiTarea(claveElegida){
   const main = document.getElementById('main');
   main.innerHTML = `<div class="empty">Cargando tu tarea…</div>`;
 
   const {data, error} = await db.rpc('bv_mis_tareas', {p_nombre:session.nombre, p_cedula:session.cedula});
   const semanas = (data || []).slice().sort((a,b)=>(a.semana||1)-(b.semana||1));
+  const notasSemanales = await cargarNotasEstudiante();
   const claveDe = s => `${s.seccion_id}||${s.semana}`;
   const tarea = semanas.length
     ? (claveElegida ? semanas.find(s=>claveDe(s)===claveElegida) : null) || semanas[semanas.length-1]
@@ -2584,6 +2601,7 @@ async function renderMiTarea(claveElegida){
       </div>
       <div class="section-divider"><div class="icon">🎯</div><h2>Crear mi página</h2><div class="rule"></div></div>
       <div id="selectorTareaEstudiante"></div>
+      ${tablaControlEstudiante(semanas,notasSemanales)}
       </div>`;
     pintarSelectorTareaEstudiante(semanas);
     return;
@@ -2628,6 +2646,7 @@ async function renderMiTarea(claveElegida){
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>Mi tarea</h2><div class="rule"></div></div>
     ${pestañas}
     <div id="selectorTareaEstudiante"></div>
+    ${tablaControlEstudiante(semanas,notasSemanales)}
     <div class="tarea-head">
       <h3 style="margin:0;">${escapeHtml(tarea.tema)} ${pill}</h3>
       <span class="hint" style="margin:0;">Semana ${tarea.semana||1}</span>
@@ -4422,6 +4441,7 @@ function pintarTablaSemanal(){
                   <span class="status-pill ${estadoClase[t.estado]||'status-pending'}">${estadoAbrev[t.estado]||t.estado}</span>
                 </button>
                 <button class="btn small outline" data-ver-celda='${escapeHtml(JSON.stringify({tema:t.tema, estado:t.estado, observacion:t.observacion, bloques:t.bloques||[]}))}' title="Ver la página que el estudiante está editando" style="padding:.2em .5em;line-height:1;">👁</button>
+                <button class="btn small outline" data-nota-celda="${al.id}" data-semana="${n}" data-nombre="${escapeHtml(al.nombre)}" title="Colocar nota" style="padding:.2em .5em;line-height:1;">⭐ Nota</button>
                 <button class="btn small danger" data-borrar-celda="${al.id}" data-semana="${n}" title="Quitar esta tarea" style="padding:.2em .5em;line-height:1;">✕</button>
               </div>
               <div class="hint" style="margin:.25em 0 0;max-width:130px;white-space:normal;">${escapeHtml(t.tema)}</div>
@@ -4456,6 +4476,20 @@ function pintarTablaSemanal(){
       const estId = b.dataset.editarCelda, semana = Number(b.dataset.semana);
       const t = porEstudianteSemana.get(`${estId}||${semana}`);
       openTareaModal({estudiante_id:estId, seccion_id:seccionId, tema:t?t.tema:undefined, semana, fecha_entrega:t?t.fecha_entrega:null});
+    };
+  });
+  cont.querySelectorAll('[data-nota-celda]').forEach(b=>{
+    b.onclick=async()=>{
+      const estId=b.dataset.notaCelda, semana=Number(b.dataset.semana), nombre=b.dataset.nombre||'Estudiante';
+      const nota=prompt(`Nota para ${nombre} — Semana ${semana} (1 a 5):`, '');
+      if(nota===null) return;
+      const valor=Number(String(nota).replace(',','.'));
+      if(!Number.isFinite(valor)||valor<1||valor>5){alert('La nota debe estar entre 1 y 5.');return;}
+      const comentario=prompt('Comentario para el estudiante (opcional):','');
+      if(comentario===null) return;
+      const {error}=await db.rpc('bv_admin_guardar_nota_semanal',{...adminCreds(),p_estudiante_id:estId,p_semana:semana,p_nota:valor,p_comentario:comentario});
+      if(error){alert('No se pudo guardar la nota: '+error.message);return;}
+      alert('Nota guardada. El estudiante la verá en su tabla de control.');
     };
   });
   cont.querySelectorAll('[data-borrar-celda]').forEach(b=>{
