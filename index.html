@@ -2570,7 +2570,7 @@ function tablaControlEstudiante(semanas=[], notas=[]){
   const porSemana=new Map((semanas||[]).map(t=>[Number(t.semana)||1,t]));
   const notaPorSemana=new Map((notas||[]).map(n=>[Number(n.semana),n]));
   const estadoTxt={borrador:'En proceso',pendiente:'En revisión',publicado:'✓ Realizada',devuelto:'Para corregir'};
-  return `<div class="card" style="max-width:860px;margin:1.2em auto;border-left:5px solid var(--forest);">
+  return `<div class="card" id="tablaMisPaginas" style="max-width:860px;margin:1.2em auto;border-left:5px solid var(--forest);">
     <h3 style="margin-top:0;">📊 Mis páginas para editar</h3>
     <p class="hint">Cada semana que ya creaste tendrá su propio botón. Puedes entrar y editar solamente tus páginas.</p>
     <div style="overflow-x:auto;"><table style="min-width:690px;width:100%;"><thead><tr><th>Semana</th><th>Tema</th><th>Estado</th><th>Nota</th><th>Comentario</th><th>Editar</th></tr></thead><tbody>
@@ -2656,6 +2656,11 @@ async function renderMiTarea(claveElegida){
       <h1 style="font-size:2.1em;margin:.15em 0 0;">${escapeHtml(session.nombre)}</h1>
     </div>
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>Mi tarea</h2><div class="rule"></div></div>
+    <div class="tarea-modo" style="flex-wrap:wrap;">
+      <button type="button" class="btn small outline" id="btnIrElegirTema">📝 Elegir tema de mi página</button>
+      <button type="button" class="btn small outline" id="btnIrVerNotas">📊 Ver notas</button>
+      <button type="button" class="btn small outline" id="btnIrEditarPaginas">✏️ Editar páginas</button>
+    </div>
     ${pestañas}
     <div id="selectorTareaEstudiante"></div>
     ${tablaControlEstudiante(semanas,notasSemanales)}
@@ -2679,6 +2684,13 @@ async function renderMiTarea(claveElegida){
   main.querySelectorAll('[data-tarea-clave]').forEach(b=>{
     b.onclick = ()=> renderMiTarea(b.dataset.tareaClave);
   });
+  const irA = id => { const el = document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); };
+  const btnIrElegirTema = document.getElementById('btnIrElegirTema');
+  if(btnIrElegirTema) btnIrElegirTema.onclick = ()=> irA('selectorTareaEstudiante');
+  const btnIrVerNotas = document.getElementById('btnIrVerNotas');
+  if(btnIrVerNotas) btnIrVerNotas.onclick = ()=> irA('tablaMisPaginas');
+  const btnIrEditarPaginas = document.getElementById('btnIrEditarPaginas');
+  if(btnIrEditarPaginas) btnIrEditarPaginas.onclick = ()=> irA('tablaMisPaginas');
   document.getElementById('modoEditarBtn').onclick = ()=>{ miTareaModo='editar'; pintarMiTarea(); };
   document.getElementById('modoVistaBtn').onclick = ()=>{ miTareaModo='vista'; pintarMiTarea(); };
   const tipoCentroSelect=document.getElementById('tipoCentroEducativo');
