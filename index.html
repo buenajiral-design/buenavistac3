@@ -2587,6 +2587,40 @@ async function cargarNotasEstudiante(){
   return error?[]:(data||[]);
 }
 
+function barraNavegacionSemanas(semanas, claveActual){
+  const porSemana = new Map((semanas||[]).map(s=>[Number(s.semana)||1, s]));
+  const claveDe = s => `${s.seccion_id}||${s.semana}`;
+  const botonesSemana = [1,2,3,4,5,6,7].map(n=>{
+    const t = porSemana.get(n);
+    if(t){
+      const activo = claveActual && claveDe(t)===claveActual;
+      return `<button type="button" class="btn small ${activo?'':'outline'}" data-semana-nav="${n}" data-clave-nav="${escapeHtml(claveDe(t))}">${activo?'✓ ':''}Semana ${n}</button>`;
+    }
+    return `<button type="button" class="btn small outline" data-semana-nav="${n}">Semana ${n}</button>`;
+  }).join('');
+  return `<div class="tarea-modo" style="flex-wrap:wrap;">
+    <button type="button" class="btn small outline" id="btnNavElegirTema">📝 Elegir tema</button>
+    <button type="button" class="btn small outline" id="btnNavVerNotas">📊 Notas</button>
+    ${botonesSemana}
+  </div>`;
+}
+function enlazarBarraNavegacion(){
+  const irA = id => { const el = document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); };
+  const btnTema = document.getElementById('btnNavElegirTema');
+  if(btnTema) btnTema.onclick = ()=> irA('selectorTareaEstudiante');
+  const btnNotas = document.getElementById('btnNavVerNotas');
+  if(btnNotas) btnNotas.onclick = ()=> irA('tablaMisPaginas');
+  document.querySelectorAll('[data-semana-nav]').forEach(b=>{
+    b.onclick = ()=>{
+      if(b.dataset.claveNav){ renderMiTarea(b.dataset.claveNav); }
+      else{
+        irA('selectorTareaEstudiante');
+        const sel = document.getElementById('autoSemana');
+        if(sel) sel.value = b.dataset.semanaNav;
+      }
+    };
+  });
+}
 async function renderMiTarea(claveElegida){
   const main = document.getElementById('main');
   main.innerHTML = `<div class="empty">Cargando tu tarea…</div>`;
@@ -2611,11 +2645,13 @@ async function renderMiTarea(claveElegida){
         <h1 style="font-size:2.1em;margin:.15em 0 0;">${escapeHtml(session.nombre)}</h1>
       </div>
       <div class="section-divider"><div class="icon">🎯</div><h2>Crear mi página</h2><div class="rule"></div></div>
+      ${barraNavegacionSemanas(semanas, null)}
       <div id="selectorTareaEstudiante"></div>
       ${tablaControlEstudiante(semanas,notasSemanales)}
       </div>`;
     pintarSelectorTareaEstudiante(semanas);
     enlazarBotonesEditarSemana();
+    enlazarBarraNavegacion();
     return;
   }
 
@@ -2656,11 +2692,7 @@ async function renderMiTarea(claveElegida){
       <h1 style="font-size:2.1em;margin:.15em 0 0;">${escapeHtml(session.nombre)}</h1>
     </div>
     <div class="section-divider"><div class="icon">${s.icon}</div><h2>Mi tarea</h2><div class="rule"></div></div>
-    <div class="tarea-modo" style="flex-wrap:wrap;">
-      <button type="button" class="btn small outline" id="btnIrElegirTema">📝 Elegir tema de mi página</button>
-      <button type="button" class="btn small outline" id="btnIrVerNotas">📊 Ver notas</button>
-      <button type="button" class="btn small outline" id="btnIrEditarPaginas">✏️ Editar páginas</button>
-    </div>
+    ${barraNavegacionSemanas(semanas, claveDe(tarea))}
     ${pestañas}
     <div id="selectorTareaEstudiante"></div>
     ${tablaControlEstudiante(semanas,notasSemanales)}
@@ -2681,16 +2713,10 @@ async function renderMiTarea(claveElegida){
   `;
   pintarSelectorTareaEstudiante(semanas);
   enlazarBotonesEditarSemana();
+  enlazarBarraNavegacion();
   main.querySelectorAll('[data-tarea-clave]').forEach(b=>{
     b.onclick = ()=> renderMiTarea(b.dataset.tareaClave);
   });
-  const irA = id => { const el = document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); };
-  const btnIrElegirTema = document.getElementById('btnIrElegirTema');
-  if(btnIrElegirTema) btnIrElegirTema.onclick = ()=> irA('selectorTareaEstudiante');
-  const btnIrVerNotas = document.getElementById('btnIrVerNotas');
-  if(btnIrVerNotas) btnIrVerNotas.onclick = ()=> irA('tablaMisPaginas');
-  const btnIrEditarPaginas = document.getElementById('btnIrEditarPaginas');
-  if(btnIrEditarPaginas) btnIrEditarPaginas.onclick = ()=> irA('tablaMisPaginas');
   document.getElementById('modoEditarBtn').onclick = ()=>{ miTareaModo='editar'; pintarMiTarea(); };
   document.getElementById('modoVistaBtn').onclick = ()=>{ miTareaModo='vista'; pintarMiTarea(); };
   const tipoCentroSelect=document.getElementById('tipoCentroEducativo');
