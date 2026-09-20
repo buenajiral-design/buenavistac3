@@ -456,6 +456,23 @@
     color:#fff;border-color:transparent;box-shadow:0 4px 0 rgba(28,142,224,.3);
   }
 
+  /* índice de fichas: Título / Contenido / Fotos / Ubicación / Redes / Agradecimientos */
+  .mi-tarea-view .indice-seccion-card{
+    background:#fdfbf6;border:1.5px solid var(--line);border-radius:16px;
+    padding:.9em .9em 1em;margin:1em 0 1.6em;box-shadow:0 3px 10px rgba(43,38,32,.06);
+  }
+  .mi-tarea-view .fichas-seccion-wrap{display:flex;flex-wrap:wrap;gap:.5em;}
+  .mi-tarea-view .ficha-seccion{
+    border-radius:12px;border:2px solid var(--fc,var(--kid-blue));
+    background:#fff;color:var(--fcd,var(--kid-blue-d));font-weight:800;
+    padding:.6em 1.05em;font-size:.9rem;transition:transform .12s ease,background .12s ease,box-shadow .12s ease;
+  }
+  .mi-tarea-view .ficha-seccion:hover{transform:translateY(-2px);}
+  .mi-tarea-view .ficha-seccion.activa{
+    background:var(--fc,var(--kid-blue));color:#fff;border-color:transparent;
+    box-shadow:0 3px 0 rgba(43,38,32,.18);
+  }
+
   /* tarjetas de cada bloque de contenido */
   .mi-tarea-view .bloque-editor{
     border:none;border-radius:16px;box-shadow:0 4px 16px rgba(43,38,32,.1);
@@ -556,6 +573,8 @@
     .pg-galeria-caption{font-size:.95rem!important;padding:.7em .6em!important;min-height:44px;margin-top:.6em!important;}
     .mi-tarea-view .tarea-modo{gap:.4em;}
     .mi-tarea-view .tarea-modo button{padding:.55em 1em;font-size:.85rem;min-height:40px;}
+    .mi-tarea-view .indice-seccion-card{padding:.75em .75em .85em;}
+    .mi-tarea-view .ficha-seccion{padding:.55em .85em;font-size:.85rem;}
     #tablaMisPaginas{max-width:100%;}
     #tablaMisPaginas table{min-width:0!important;}
     #tablaMisPaginas table,#tablaMisPaginas tbody,#tablaMisPaginas tr,#tablaMisPaginas td{display:block;width:100%;}
@@ -2429,12 +2448,12 @@ function normalizarFilas(data){
    para llenar. Así todas las páginas del salón se ven parejas y nadie
    tiene que pensar en "cómo armar" la página. */
 const SECCION_FIJA_INFO = {
-  esTituloFijo:         {icon:'🏷️', nombre:'Título de la página'},
-  esContenidoFijo:      {icon:'📖', nombre:'Contenido / Lectura'},
-  esFotosFijo:          {icon:'📸', nombre:'Fotos'},
-  esMapaFijo:           {icon:'📍', nombre:'Ubicación en el mapa'},
-  esRedesFijo:          {icon:'📱', nombre:'Redes sociales (si tiene)'},
-  esAgradecimientoFijo: {icon:'🙏', nombre:'Agradecimientos'},
+  esTituloFijo:         {icon:'🏷️', nombre:'Título de la página', color:'kid-yellow'},
+  esContenidoFijo:      {icon:'📖', nombre:'Contenido / Lectura', color:'kid-blue'},
+  esFotosFijo:          {icon:'📸', nombre:'Fotos', color:'kid-pink'},
+  esMapaFijo:           {icon:'📍', nombre:'Ubicación en el mapa', color:'kid-teal'},
+  esRedesFijo:          {icon:'📱', nombre:'Redes sociales (si tiene)', color:'kid-purple'},
+  esAgradecimientoFijo: {icon:'🙏', nombre:'Agradecimientos', color:'kid-red'},
 };
 function infoSeccionFija(b){
   for(const clave in SECCION_FIJA_INFO){ if(b[clave]) return SECCION_FIJA_INFO[clave]; }
@@ -2906,7 +2925,7 @@ function pintarMiTarea(){
     return;
   }
   body.innerHTML = `
-    <div id="indiceMiTarea" class="tarea-modo" style="flex-wrap:wrap;"></div>
+    <div id="indiceMiTarea" class="indice-seccion-card"></div>
     <div id="bloquesList"></div>
     <div class="row-actions" style="margin:1em 0 .6em;">
       <button class="btn outline small" id="agregarFilaBtn" type="button">➕ Agregar otra sección (opcional)</button>
@@ -3009,17 +3028,20 @@ function cambiarMayusMinus(editor, aMayus){
 }
 let seccionActivaMiTarea = 'esTituloFijo';
 function indiceMiTareaHTML(){
-  return Object.entries(SECCION_FIJA_INFO).map(([clave,info])=>{
+  const botones = Object.entries(SECCION_FIJA_INFO).map(([clave,info])=>{
     const etiqueta = info.nombre.replace(' (si tiene)','');
-    return `<button type="button" class="btn small ${seccionActivaMiTarea===clave?'':'outline'}" data-seccion-indice="${clave}">${info.icon} ${etiqueta}</button>`;
+    const activo = seccionActivaMiTarea===clave;
+    return `<button type="button" class="ficha-seccion ${activo?'activa':''}" style="--fc:var(--${info.color});--fcd:var(--${info.color}-d);" data-seccion-indice="${clave}">${info.icon} ${etiqueta}</button>`;
   }).join('');
+  return `<p class="hint" style="margin:0 0 .5em;font-weight:700;">📑 Partes de tu página — toca una ficha para trabajar en ella:</p>
+    <div class="fichas-seccion-wrap">${botones}</div>`;
 }
 function aplicarSeccionActivaMiTarea(){
   document.querySelectorAll('#bloquesList [data-seccion-fija]').forEach(el=>{
     el.style.display = (el.dataset.seccionFija===seccionActivaMiTarea) ? '' : 'none';
   });
   document.querySelectorAll('#indiceMiTarea [data-seccion-indice]').forEach(btn=>{
-    btn.classList.toggle('outline', btn.dataset.seccionIndice!==seccionActivaMiTarea);
+    btn.classList.toggle('activa', btn.dataset.seccionIndice===seccionActivaMiTarea);
   });
 }
 function pintarBloquesList(){
