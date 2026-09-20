@@ -1035,13 +1035,14 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* =====================  DATOS BASE  ===================== */
 const SECTIONS = [
-  {id:'lugares', name:'30 lugares poblados', icon:'🗺️', desc:'Directorio censal de las comunidades que integran el corregimiento de Buena Vista, con su historia, fotografías, pobladores destacados, negocios, sitios de interés y mapas.'},
+  {id:'lugares', name:'Lugares poblados', icon:'🗺️', desc:'Directorio censal de las comunidades que integran el corregimiento de Buena Vista, con su historia, fotografías, pobladores destacados, negocios, sitios de interés y mapas.'},
   {id:'autoridades', name:'Autoridades', icon:'🏛️', desc:'Conoce a quienes representan y toman decisiones en Buena Vista: representante de corregimiento, corregidor(a), integrantes de la Junta Comunal, delegados de instituciones y líderes comunitarios.'},
   {id:'instituciones', name:'Instituciones públicas', icon:'🏢', desc:'Entidades gubernamentales y servicios oficiales presentes en el corregimiento de Buena Vista.'},
-  {id:'servicios', name:'Empresas de servicios públicos o privados', icon:'💡', desc:'Empresas y proveedores que ofrecen energía eléctrica, telecomunicaciones, internet, transporte, recolección de basura, combustible y otros servicios a la comunidad.'},
+  {id:'servicios', name:'Empresas públicas', icon:'💡', desc:'Empresas e instituciones que prestan servicios públicos a la comunidad.'},
+  {id:'empresas_privadas', name:'Empresas privadas', icon:'🏬', desc:'Empresas privadas que ofrecen productos y servicios dentro del corregimiento.'},
   {id:'escuelas', name:'Escuelas y centros educativos', icon:'🏫', desc:'Todos los centros educativos de Buena Vista: escuelas primarias, la sede de premedia y media, centros de educación inicial, y los programas, docentes y logros que forman parte de la vida escolar.'},
   {id:'iglesias', name:'Iglesias', icon:'⛪', desc:'Los templos y congregaciones que acompañan la vida espiritual de la comunidad, junto con sus actividades, grupos juveniles y fiestas patronales.'},
-  {id:'deportes', name:'Deportes y clubes', icon:'⚽', desc:'Equipos, canchas, ligas y clubes deportivos de Buena Vista, además de los torneos, actividades recreativas y atletas que representan al corregimiento.'},
+  {id:'deportes', name:'Deportes', icon:'⚽', desc:'Equipos, canchas, ligas y clubes deportivos de Buena Vista, además de los torneos, actividades recreativas y atletas que representan al corregimiento.'},
   {id:'negocios', name:'Directorio de negocios', icon:'🏪', desc:'Tiendas, ventas y emprendimientos locales. Como mínimo se menciona el nombre del negocio, la dirección y un teléfono de contacto; si el dueño lo desea, se le puede armar una página más completa, igual que en las demás secciones.'},
   {id:'donantes', name:'Donantes y padrinos', icon:'🎁', desc:'Personas, negocios o instituciones que han apoyado con donaciones de dinero, materiales, alimentos o tiempo a la escuela y a la comunidad.'},
   {id:'salud', name:'Salud y servicios médicos', icon:'🏥', desc:'Centros y servicios de salud reales del corregimiento de Buena Vista, tanto públicos como privados.'},
@@ -2528,7 +2529,8 @@ function pintarSelectorTareaEstudiante(tareasActuales=[]){
   const usadas=new Set((tareasActuales||[]).map(t=>Number(t.semana)||1));
   const faltantes=[1,2,3,4,5,6,7].filter(n=>!usadas.has(n));
   const todasCompletas=faltantes.length===0;
-  const secOptions=SECTIONS.map(s=>`<option value="${escapeHtml(s.id)}">${s.icon} ${escapeHtml(s.name)}</option>`).join('');
+  const SECCIONES_ESTUDIANTE_IDS=['lugares','autoridades','instituciones','servicios','empresas_privadas','escuelas','iglesias','deportes','negocios','salud','transporte','entrevistas'];
+  const secOptions=SECCIONES_ESTUDIANTE_IDS.map(id=>SECTIONS.find(s=>s.id===id)).filter(Boolean).map(s=>`<option value="${escapeHtml(s.id)}">${s.icon} ${escapeHtml(s.name)}</option>`).join('');
   const grupos=['8A','8B','8C','9A','9B','9C'];
   const grupoActual=String(session.salon||'').replace(/[^0-9A-Za-z]/g,'').toUpperCase();
   cont.innerHTML=`
